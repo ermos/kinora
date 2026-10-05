@@ -6,7 +6,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { api, img, unwrap, type Item, type ListItem, type MediaType, type Progress } from '../api/client';
 import { useLayout } from '../theme';
 import { Focusable } from './Focusable';
-import { Button, Hero, icons, itemCard, progressCard, Row, Spinner, styles as ui } from './ui';
+import { Button, Hero, icons, itemCard, progressCard, RankCard, Row, Spinner, styles as ui } from './ui';
 import { t } from '../i18n';
 
 export function useLibrary() {
@@ -44,7 +44,13 @@ export function Browse({ type }: { type?: MediaType }) {
           <Row<ListItem> title={t('common.myList')} data={mine} keyOf={(i) => `${i.type}-${i.id}`} render={(i) => itemCard({ ...i, backdrop: '' })} />
         )}
         {rows.data.map((r) => (
-          <Row<Item> key={r.title} title={r.title} data={r.items} keyOf={(i) => `${i.type}-${i.id}`} render={itemCard} />
+          <Row<Item>
+            key={r.title}
+            title={r.title}
+            data={r.items}
+            keyOf={(i) => `${i.type}-${i.id}`}
+            render={r.ranked ? (i, width, index) => <RankCard item={i} rank={index + 1} width={width} /> : itemCard}
+          />
         ))}
       </View>
     </ScrollView>

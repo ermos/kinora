@@ -285,12 +285,17 @@
                         "type": "array",
                         "uniqueItems": false
                     },
+                    "ranked": {
+                        "description": "Ranked rows are Top 10s: the UI draws the rank next to each poster.",
+                        "type": "boolean"
+                    },
                     "title": {
                         "type": "string"
                     }
                 },
                 "required": [
                     "items",
+                    "ranked",
                     "title"
                 ],
                 "type": "object"

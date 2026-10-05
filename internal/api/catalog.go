@@ -20,6 +20,8 @@ import (
 type row struct {
 	Title string      `json:"title"`
 	Items []tmdb.Item `json:"items"`
+	// Ranked rows are Top 10s: the UI draws the rank next to each poster.
+	Ranked bool `json:"ranked,omitempty"`
 }
 
 // rowSpec.key is translated by rowTitles (i18n.go) in the instance language.
@@ -28,6 +30,14 @@ type rowSpec struct {
 	params          url.Values
 }
 
+// top10Row is today's most watched titles of a kind, like Netflix's Top 10 rows.
+func top10Row(kind string) rowSpec {
+	key := map[string]string{"movie": "top10Movies", "tv": "top10Shows"}[kind]
+	return rowSpec{key, kind, "trending/" + kind + "/day", nil}
+}
+
+func (s rowSpec) ranked() bool { return strings.HasPrefix(s.key, "top10") }
+
 func genreRow(key, kind string, genre int) rowSpec {
 	return rowSpec{key, kind, "discover/" + kind, url.Values{"with_genres": {strconv.Itoa(genre)}, "sort_by": {"popularity.desc"}}}
 }
@@ -35,7 +45,9 @@ func genreRow(key, kind string, genre int) rowSpec {
 var homeRows = map[string][]rowSpec{
 	"": {
 		{"trending", "", "trending/all/week", nil},
+		top10Row("tv"),
 		{"popularMovies", "movie", "movie/popular", nil},
+		top10Row("movie"),
 		{"popularShows", "tv", "tv/popular", nil},
 		{"topRatedMovies", "movie", "movie/top_rated", nil},
 		genreRow("action", "movie", 28),
@@ -47,6 +59,7 @@ var homeRows = map[string][]rowSpec{
 	},
 	"movie": {
 		{"trending", "movie", "trending/movie/week", nil},
+		top10Row("movie"),
 		{"nowPlaying", "movie", "movie/now_playing", nil},
 		{"popular", "movie", "movie/popular", nil},
 		{"topRated", "movie", "movie/top_rated", nil},
@@ -60,6 +73,7 @@ var homeRows = map[string][]rowSpec{
 	},
 	"tv": {
 		{"trending", "tv", "trending/tv/week", nil},
+		top10Row("tv"),
 		{"popular", "tv", "tv/popular", nil},
 		{"topRatedShows", "tv", "tv/top_rated", nil},
 		genreRow("crime", "tv", 80),
@@ -93,7 +107,10 @@ func (h *Handler) home(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				slog.Warn("tmdb row failed", "row", s.key, "err", err)
 			}
-			rows[i] = row{Title: rowTitle(lang, s.key), Items: items}
+			if s.ranked() && len(items) > 10 {
+				items = items[:10]
+			}
+			rows[i] = row{Title: rowTitle(lang, s.key), Items: items, Ranked: s.ranked()}
 		}()
 	}
 	wg.Wait()
