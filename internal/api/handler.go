@@ -15,6 +15,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/ermos/kinora/internal/aniskip"
 	"github.com/ermos/kinora/internal/scraper"
 	"github.com/ermos/kinora/internal/store"
 	"github.com/ermos/kinora/internal/stream"
@@ -35,10 +36,11 @@ type Handler struct {
 	proxy     *stream.Proxy
 	linkCache linkCache
 	lang      atomic.Pointer[scraper.Language] // instance language, chosen at setup
+	aniskip   *aniskip.Client
 }
 
 func New(st *store.Store, tm *tmdb.Client, signer *stream.Signer, lang scraper.Language) *Handler {
-	h := &Handler{store: st, tmdb: tm, signer: signer, proxy: stream.NewProxy(signer, "/api/v1/proxy")}
+	h := &Handler{store: st, tmdb: tm, signer: signer, proxy: stream.NewProxy(signer, "/api/v1/proxy"), aniskip: aniskip.New()}
 	h.lang.Store(&lang)
 	return h
 }
@@ -75,6 +77,7 @@ func (h *Handler) Routes() http.Handler {
 	user("POST /api/v1/play", h.play)
 	public("GET /api/v1/proxy", h.proxy.ServeHTTP) // the signed, expiring URL is the credential
 
+	profile("GET /api/v1/titles/{type}/{id}/segments", h.segments)
 	profile("GET /api/v1/library/list", h.myList)
 	profile("PUT /api/v1/library/list", h.addToList)
 	profile("DELETE /api/v1/library/list/{type}/{id}", h.removeFromList)

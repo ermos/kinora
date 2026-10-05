@@ -42,7 +42,7 @@ fmt:
 
 ## openapi: regenerate the spec from handler annotations, then the typed TS client
 openapi:
-	$(SWAG) init -g doc.go -d internal/api,internal/store,internal/tmdb -o internal/api/docs \
+	$(SWAG) init -g doc.go -d internal/api,internal/store,internal/tmdb,internal/aniskip -o internal/api/docs \
 	  --ot json,yaml --parseInternal --requiredByDefault --v3.1
 	cd ui && npm run gen:api
 

@@ -15,8 +15,8 @@ func TestContinueWatching(t *testing.T) {
 	}
 	s, ctx := New(conn), context.Background()
 	u, _ := s.CreateUser(ctx, "a", "h", false)
-	p, _ := s.CreateProfile(ctx, u.ID, "a", "red")
-	other, _ := s.CreateProfile(ctx, u.ID, "b", "blue")
+	p, _ := s.CreateProfile(ctx, u.ID, "a", "red", true)
+	other, _ := s.CreateProfile(ctx, u.ID, "b", "blue", true)
 
 	save := func(profile int64, pr Progress, at int64) {
 		t.Helper()

@@ -10,6 +10,10 @@ sans Kodi : [vStream](https://github.com/Kodi-vStream/venom-xbmc-addons) pour le
 - **Hébergeurs** : chaque lien d'embed (vidzy, uqload, lulustream...) est résolu en flux HLS/MP4.
 - **Proxy** : le flux passe par le serveur (Referer/User-Agent imposés par les CDN, pas de CORS). Les URLs sont
   signées en HMAC et expirent après 12 h : ce n'est pas un proxy ouvert.
+- **Passer l'intro / le générique** : pour les animés, les boutons « Passer l'intro » et « Passer le générique »
+  (ou « Épisode suivant ») s'appuient sur les timestamps communautaires d'[AniSkip](https://aniskip.com), via la
+  correspondance TMDB vers MyAnimeList de [Fribb/anime-lists](https://github.com/Fribb/anime-lists). Désactivable par
+  profil.
 - **Comptes et profils** : comptes créés par l'admin, jusqu'à 5 profils par compte. Chaque profil a sa liste et son
   historique de lecture ("Reprendre la lecture").
 - **Cloudflare** : les sites protégés par un challenge Cloudflare ne sont interrogés que si un admin renseigne un

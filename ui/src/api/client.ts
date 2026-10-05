@@ -13,6 +13,7 @@ export type Row = S['api.row'];
 export type Link = S['api.link'];
 export type User = S['store.User'];
 export type Profile = S['store.Profile'];
+export type Segment = S['aniskip.Segment'];
 export type Progress = S['store.Progress'];
 export type ListItem = S['store.ListItem'];
 export type MediaType = 'movie' | 'tv';

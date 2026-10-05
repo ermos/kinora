@@ -1,5 +1,21 @@
 components:
   schemas:
+    aniskip.Segment:
+      properties:
+        end:
+          type: number
+        kind:
+          enum:
+          - intro
+          - credits
+          type: string
+        start:
+          type: number
+      required:
+      - end
+      - kind
+      - start
+      type: object
     api.apiError:
       properties:
         code:
@@ -175,9 +191,13 @@ components:
           type: string
         name:
           type: string
+        skipSegments:
+          description: SkipSegments shows the "skip intro" and "skip credits" buttons.
+          type: boolean
       required:
       - avatar
       - name
+      - skipSegments
       type: object
     api.row:
       properties:
@@ -232,10 +252,14 @@ components:
           type: integer
         name:
           type: string
+        skipSegments:
+          description: SkipSegments shows the "skip intro" and "skip credits" buttons.
+          type: boolean
       required:
       - avatar
       - id
       - name
+      - skipSegments
       type: object
     store.Progress:
       properties:
@@ -1047,6 +1071,50 @@ paths:
         language
       tags:
       - playback
+  /titles/{type}/{id}/segments:
+    get:
+      parameters:
+      - description: movie or tv
+        in: path
+        name: type
+        required: true
+        schema:
+          type: string
+      - description: TMDB ID
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      - description: Season (shows)
+        in: query
+        name: season
+        schema:
+          type: integer
+      - description: Episode (shows)
+        in: query
+        name: episode
+        schema:
+          type: integer
+      - description: Length of the file being played, in seconds
+        in: query
+        name: duration
+        required: true
+        schema:
+          type: number
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/aniskip.Segment'
+                type: array
+          description: OK
+      summary: Opening and ending of a movie or episode, for the skip buttons (empty
+        when unknown or turned off for the profile)
+      tags:
+      - catalog
   /titles/tv/{id}/seasons/{season}:
     get:
       parameters:

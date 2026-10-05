@@ -1159,10 +1159,64 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/titles/{type}/{id}/segments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Opening and ending of a movie or episode, for the skip buttons (empty when unknown or turned off for the profile) */
+        get: {
+            parameters: {
+                query: {
+                    /** @description Season (shows) */
+                    season?: number;
+                    /** @description Episode (shows) */
+                    episode?: number;
+                    /** @description Length of the file being played, in seconds */
+                    duration: number;
+                };
+                header?: never;
+                path: {
+                    /** @description movie or tv */
+                    type: string;
+                    /** @description TMDB ID */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["aniskip.Segment"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        "aniskip.Segment": {
+            end: number;
+            /** @enum {string} */
+            kind: "intro" | "credits";
+            start: number;
+        };
         "api.apiError": {
             /** @enum {string} */
             code: "invalid_json" | "unsupported_media_type" | "not_logged_in" | "session_expired" | "admin_only" | "missing_profile" | "unknown_profile" | "internal" | "not_found" | "invalid_credentials" | "already_set_up" | "username_required" | "password_length" | "unsupported_language" | "wrong_password" | "name_required" | "unknown_avatar" | "profile_limit" | "last_profile" | "username_taken" | "delete_self" | "invalid_id" | "invalid_request" | "episode_required" | "tmdb_unreachable" | "invalid_link" | "link_dead" | "invalid_progress" | "flaresolverr_unreachable";
@@ -1224,6 +1278,8 @@ export interface components {
         "api.profileBody": {
             avatar: string;
             name: string;
+            /** @description SkipSegments shows the "skip intro" and "skip credits" buttons. */
+            skipSegments: boolean;
         };
         "api.row": {
             items: components["schemas"]["tmdb.Item"][];
@@ -1245,6 +1301,8 @@ export interface components {
             avatar: string;
             id: number;
             name: string;
+            /** @description SkipSegments shows the "skip intro" and "skip credits" buttons. */
+            skipSegments: boolean;
         };
         "store.Progress": {
             backdrop: string;

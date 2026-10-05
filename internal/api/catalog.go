@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ermos/kinora/internal/aniskip"
 	"github.com/ermos/kinora/internal/scraper"
 	"github.com/ermos/kinora/internal/stream"
 	"github.com/ermos/kinora/internal/tmdb"
@@ -217,6 +218,40 @@ func (h *Handler) title(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, d)
+}
+
+// @Summary  Opening and ending of a movie or episode, for the skip buttons (empty when unknown or turned off for the profile)
+// @Tags     catalog
+// @Param    type      path   string  true   "movie or tv"
+// @Param    id        path   int     true   "TMDB ID"
+// @Param    season    query  int     false  "Season (shows)"
+// @Param    episode   query  int     false  "Episode (shows)"
+// @Param    duration  query  number  true   "Length of the file being played, in seconds"
+// @Success  200  {array}  aniskip.Segment
+// @Router   /titles/{type}/{id}/segments [get]
+func (h *Handler) segments(w http.ResponseWriter, r *http.Request) {
+	kind, ok := mediaType(r)
+	id, ok2 := pathInt(r, "id")
+	q := r.URL.Query()
+	season, _ := strconv.Atoi(q.Get("season"))
+	episode, _ := strconv.Atoi(q.Get("episode"))
+	duration, err := strconv.ParseFloat(q.Get("duration"), 64)
+	if !ok || !ok2 || err != nil || duration <= 0 || (kind == "tv" && (season < 1 || episode < 1)) {
+		writeError(w, http.StatusBadRequest, errInvalidRequest)
+		return
+	}
+	segments := []aniskip.Segment{}
+	if on, err := h.store.ProfileSkipSegments(r.Context(), currentProfile(r)); err != nil {
+		internalError(w, err)
+		return
+	} else if on {
+		found, err := h.aniskip.Segments(r.Context(), kind, id, season, episode, duration)
+		if err != nil {
+			slog.Warn("aniskip failed", "err", err) // skip buttons are a bonus: play on without them
+		}
+		segments = append(segments, found...)
+	}
+	writeJSON(w, http.StatusOK, segments)
 }
 
 // @Summary  Episodes of a season

@@ -5,7 +5,7 @@ import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { api, setCurrentProfile, unwrap, type Profile } from '../api/client';
 import { Logo } from '../components/AuthForm';
 import { Focusable } from '../components/Focusable';
-import { Avatar, Button, Field, Icon, icons, Spinner, styles as ui } from '../components/ui';
+import { Avatar, Button, Chip, Field, Icon, icons, Spinner, styles as ui } from '../components/ui';
 import { Gate } from '../lib/auth';
 import { AVATARS, colors, useLayout } from '../theme';
 import { t } from '../i18n';
@@ -93,6 +93,7 @@ function Profiles() {
 function ProfileEditor({ profile, canDelete, onClose }: { profile: Profile | null; canDelete: boolean; onClose: () => void }) {
   const [name, setName] = useState(profile?.name ?? '');
   const [avatar, setAvatar] = useState(profile?.avatar ?? Object.keys(AVATARS)[Math.floor(Math.random() * 8)]);
+  const [skipSegments, setSkipSegments] = useState(profile?.skipSegments ?? true);
   const [error, setError] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -108,8 +109,8 @@ function ProfileEditor({ profile, canDelete, onClose }: { profile: Profile | nul
   const save = () =>
     run(() =>
       profile
-        ? unwrap(api.PATCH('/profiles/{id}', { params: { path: { id: profile.id } }, body: { name, avatar } }))
-        : unwrap(api.POST('/profiles', { body: { name, avatar } })),
+        ? unwrap(api.PATCH('/profiles/{id}', { params: { path: { id: profile.id } }, body: { name, avatar, skipSegments } }))
+        : unwrap(api.POST('/profiles', { body: { name, avatar, skipSegments } })),
     );
 
   return (
@@ -128,6 +129,7 @@ function ProfileEditor({ profile, canDelete, onClose }: { profile: Profile | nul
                   </Focusable>
                 ))}
               </View>
+              <Chip label={t('profiles.skipSegments')} selected={skipSegments} onPress={() => setSkipSegments(!skipSegments)} />
             </View>
           </View>
           {!!error && <Text style={ui.error}>{error}</Text>}

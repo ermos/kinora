@@ -1,15 +1,21 @@
 import type Hls from 'hls.js';
-import { useEffect, useRef } from 'react';
+import { useEffect, useImperativeHandle, useRef } from 'react';
 import { PROGRESS_INTERVAL, type PlayerProps } from './Player.types';
 import { t } from '../i18n';
 
 /** Web player: native <video>, with hls.js where the browser cannot play HLS itself (all but Safari). */
-export function Player({ url, kind, startAt, audioTrack, onReady, onError, onEnded, onProgress, onAudioTracks }: PlayerProps) {
+export function Player({ ref, url, kind, startAt, audioTrack, onReady, onError, onEnded, onProgress, onAudioTracks, onTime }: PlayerProps) {
   const video = useRef<HTMLVideoElement>(null);
   const hls = useRef<Hls | null>(null);
   // Callbacks change every render; the effects below must only restart when the stream changes.
-  const cb = useRef({ onReady, onError, onEnded, onProgress, onAudioTracks });
-  cb.current = { onReady, onError, onEnded, onProgress, onAudioTracks };
+  const cb = useRef({ onReady, onError, onEnded, onProgress, onAudioTracks, onTime });
+  cb.current = { onReady, onError, onEnded, onProgress, onAudioTracks, onTime };
+
+  useImperativeHandle(ref, () => ({
+    seek: (seconds) => {
+      if (video.current) video.current.currentTime = seconds;
+    },
+  }));
 
   useEffect(() => {
     const el = video.current!;
@@ -71,6 +77,10 @@ export function Player({ url, kind, startAt, audioTrack, onReady, onError, onEnd
       controls
       playsInline
       onEnded={() => cb.current.onEnded()}
+      onTimeUpdate={(e) => {
+        const el = e.currentTarget;
+        if (el.duration && isFinite(el.duration)) cb.current.onTime?.(el.currentTime, el.duration);
+      }}
       style={{ width: '100%', height: '100%', backgroundColor: '#000' }}
     />
   );
