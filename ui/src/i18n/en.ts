@@ -82,6 +82,12 @@ export const en = {
     track: 'Track {n}',
     skipIntro: 'Skip intro',
     skipCredits: 'Skip credits',
+    pause: 'Pause',
+    back10: 'Back 10 seconds',
+    forward10: 'Forward 10 seconds',
+    mute: 'Mute',
+    unmute: 'Unmute',
+    fullscreen: 'Full screen',
   },
   account: {
     title: 'Account',

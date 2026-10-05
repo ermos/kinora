@@ -96,7 +96,9 @@ L'UI est une app Expo. Seul le build web est produit pour l'instant, mais tous l
 - **Modules supportés sur TV** : expo-router, expo-image, expo-video, react-native-svg, expo-linear-gradient,
   expo-secure-store.
 - **Lecteur par plateforme** : `Player.web.tsx` (hls.js chargé à la demande) et `Player.tsx` (expo-video, HLS natif
-  ExoPlayer/AVPlayer, contrôles natifs pilotables à la télécommande).
+  ExoPlayer/AVPlayer). Les deux sont pilotés par les mêmes contrôles façon Netflix (`PlayerControls`) : barre de
+  progression avec temps restant, lecture/pause, ±10 s, son et plein écran sur le web, raccourcis clavier (Espace,
+  flèches, F, M), tous focusables à la télécommande.
 - **Proxy sans cookie** : l'URL de flux est signée et expire (12 h), elle suffit à elle seule. Les lecteurs natifs,
   AirPlay et Chromecast n'envoient pas les cookies de l'app.
 

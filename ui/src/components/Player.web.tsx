@@ -4,24 +4,32 @@ import { PROGRESS_INTERVAL, type PlayerProps } from './Player.types';
 import { t } from '../i18n';
 
 /** Web player: native <video>, with hls.js where the browser cannot play HLS itself (all but Safari). */
-export function Player({ ref, url, kind, startAt, audioTrack, onReady, onError, onEnded, onProgress, onAudioTracks, onTime }: PlayerProps) {
+export function Player({ ref, url, kind, startAt, muted, audioTrack, onReady, onError, onEnded, onProgress, onAudioTracks, onTime, onPlaying }: PlayerProps) {
   const video = useRef<HTMLVideoElement>(null);
   const hls = useRef<Hls | null>(null);
   // Callbacks change every render; the effects below must only restart when the stream changes.
-  const cb = useRef({ onReady, onError, onEnded, onProgress, onAudioTracks, onTime });
-  cb.current = { onReady, onError, onEnded, onProgress, onAudioTracks, onTime };
+  const cb = useRef({ onReady, onError, onEnded, onProgress, onAudioTracks, onTime, onPlaying });
+  cb.current = { onReady, onError, onEnded, onProgress, onAudioTracks, onTime, onPlaying };
 
   useImperativeHandle(ref, () => ({
     seek: (seconds) => {
       if (video.current) video.current.currentTime = seconds;
     },
+    play: () => {
+      video.current?.play().catch(() => {});
+    },
+    pause: () => video.current?.pause(),
   }));
+
+  useEffect(() => {
+    if (video.current) video.current.muted = !!muted;
+  }, [muted]);
 
   useEffect(() => {
     const el = video.current!;
     const start = () => {
       if (startAt) el.currentTime = startAt;
-      el.play().catch(() => {}); // autoplay may be blocked, the native controls remain
+      el.play().catch(() => {}); // autoplay may be blocked: the play button stays shown
       cb.current.onReady();
     };
     el.addEventListener('loadedmetadata', start, { once: true });
@@ -74,9 +82,10 @@ export function Player({ ref, url, kind, startAt, audioTrack, onReady, onError, 
   return (
     <video
       ref={video}
-      controls
       playsInline
       onEnded={() => cb.current.onEnded()}
+      onPlay={() => cb.current.onPlaying?.(true)}
+      onPause={() => cb.current.onPlaying?.(false)}
       onTimeUpdate={(e) => {
         const el = e.currentTarget;
         if (el.duration && isFinite(el.duration)) cb.current.onTime?.(el.currentTime, el.duration);
