@@ -68,11 +68,25 @@ func animeSamaFind(ctx context.Context, c *scraper.Client, base string, q scrape
 			continue
 		}
 		for _, arr := range scraper.FindAll(data, `var eps\d+ = \[(.+?)\];`) {
-			urls := scraper.FindAll(arr[0], `'([^']*)'`)
-			if q.Episode-1 < len(urls) && urls[q.Episode-1][0] != "" {
-				links = append(links, scraper.Link{URL: urls[q.Episode-1][0], Lang: strings.ToUpper(lang), Referer: base})
+			urls := embedList(arr[0])
+			if q.Episode-1 < len(urls) && urls[q.Episode-1] != "" {
+				links = append(links, scraper.Link{URL: urls[q.Episode-1], Lang: strings.ToUpper(lang), Referer: base})
 			}
 		}
 	}
 	return links, nil
+}
+
+// embedList splits the body of an episodes.js array, one entry per episode ("" for a missing one). Some arrays
+// lose their closing quotes ('https://...html, 'https://...html,), so entries are split on commas, not quotes.
+func embedList(arr string) []string {
+	parts := strings.Split(arr, ",")
+	if strings.TrimSpace(parts[len(parts)-1]) == "" {
+		parts = parts[:len(parts)-1] // trailing comma
+	}
+	out := make([]string, len(parts))
+	for i, p := range parts {
+		out[i] = strings.Trim(p, " '\"")
+	}
+	return out
 }
