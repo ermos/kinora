@@ -6,7 +6,7 @@ import { colors } from '../theme';
 import { Button, Field, styles as ui } from './ui';
 
 export function Logo({ size = 34 }: { size?: number }) {
-  return <Text style={[styles.logo, { fontSize: size }]}>ISTREAM</Text>;
+  return <Text style={[styles.logo, { fontSize: size }]}>KINORA</Text>;
 }
 
 export function AuthForm({

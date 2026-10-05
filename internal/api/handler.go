@@ -15,14 +15,14 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ermos/istream/internal/scraper"
-	"github.com/ermos/istream/internal/store"
-	"github.com/ermos/istream/internal/stream"
-	"github.com/ermos/istream/internal/tmdb"
+	"github.com/ermos/kinora/internal/scraper"
+	"github.com/ermos/kinora/internal/store"
+	"github.com/ermos/kinora/internal/stream"
+	"github.com/ermos/kinora/internal/tmdb"
 )
 
 const (
-	sessionCookie = "istream_session"
+	sessionCookie = "kinora_session"
 	sessionTTL    = 30 * 24 * time.Hour
 	profileHeader = "X-Profile-ID"
 	maxProfiles   = 5

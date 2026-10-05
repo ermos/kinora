@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ermos/istream/internal/scraper"
+	"github.com/ermos/kinora/internal/scraper"
 )
 
 func TestSignerRejectsTampering(t *testing.T) {

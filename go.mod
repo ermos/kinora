@@ -1,4 +1,4 @@
-module github.com/ermos/istream
+module github.com/ermos/kinora
 
 go 1.26.0
 

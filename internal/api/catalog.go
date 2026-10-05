@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ermos/istream/internal/scraper"
-	"github.com/ermos/istream/internal/stream"
-	"github.com/ermos/istream/internal/tmdb"
+	"github.com/ermos/kinora/internal/scraper"
+	"github.com/ermos/kinora/internal/stream"
+	"github.com/ermos/kinora/internal/tmdb"
 )
 
 type row struct {

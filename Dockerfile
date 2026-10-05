@@ -13,14 +13,14 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 COPY --from=ui /src/ui/dist ./ui/dist
-RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -ldflags "-s -w" -o /istream ./cmd/istream
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -ldflags "-s -w" -o /kinora ./cmd/kinora
 
 FROM alpine:3
-RUN apk add --no-cache ca-certificates && adduser -D -u 10001 istream && mkdir /data && chown istream /data
-COPY --from=build /istream /usr/local/bin/istream
-USER istream
+RUN apk add --no-cache ca-certificates && adduser -D -u 10001 kinora && mkdir /data && chown kinora /data
+COPY --from=build /kinora /usr/local/bin/kinora
+USER kinora
 ENV DATA_DIR=/data ADDR=:8080
 VOLUME /data
 EXPOSE 8080
 HEALTHCHECK CMD wget -qO- http://localhost:8080/api/v1/setup >/dev/null || exit 1
-ENTRYPOINT ["istream"]
+ENTRYPOINT ["kinora"]

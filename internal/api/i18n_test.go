@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ermos/istream/internal/scraper"
+	"github.com/ermos/kinora/internal/scraper"
 )
 
 // Adding a language to scraper.Languages must come with every home row title.

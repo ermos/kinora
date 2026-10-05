@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ermos/istream/internal/db"
+	"github.com/ermos/kinora/internal/db"
 )
 
 func TestContinueWatching(t *testing.T) {

@@ -8,8 +8,8 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/ermos/istream/internal/scraper"
-	"github.com/ermos/istream/internal/store"
+	"github.com/ermos/kinora/internal/scraper"
+	"github.com/ermos/kinora/internal/store"
 )
 
 var avatars = map[string]bool{"red": true, "blue": true, "green": true, "yellow": true, "purple": true, "pink": true, "teal": true, "orange": true}
