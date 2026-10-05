@@ -187,9 +187,10 @@
       "url": "https://www.pressplay.top/"
     },
     "projectfreetv_cyou": {
-      "label": "Projectfreetv",
-      "active": "False",
-      "url": "https://freeprojecttv.cyou/"
+      "label": "Project Free TV",
+      "active": "True",
+      "url": "https://freeprojecttv.cyou/",
+      "cloudflare": "True"
     },
     "projectfreetv_lol": {
       "label": "Projectfreetv",
@@ -209,7 +210,8 @@
     "series9movies_com": {
       "label": "Series9Movies",
       "active": "False",
-      "url": "https://series9movies.com/"
+      "url": "https://series9movies.com/",
+      "cloudflare": "True"
     },
     "series9mx_pro": {
       "label": "Series9Mx",
@@ -268,8 +270,9 @@
     },
     "watchseries_cyou": {
       "label": "Watchseries",
-      "active": "False",
-      "url": "https://watchseries.cyou/"
+      "active": "True",
+      "url": "https://watchseries.cyou/",
+      "cloudflare": "True"
     },
     "watchserieshd_stream": {
       "label": "Watchserieshd",

@@ -12,6 +12,10 @@ sans Kodi : [vStream](https://github.com/Kodi-vStream/venom-xbmc-addons) pour le
   signées en HMAC et expirent après 12 h : ce n'est pas un proxy ouvert.
 - **Comptes et profils** : comptes créés par l'admin, jusqu'à 5 profils par compte. Chaque profil a sa liste et son
   historique de lecture ("Reprendre la lecture").
+- **Cloudflare** : les sites protégés par un challenge Cloudflare ne sont interrogés que si un admin renseigne un
+  serveur [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) (page Compte, pris en compte sans redémarrage).
+  Une requête challengée passe par FlareSolverr, puis le cookie `cf_clearance` obtenu est réutilisé en direct pour ce
+  domaine jusqu'au challenge suivant. Le `docker-compose.yml` fournit un service `flaresolverr` prêt à l'emploi.
 - **Domaines** : les URLs des sites sont synchronisées automatiquement toutes les 6 h depuis un `sites.json` par
   langue : celui de vStream pour le français (mis à jour par leur équipe plusieurs fois par semaine), et
   `internal/scraper/en/sites.json` de ce dépôt pour l'anglais (Scrubs garde ses domaines dans le code). Rien à
@@ -139,7 +143,9 @@ Chacune est vérifiée en conditions réelles par `make test-live`.
 Non portées : TV en direct et sport (pas un catalogue), téléchargement direct (extreme_down, wawacity... : demandent
 un débrideur), sources que vStream a lui-même désactivées ou retirées (souvent derrière un challenge Cloudflare),
 sites morts, et adkami / anime-ultime / otaku-attitude (licences redirigées vers Crunchyroll, recherche cassée,
-catalogue de téléchargement).
+catalogue de téléchargement). Les sites de streaming que vStream marque Cloudflare (cpasmal, dulourd, juststream)
+demandent en plus un captcha Turnstile pour chaque lien, que FlareSolverr ne résout pas ; french_stream_lol est le même
+site que French Stream.
 
 ### Anglais (Scrubs V2)
 
@@ -150,9 +156,10 @@ Scrubs V2 est l'équivalent anglophone de vStream : un fork d'Exodus qui scrape 
 | Source | Contenu | Remarques |
 |---|---|---|
 | Levidia | films, séries | liens `go.php` redirigés vers Lulustream |
+| Bstsrs | séries | Cloudflare : demande FlareSolverr |
+| Project Free TV | films, séries | Cloudflare : demande FlareSolverr. Watchseries (watchseries.cyou) partage la même base de liens |
 
-Écartées après test : bstsrs (challenge Cloudflare sur le client Go, marqué `cloudflare` dans le `sites.json`),
-m4ufree et tvids (uniquement des lecteurs maison type vidsrc / 2embed), PrimeWire / PrimeSrc (chaque lien demande un
+Écartées après test : series9movies (lecteurs morts ou non gérés), m4ufree et tvids (uniquement des lecteurs maison type vidsrc / 2embed), PrimeWire / PrimeSrc (chaque lien demande un
 captcha Turnstile), Goojara (lecteur Wootly maison), et les clones sflix / bflix (lecteurs chiffrés).
 
 Hébergeurs : Lulustream, Vidzy, Uqload, Voe (et ses clones, détectés au contenu), Vidmoly, Veev, Filemoon, Mixdrop,

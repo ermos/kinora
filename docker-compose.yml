@@ -7,3 +7,9 @@ services:
     volumes:
       - ./data:/data
     restart: unless-stopped
+
+  # Optional: lets kinora search the sites behind Cloudflare. Enable it in Account > FlareSolverr with
+  # http://flaresolverr:8191.
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    restart: unless-stopped

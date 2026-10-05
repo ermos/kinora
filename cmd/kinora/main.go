@@ -69,6 +69,10 @@ func run() error {
 		}
 	}()
 
+	if u, err := st.Setting(ctx, "flaresolverr"); err == nil {
+		scraper.SetFlareSolverr(u)
+	}
+
 	lang, _ := scraper.LanguageByCode(scraper.DefaultLanguage)
 	if code, err := st.Setting(ctx, "language"); err == nil {
 		if l, ok := scraper.LanguageByCode(code); ok {

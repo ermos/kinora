@@ -62,6 +62,8 @@ type Source struct {
 	DefaultURL string   // used until the first sites.json sync
 	Langs      []string // languages of the site's audience (ISO 639-1)
 	Sites      string   // URL of the sites.json (vStream format) that tracks the site's current domain
+	// Cloudflare marks sites that answer with a Cloudflare challenge: they are only queried through FlareSolverr.
+	Cloudflare bool
 	// Find returns the links for q. base is the site URL (synced from Sites or overridden by an admin).
 	Find func(ctx context.Context, c *Client, base string, q Query) ([]Link, error)
 }
@@ -94,8 +96,9 @@ func FindLinks(ctx context.Context, siteURL SiteURL, q Query, lang Language) []L
 		all []Link
 		wg  sync.WaitGroup
 	)
+	solver := FlareSolverr()
 	for _, s := range Sources {
-		if !s.serves(lang.Code) {
+		if !s.serves(lang.Code) || (s.Cloudflare && solver == "") {
 			continue
 		}
 		base := siteURL(s.ID)
@@ -108,7 +111,11 @@ func FindLinks(ctx context.Context, siteURL SiteURL, q Query, lang Language) []L
 		wg.Add(1)
 		go func(s Source) {
 			defer wg.Done()
-			links, err := s.Find(ctx, NewClient(), strings.TrimRight(base, "/")+"/", q)
+			c := NewClient()
+			if s.Cloudflare {
+				c.Solver = solver
+			}
+			links, err := s.Find(ctx, c, strings.TrimRight(base, "/")+"/", q)
 			if err != nil {
 				slog.Warn("source failed", "source", s.ID, "err", err)
 			}

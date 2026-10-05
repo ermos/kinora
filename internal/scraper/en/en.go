@@ -30,3 +30,22 @@ func audioRank(tag string) int {
 	}
 	return 1
 }
+
+// slug turns a title into the URL form sites use: "Grey's Anatomy 2005" -> "greys-anatomy-2005".
+func slug(s string) string {
+	s = strings.ReplaceAll(strings.ToLower(s), "'", "")
+	var b strings.Builder
+	dash := false
+	for _, r := range s {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
+			if dash && b.Len() > 0 {
+				b.WriteByte('-')
+			}
+			b.WriteRune(r)
+			dash = false
+		} else {
+			dash = true
+		}
+	}
+	return b.String()
+}

@@ -22,6 +22,8 @@ type Client struct {
 	jar  http.CookieJar
 	// Referer is sent when a request sets none: the page an embed was found on, which many hosters check.
 	Referer string
+	// Solver is the FlareSolverr URL that requests challenged by Cloudflare go through ("" gives up on them).
+	Solver string
 }
 
 func NewClient() *Client {
@@ -31,7 +33,7 @@ func NewClient() *Client {
 
 // Get fetches a page and returns its body and the final URL after redirects.
 func (c *Client) Get(ctx context.Context, rawURL string, headers map[string]string) (string, string, error) {
-	return c.do(ctx, http.MethodGet, rawURL, nil, headers)
+	return c.do(ctx, http.MethodGet, rawURL, "", headers)
 }
 
 // PostForm posts an urlencoded form, like the search forms of DLE and WordPress sites.
@@ -40,11 +42,11 @@ func (c *Client) PostForm(ctx context.Context, rawURL string, form url.Values, h
 	for k, v := range headers {
 		h[k] = v
 	}
-	return c.do(ctx, http.MethodPost, rawURL, strings.NewReader(form.Encode()), h)
+	return c.do(ctx, http.MethodPost, rawURL, form.Encode(), h)
 }
 
-func (c *Client) do(ctx context.Context, method, rawURL string, body io.Reader, headers map[string]string) (string, string, error) {
-	req, err := http.NewRequestWithContext(ctx, method, rawURL, body)
+func (c *Client) do(ctx context.Context, method, rawURL, body string, headers map[string]string) (string, string, error) {
+	req, err := http.NewRequestWithContext(ctx, method, rawURL, strings.NewReader(body))
 	if err != nil {
 		return "", "", err
 	}
@@ -56,11 +58,15 @@ func (c *Client) do(ctx context.Context, method, rawURL string, body io.Reader, 
 	for k, v := range headers {
 		req.Header.Set(k, v)
 	}
+	c.useClearance(req)
 	resp, err := c.http.Do(req)
 	if err != nil {
 		return "", "", err
 	}
 	defer resp.Body.Close()
+	if c.Solver != "" && isChallenge(resp) {
+		return solve(ctx, c.Solver, method, rawURL, body)
+	}
 	page, err := io.ReadAll(io.LimitReader(resp.Body, 10<<20))
 	if err != nil {
 		return "", "", err
@@ -83,16 +89,35 @@ func (c *Client) Location(ctx context.Context, rawURL string, headers map[string
 	for k, v := range headers {
 		req.Header.Set(k, v)
 	}
+	c.useClearance(req)
 	resp, err := nc.Do(req)
 	if err != nil {
 		return "", err
 	}
 	resp.Body.Close()
+	if c.Solver != "" && isChallenge(resp) {
+		// The browser follows the redirect: where it lands is the answer.
+		_, final, err := solve(ctx, c.Solver, http.MethodGet, rawURL, "")
+		return final, err
+	}
 	loc, err := resp.Location()
 	if err != nil {
 		return "", fmt.Errorf("GET %s: no redirect (status %d)", rawURL, resp.StatusCode)
 	}
 	return loc.String(), nil
+}
+
+// useClearance sends the cookies and user agent of a challenge solved for this host: the clearance only holds
+// with the browser's user agent.
+func (c *Client) useClearance(req *http.Request) {
+	if c.Solver == "" {
+		return
+	}
+	if v, ok := clearances.Load(Host(req.URL.String())); ok {
+		cl := v.(clearance)
+		req.Header.Set("User-Agent", cl.userAgent)
+		c.jar.SetCookies(req.URL, cl.cookies)
+	}
 }
 
 func (c *Client) GetJSON(ctx context.Context, rawURL string, out any) error {

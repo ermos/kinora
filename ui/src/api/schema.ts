@@ -4,6 +4,74 @@
  */
 
 export interface paths {
+    "/admin/flaresolverr": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** FlareSolverr server used for sources behind Cloudflare */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["api.flareSolverrSettings"];
+                    };
+                };
+            };
+        };
+        /** Set the FlareSolverr server (empty URL disables it), checked before saving. Sources behind Cloudflare are queried while it is set. */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description FlareSolverr URL */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["api.flareSolverrSettings"];
+                };
+            };
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["api.apiError"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/instance": {
         parameters: {
             query?: never;
@@ -1097,12 +1165,16 @@ export interface components {
     schemas: {
         "api.apiError": {
             /** @enum {string} */
-            code: "invalid_json" | "unsupported_media_type" | "not_logged_in" | "session_expired" | "admin_only" | "missing_profile" | "unknown_profile" | "internal" | "not_found" | "invalid_credentials" | "already_set_up" | "username_required" | "password_length" | "unsupported_language" | "wrong_password" | "name_required" | "unknown_avatar" | "profile_limit" | "last_profile" | "username_taken" | "delete_self" | "invalid_id" | "invalid_request" | "episode_required" | "tmdb_unreachable" | "invalid_link" | "link_dead" | "invalid_progress";
+            code: "invalid_json" | "unsupported_media_type" | "not_logged_in" | "session_expired" | "admin_only" | "missing_profile" | "unknown_profile" | "internal" | "not_found" | "invalid_credentials" | "already_set_up" | "username_required" | "password_length" | "unsupported_language" | "wrong_password" | "name_required" | "unknown_avatar" | "profile_limit" | "last_profile" | "username_taken" | "delete_self" | "invalid_id" | "invalid_request" | "episode_required" | "tmdb_unreachable" | "invalid_link" | "link_dead" | "invalid_progress" | "flaresolverr_unreachable";
             error: string;
         };
         "api.credentials": {
             password: string;
             username: string;
+        };
+        "api.flareSolverrSettings": {
+            /** @description URL of the FlareSolverr server, "" when disabled. */
+            url: string;
         };
         "api.instanceInfo": {
             /**
