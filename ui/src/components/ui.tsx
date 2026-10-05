@@ -264,11 +264,44 @@ function RowArrow({ side, width, onPress }: { side: 'left' | 'right'; width: num
   );
 }
 
+/**
+ * Netflix tags: a red "TOP 10" square in the top right corner, or a red label ("New", "New episode"...) in the top
+ * left one.
+ */
+export function Badge({ badge }: { badge?: string }) {
+  if (!badge) return null;
+  if (badge === 'top10') {
+    return (
+      <View style={styles.top10} accessibilityLabel="Top 10">
+        <Text style={styles.top10Small}>TOP</Text>
+        <Text style={styles.top10Big}>10</Text>
+      </View>
+    );
+  }
+  const label = { new: t('badges.new'), newEpisode: t('badges.newEpisode'), newSeason: t('badges.newSeason') }[badge];
+  return label ? <Text style={styles.badge}>{label}</Text> : null;
+}
+
 /** Landscape card, Netflix style: grows and gets a white frame when focused. */
-export function Card({ href, title, image, progress, subtitle }: { href: Href; title: string; image?: string; progress?: number; subtitle?: string }) {
+export function Card({
+  href,
+  title,
+  image,
+  progress,
+  subtitle,
+  badge,
+}: {
+  href: Href;
+  title: string;
+  image?: string;
+  progress?: number;
+  subtitle?: string;
+  badge?: string;
+}) {
   return (
     <Focusable href={href} style={(active) => [styles.card, active && styles.cardActive]}>
       {image ? <Image source={image} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} recyclingKey={image} /> : null}
+      <Badge badge={badge} />
       <LinearGradient colors={['transparent', 'rgba(0,0,0,0.85)']} locations={[0.45, 1]} style={StyleSheet.absoluteFill} />
       <Text style={styles.cardTitle} numberOfLines={2}>
         {title}
@@ -279,15 +312,15 @@ export function Card({ href, title, image, progress, subtitle }: { href: Href; t
   );
 }
 
-export function itemCard(it: Pick<Item, 'id' | 'type' | 'title' | 'backdrop' | 'poster'>) {
-  return <Card href={`/title/${it.type}/${it.id}`} title={it.title} image={img(it.backdrop || it.poster, 'w780')} />;
+export function itemCard(it: Pick<Item, 'id' | 'type' | 'title' | 'backdrop' | 'poster'> & { badge?: string }) {
+  return <Card href={`/title/${it.type}/${it.id}`} title={it.title} image={img(it.backdrop || it.poster, 'w780')} badge={it.badge} />;
 }
 
 /**
  * Top 10 card, Netflix style: a huge outlined rank with the poster laid over its right side. The poster takes
  * half the width; "10" tucks its first digit behind it.
  */
-export function RankCard({ item, rank, width }: { item: Pick<Item, 'id' | 'type' | 'title' | 'poster'>; rank: number; width: number }) {
+export function RankCard({ item, rank, width }: { item: Pick<Item, 'id' | 'type' | 'title' | 'poster' | 'badge'>; rank: number; width: number }) {
   const height = width * 0.75;
   const posterWidth = (height * 2) / 3;
   return (
@@ -315,6 +348,7 @@ export function RankCard({ item, rank, width }: { item: Pick<Item, 'id' | 'type'
             ) : (
               <Text style={styles.posterFallback}>{item.title}</Text>
             )}
+            <Badge badge={item.badge} />
           </View>
         </>
       )}
@@ -343,7 +377,7 @@ export function ProgressBar({ value, style }: { value: number; style?: ViewStyle
   );
 }
 
-export function PosterGrid({ items }: { items: Pick<Item, 'id' | 'type' | 'title' | 'poster'>[] }) {
+export function PosterGrid({ items }: { items: (Pick<Item, 'id' | 'type' | 'title' | 'poster'> & { badge?: string })[] }) {
   const { width, rail, gutter } = useLayout();
   const inner = width - rail - 2 * gutter;
   const columns = Math.max(2, Math.floor(inner / 160));
@@ -357,6 +391,7 @@ export function PosterGrid({ items }: { items: Pick<Item, 'id' | 'type' | 'title
           ) : (
             <Text style={styles.posterFallback}>{it.title}</Text>
           )}
+          <Badge badge={it.badge} />
         </Focusable>
       ))}
     </View>
@@ -398,6 +433,10 @@ export const styles = StyleSheet.create({
   rankActive: { transform: [{ scale: 1.06 }], zIndex: 2 },
   rankPoster: { position: 'absolute', right: 0, top: 0, bottom: 0, borderRadius: 4, overflow: 'hidden', backgroundColor: colors.bg3, justifyContent: 'center', borderWidth: 3, borderColor: 'transparent' },
   rankPosterActive: { borderColor: '#fff' },
+  top10: { position: 'absolute', top: 0, right: 0, zIndex: 1, width: 30, paddingVertical: 3, alignItems: 'center', backgroundColor: colors.red, borderBottomLeftRadius: 2 },
+  top10Small: { color: '#fff', fontSize: 8, fontWeight: '800', lineHeight: 9, letterSpacing: 0.5 },
+  top10Big: { color: '#fff', fontSize: 15, fontWeight: '900', lineHeight: 16 },
+  badge: { position: 'absolute', top: 8, left: 8, zIndex: 1, overflow: 'hidden', paddingVertical: 2, paddingHorizontal: 6, borderRadius: 2, backgroundColor: colors.red, color: '#fff', fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
   cardTitle: { color: '#fff', fontWeight: '700', fontSize: 15, padding: 10, paddingBottom: 12, textShadowColor: '#000', textShadowRadius: 2 },
   cardSubtitle: { fontWeight: '400', fontSize: 13 },
   cardProgress: { position: 'absolute', left: 8, right: 8, bottom: 5 },

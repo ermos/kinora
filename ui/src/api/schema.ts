@@ -1324,6 +1324,12 @@ export interface components {
         };
         "tmdb.Details": {
             backdrop: string;
+            /**
+             * @description Badge is the Netflix-style tag shown on cards: in today's Top 10, newly released, or a show with a new
+             *     episode or season (details only).
+             * @enum {string}
+             */
+            badge: "top10" | "new" | "newEpisode" | "newSeason";
             cast: string[];
             genres: components["schemas"]["tmdb.Genre"][];
             id: number;
@@ -1353,6 +1359,12 @@ export interface components {
         };
         "tmdb.Item": {
             backdrop: string;
+            /**
+             * @description Badge is the Netflix-style tag shown on cards: in today's Top 10, newly released, or a show with a new
+             *     episode or season (details only).
+             * @enum {string}
+             */
+            badge: "top10" | "new" | "newEpisode" | "newSeason";
             id: number;
             /** @description Logo is the title artwork (transparent PNG), set on the home banner titles and on details. */
             logo: string;

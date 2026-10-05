@@ -124,8 +124,28 @@ func (h *Handler) home(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadGateway, errTMDBUnreachable)
 		return
 	}
+	markTop10(out)
 	h.addHeroLogos(r.Context(), out[0].Items)
 	writeJSON(w, http.StatusOK, out)
+}
+
+// markTop10 badges the titles of the other rows that are in one of the page's Top 10 rows.
+func markTop10(rows []row) {
+	top := map[string]bool{}
+	for _, rw := range rows {
+		for _, it := range rw.Items {
+			if rw.Ranked {
+				top[it.Type+strconv.Itoa(it.ID)] = true
+			}
+		}
+	}
+	for _, rw := range rows {
+		for i, it := range rw.Items {
+			if !rw.Ranked && top[it.Type+strconv.Itoa(it.ID)] {
+				rw.Items[i].Badge = "top10"
+			}
+		}
+	}
 }
 
 // heroCount is how many titles of the first row the UI banner cycles through (HERO_COUNT in Browse.tsx).

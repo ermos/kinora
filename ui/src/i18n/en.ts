@@ -69,6 +69,11 @@ export const en = {
     episodes: 'Episodes',
     similar: 'More like this',
   },
+  badges: {
+    new: 'New',
+    newEpisode: 'New episode',
+    newSeason: 'New season',
+  },
   watch: {
     sources: 'Sources',
     audio: 'Audio',
