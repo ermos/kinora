@@ -1283,6 +1283,8 @@ export interface components {
         };
         "api.row": {
             items: components["schemas"]["tmdb.Item"][];
+            /** @description Ranked rows are Top 10s: the UI draws the rank next to each poster. */
+            ranked: boolean;
             title: string;
         };
         "api.setupRequest": {

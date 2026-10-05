@@ -4,6 +4,8 @@ package api
 var rowTitles = map[string]map[string]string{
 	"en": {
 		"trending":       "Trending",
+		"top10Movies":    "Top 10 movies today",
+		"top10Shows":     "Top 10 shows today",
 		"popularMovies":  "Popular movies",
 		"popularShows":   "Popular shows",
 		"topRatedMovies": "Top rated movies",
@@ -25,6 +27,8 @@ var rowTitles = map[string]map[string]string{
 	},
 	"fr": {
 		"trending":       "Tendances",
+		"top10Movies":    "Top 10 des films aujourd'hui",
+		"top10Shows":     "Top 10 des séries aujourd'hui",
 		"popularMovies":  "Films populaires",
 		"popularShows":   "Séries populaires",
 		"topRatedMovies": "Films les mieux notés",

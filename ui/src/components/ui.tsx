@@ -3,7 +3,7 @@ import { type Href } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Animated, FlatList, Platform, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps, type ViewStyle } from 'react-native';
-import Svg, { Circle, Path, Rect } from 'react-native-svg';
+import Svg, { Circle, Path, Rect, Text as SvgText } from 'react-native-svg';
 import { img, type Item, type Progress } from '../api/client';
 import { AVATARS, colors, useLayout } from '../theme';
 import { Focusable } from './Focusable';
@@ -200,7 +200,17 @@ export function Hero({
   );
 }
 
-export function Row<T>({ title, data, render, keyOf }: { title: string; data: T[]; render: (it: T, width: number) => ReactNode; keyOf: (it: T) => string }) {
+export function Row<T>({
+  title,
+  data,
+  render,
+  keyOf,
+}: {
+  title: string;
+  data: T[];
+  render: (it: T, width: number, index: number) => ReactNode;
+  keyOf: (it: T) => string;
+}) {
   const { width, rail, gutter, cardsPerRow } = useLayout();
   const cardWidth = (width - rail - 2 * gutter) / cardsPerRow - 6;
   const list = useRef<FlatList<T>>(null);
@@ -221,7 +231,7 @@ export function Row<T>({ title, data, render, keyOf }: { title: string; data: T[
           horizontal
           data={data}
           keyExtractor={keyOf}
-          renderItem={({ item }) => <View style={{ width: cardWidth }}>{render(item, cardWidth)}</View>}
+          renderItem={({ item, index }) => <View style={{ width: cardWidth }}>{render(item, cardWidth, index)}</View>}
           ItemSeparatorComponent={() => <View style={{ width: 6 }} />}
           // vertical padding leaves room for the focused card, which grows (overflow must stay scrollable on web)
           contentContainerStyle={{ paddingHorizontal: gutter, paddingVertical: 12 }}
@@ -271,6 +281,45 @@ export function Card({ href, title, image, progress, subtitle }: { href: Href; t
 
 export function itemCard(it: Pick<Item, 'id' | 'type' | 'title' | 'backdrop' | 'poster'>) {
   return <Card href={`/title/${it.type}/${it.id}`} title={it.title} image={img(it.backdrop || it.poster, 'w780')} />;
+}
+
+/**
+ * Top 10 card, Netflix style: a huge outlined rank with the poster laid over its right side. The poster takes
+ * half the width; "10" tucks its first digit behind it.
+ */
+export function RankCard({ item, rank, width }: { item: Pick<Item, 'id' | 'type' | 'title' | 'poster'>; rank: number; width: number }) {
+  const height = width * 0.75;
+  const posterWidth = (height * 2) / 3;
+  return (
+    <Focusable href={`/title/${item.type}/${item.id}`} accessibilityLabel={`${rank}. ${item.title}`} style={(active) => [{ height }, active && styles.rankActive]}>
+      {(active) => (
+        <>
+          <Svg width={width} height={height} style={StyleSheet.absoluteFill}>
+            <SvgText
+              x={width - posterWidth + height * 0.1}
+              y={height * 0.97}
+              fontSize={height * 0.95}
+              fontWeight="900"
+              letterSpacing={rank >= 10 ? -height * 0.12 : 0}
+              textAnchor="end"
+              fill={colors.bg}
+              stroke="#595959"
+              strokeWidth={3}
+            >
+              {rank}
+            </SvgText>
+          </Svg>
+          <View style={[styles.rankPoster, { width: posterWidth }, active && styles.rankPosterActive]}>
+            {item.poster ? (
+              <Image source={img(item.poster, 'w342')} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} recyclingKey={item.poster} />
+            ) : (
+              <Text style={styles.posterFallback}>{item.title}</Text>
+            )}
+          </View>
+        </>
+      )}
+    </Focusable>
+  );
 }
 
 export function progressCard(p: Progress) {
@@ -346,6 +395,9 @@ export const styles = StyleSheet.create({
   rowArrow: { position: 'absolute', top: 12, bottom: 12, zIndex: 5, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(20,20,20,0.5)' },
   card: { aspectRatio: 16 / 9, borderRadius: 4, overflow: 'hidden', backgroundColor: colors.bg2, justifyContent: 'flex-end', borderWidth: 3, borderColor: 'transparent' },
   cardActive: { borderColor: '#fff', transform: [{ scale: 1.06 }], zIndex: 2 },
+  rankActive: { transform: [{ scale: 1.06 }], zIndex: 2 },
+  rankPoster: { position: 'absolute', right: 0, top: 0, bottom: 0, borderRadius: 4, overflow: 'hidden', backgroundColor: colors.bg3, justifyContent: 'center', borderWidth: 3, borderColor: 'transparent' },
+  rankPosterActive: { borderColor: '#fff' },
   cardTitle: { color: '#fff', fontWeight: '700', fontSize: 15, padding: 10, paddingBottom: 12, textShadowColor: '#000', textShadowRadius: 2 },
   cardSubtitle: { fontWeight: '400', fontSize: 13 },
   cardProgress: { position: 'absolute', left: 8, right: 8, bottom: 5 },
