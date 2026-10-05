@@ -91,7 +91,12 @@ func TestSortLinks(t *testing.T) {
 		{URL: "vf-unknown", Lang: "VF"},
 		{URL: "nolang-1080", Tier: Quality1080},
 	}
-	SortLinks(ls, frenchAudio)
+	SortLinks(ls, func(tag string) int {
+		if tag == "VOSTFR" {
+			return 1
+		}
+		return 2
+	})
 	var got []string
 	for _, l := range ls {
 		got = append(got, l.URL)

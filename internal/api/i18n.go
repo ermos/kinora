@@ -2,6 +2,27 @@ package api
 
 // rowTitles translates the home rows. A language listed in scraper.Languages needs its entry here.
 var rowTitles = map[string]map[string]string{
+	"en": {
+		"trending":       "Trending",
+		"popularMovies":  "Popular movies",
+		"popularShows":   "Popular shows",
+		"topRatedMovies": "Top rated movies",
+		"action":         "Action",
+		"crimeShows":     "Crime shows",
+		"comedies":       "Comedies",
+		"animation":      "Animation",
+		"scifi":          "Science fiction",
+		"horror":         "Horror",
+		"nowPlaying":     "In theaters",
+		"popular":        "Popular",
+		"topRated":       "Top rated",
+		"topRatedShows":  "Top rated",
+		"dramas":         "Dramas",
+		"thrillers":      "Thrillers",
+		"crime":          "Crime",
+		"scifiFantasy":   "Sci-fi and fantasy",
+		"documentaries":  "Documentaries",
+	},
 	"fr": {
 		"trending":       "Tendances",
 		"popularMovies":  "Films populaires",

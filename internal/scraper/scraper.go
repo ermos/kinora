@@ -1,4 +1,5 @@
-// Package scraper is the Go port of vStream's sites (sources) and hosters.
+// Package scraper is the Go port of vStream's hosters, and the engine the sources of each language
+// (packages fr, en) register into.
 //
 // A Source finds links for a title. A link usually points to an embed page on a
 // hoster, which a Hoster resolves to a playable stream (HLS or file) plus the
@@ -60,7 +61,8 @@ type Source struct {
 	Name       string
 	DefaultURL string   // used until the first sites.json sync
 	Langs      []string // languages of the site's audience (ISO 639-1)
-	// Find returns the links for q. base is the site URL (synced from vStream's sites.json or overridden by an admin).
+	Sites      string   // URL of the sites.json (vStream format) that tracks the site's current domain
+	// Find returns the links for q. base is the site URL (synced from Sites or overridden by an admin).
 	Find func(ctx context.Context, c *Client, base string, q Query) ([]Link, error)
 }
 
@@ -78,7 +80,7 @@ var (
 
 var ErrNotFound = errors.New("stream not found")
 
-// SiteURL gives the current URL of a source, synced from vStream's sites.json ("" before the first sync).
+// SiteURL gives the current URL of a source, synced from its sites.json ("" before the first sync).
 type SiteURL func(id string) string
 
 // FindLinks queries the sources of the language concurrently, keeps the links a hoster can play, then probes them
@@ -238,4 +240,16 @@ func (q Query) SameTitle(title string) bool {
 // SameYear tolerates one year of difference (release dates differ between countries); unknown years match.
 func (q Query) SameYear(year int) bool {
 	return q.Year == 0 || year == 0 || (year-q.Year <= 1 && q.Year-year <= 1)
+}
+
+func uniq(values ...string) []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, v := range values {
+		if v != "" && !seen[v] {
+			seen[v] = true
+			out = append(out, v)
+		}
+	}
+	return out
 }

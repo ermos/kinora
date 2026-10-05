@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/ermos/kinora/internal/scraper"
+	_ "github.com/ermos/kinora/internal/scraper/en"
+	_ "github.com/ermos/kinora/internal/scraper/fr"
 )
 
 // Adding a language to scraper.Languages must come with every home row title.

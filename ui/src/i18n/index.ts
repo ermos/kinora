@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import type { components } from '../api/schema';
+import { en } from './en';
 import { fr } from './fr';
 
 /** Language codes the server supports; adding one in Go (scraper.Languages + enums tag) breaks the build
@@ -9,7 +10,7 @@ export type LangCode = components['schemas']['api.language']['code'];
 type Dict = typeof fr;
 type DeepString<T> = { [K in keyof T]: T[K] extends string ? string : DeepString<T[K]> };
 
-const dictionaries: Record<LangCode, DeepString<Dict>> = { fr };
+const dictionaries: Record<LangCode, DeepString<Dict>> = { en, fr };
 
 /** Dotted keys of the dictionary: "nav.home", "watch.loadingFrom"... */
 type Keys<T, P extends string = ''> = {

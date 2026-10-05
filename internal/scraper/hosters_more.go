@@ -493,5 +493,5 @@ func sibnet(ctx context.Context, c *Client, u string) (Stream, error) {
 	if src == "" {
 		return Stream{}, ErrNotFound
 	}
-	return Stream{URL: absURL(main, src), Headers: map[string]string{"Referer": u}}, nil
+	return Stream{URL: AbsURL(main, src), Headers: map[string]string{"Referer": u}}, nil
 }

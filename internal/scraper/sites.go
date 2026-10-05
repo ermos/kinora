@@ -9,37 +9,27 @@ import (
 	"time"
 )
 
-// SitesJSON is vStream's list of current site domains, updated by their team several times a week.
-const SitesJSON = "https://raw.githubusercontent.com/Kodi-vStream/venom-xbmc-addons/Beta/plugin.video.vstream/resources/sites.json"
-
-// FetchSiteURLs returns the current URL of each ported source according to vStream's sites.json.
+// FetchSiteURLs returns the current URL of each source according to its sites.json (vStream format).
+// A list that fails to load is skipped: its sources keep their last synced URL.
 func FetchSiteURLs(ctx context.Context) (map[string]string, error) {
 	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, SitesJSON, nil)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("sites.json: status %d", resp.StatusCode)
-	}
-	var data struct {
-		Sites map[string]struct {
-			URL      string `json:"url"`
-			SiteInfo string `json:"site_info"`
-		} `json:"sites"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-		return nil, err
-	}
 	out := map[string]string{}
+	var errs []error
+	lists := map[string]map[string]siteEntry{}
 	for _, s := range Sources {
-		site, ok := data.Sites[s.ID]
+		if s.Sites == "" {
+			continue
+		}
+		list, ok := lists[s.Sites]
+		if !ok {
+			var err error
+			if list, err = fetchSites(ctx, s.Sites); err != nil {
+				errs = append(errs, err)
+			}
+			lists[s.Sites] = list
+		}
+		site, ok := list[s.ID]
 		if !ok {
 			continue
 		}
@@ -54,7 +44,37 @@ func FetchSiteURLs(ctx context.Context) (map[string]string, error) {
 			out[s.ID] = strings.TrimRight(u, "/") + "/"
 		}
 	}
+	if len(out) == 0 && len(errs) > 0 {
+		return nil, errs[0]
+	}
 	return out, nil
+}
+
+type siteEntry struct {
+	URL      string `json:"url"`
+	SiteInfo string `json:"site_info"`
+}
+
+func fetchSites(ctx context.Context, sitesURL string) (map[string]siteEntry, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, sitesURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("%s: status %d", sitesURL, resp.StatusCode)
+	}
+	var data struct {
+		Sites map[string]siteEntry `json:"sites"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+		return nil, err
+	}
+	return data.Sites, nil
 }
 
 // currentAddress reads a "new address" page the way vStream's sites do (wiflix, french_stream...).

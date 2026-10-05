@@ -1,4 +1,4 @@
-package scraper
+package fr
 
 import (
 	"context"
@@ -7,11 +7,13 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/ermos/kinora/internal/scraper"
 )
 
 // Port of vStream sites/french_stream.py (DLE site with JSON player APIs: film_api.php, sx.php).
 func init() {
-	Sources = append(Sources, Source{ID: "french_stream", Name: "French Stream", DefaultURL: "https://fs07.lol/", Langs: []string{"fr"}, Find: frenchStreamFind})
+	register(scraper.Source{ID: "french_stream", Name: "French Stream", DefaultURL: "https://fs07.lol/", Find: frenchStreamFind})
 }
 
 var (
@@ -19,7 +21,7 @@ var (
 	reFSSeason = regexp.MustCompile(`(?i)^(.*?)\s*-\s*saison\s*(\d+)`)
 )
 
-func frenchStreamFind(ctx context.Context, c *Client, base string, q Query) ([]Link, error) {
+func frenchStreamFind(ctx context.Context, c *scraper.Client, base string, q scraper.Query) ([]scraper.Link, error) {
 	page, err := frenchStreamSearch(ctx, c, base, q)
 	if err != nil || page == "" {
 		return nil, err
@@ -29,7 +31,7 @@ func frenchStreamFind(ctx context.Context, c *Client, base string, q Query) ([]L
 		return nil, err
 	}
 	if q.Type == "movie" {
-		id := Find(html, `data-newsid="(\d+)"`)
+		id := scraper.Find(html, `data-newsid="(\d+)"`)
 		if id == "" {
 			return nil, nil
 		}
@@ -39,7 +41,7 @@ func frenchStreamFind(ctx context.Context, c *Client, base string, q Query) ([]L
 		if err := c.GetJSON(ctx, base+"engine/ajax/film_api.php?id="+id, &r); err != nil {
 			return nil, err
 		}
-		var links []Link
+		var links []scraper.Link
 		seen := map[string]bool{}
 		for name, byLang := range r.Players {
 			if name == "premium" { // fsvid, needs an account
@@ -50,12 +52,12 @@ func frenchStreamFind(ctx context.Context, c *Client, base string, q Query) ([]L
 					continue
 				}
 				seen[u] = true
-				links = append(links, Link{URL: u, Lang: frenchStreamLang(lang), Referer: base})
+				links = append(links, scraper.Link{URL: u, Lang: frenchStreamLang(lang), Referer: base})
 			}
 		}
 		return links, nil
 	}
-	id := Find(html, `data-news-id="([^"]+)`)
+	id := scraper.Find(html, `data-news-id="([^"]+)`)
 	if id == "" {
 		return nil, nil
 	}
@@ -63,7 +65,7 @@ func frenchStreamFind(ctx context.Context, c *Client, base string, q Query) ([]L
 	if err := c.GetJSON(ctx, base+"engine/ajax/sx.php?p="+id, &byLang); err != nil {
 		return nil, err
 	}
-	var links []Link
+	var links []scraper.Link
 	for lang, raw := range byLang {
 		if strings.Contains(lang, "info") {
 			continue
@@ -74,14 +76,14 @@ func frenchStreamFind(ctx context.Context, c *Client, base string, q Query) ([]L
 		}
 		for name, u := range episodes[strconv.Itoa(q.Episode)] {
 			if u != "" && name != "premium" && !strings.Contains(u, "uptostream") {
-				links = append(links, Link{URL: u, Lang: frenchStreamLang(lang), Referer: base})
+				links = append(links, scraper.Link{URL: u, Lang: frenchStreamLang(lang), Referer: base})
 			}
 		}
 	}
 	return links, nil
 }
 
-func frenchStreamSearch(ctx context.Context, c *Client, base string, q Query) (string, error) {
+func frenchStreamSearch(ctx context.Context, c *scraper.Client, base string, q scraper.Query) (string, error) {
 	for _, title := range q.Names() {
 		form := url.Values{"query": {title}}
 		headers := map[string]string{"Referer": base, "X-Requested-With": "XMLHttpRequest"}
@@ -90,14 +92,14 @@ func frenchStreamSearch(ctx context.Context, c *Client, base string, q Query) (s
 			return "", err
 		}
 		// Anti-bot: the first answer sets a cookie through JavaScript.
-		if cookie := Find(html, `document\.cookie="([^"]+)"`); cookie != "" {
+		if cookie := scraper.Find(html, `document\.cookie="([^"]+)"`); cookie != "" {
 			headers["Cookie"] = cookie
 			if html, _, err = c.PostForm(ctx, base+"engine/ajax/search.php", form, headers); err != nil {
 				return "", err
 			}
 		}
-		for _, m := range FindAll(html, `href='([^']+).+?src='[^']+.+?title *'>([^<]+)`) {
-			name := Clean(strings.ReplaceAll(m[1], "Saisn", "Saison"))
+		for _, m := range scraper.FindAll(html, `href='([^']+).+?src='[^']+.+?title *'>([^<]+)`) {
+			name := scraper.Clean(strings.ReplaceAll(m[1], "Saisn", "Saison"))
 			if q.Type == "tv" {
 				sm := reFSSeason.FindStringSubmatch(name)
 				if sm == nil || !q.SameTitle(sm[1]) || sm[2] != strconv.Itoa(q.Season) {
@@ -113,19 +115,19 @@ func frenchStreamSearch(ctx context.Context, c *Client, base string, q Query) (s
 					continue
 				}
 			}
-			return absURL(base, m[0]), nil
+			return scraper.AbsURL(base, m[0]), nil
 		}
 	}
 	return "", nil
 }
 
 // frenchStreamGet fetches a page, replaying the JavaScript cookie the site sets on first visit.
-func frenchStreamGet(ctx context.Context, c *Client, page, base string) (string, error) {
+func frenchStreamGet(ctx context.Context, c *scraper.Client, page, base string) (string, error) {
 	html, _, err := c.Get(ctx, page, map[string]string{"Referer": base})
 	if err != nil {
 		return "", err
 	}
-	if cookie := Find(html, `document\.cookie="([^"]+)"`); cookie != "" {
+	if cookie := scraper.Find(html, `document\.cookie="([^"]+)"`); cookie != "" {
 		html, _, err = c.Get(ctx, page, map[string]string{"Referer": base, "Cookie": cookie})
 	}
 	return html, err
@@ -139,11 +141,4 @@ func frenchStreamLang(l string) string {
 		return "VOSTFR"
 	}
 	return strings.ToUpper(l)
-}
-
-func absURL(base, href string) string {
-	if strings.HasPrefix(href, "http") {
-		return href
-	}
-	return strings.TrimRight(base, "/") + "/" + strings.TrimLeft(href, "/")
 }

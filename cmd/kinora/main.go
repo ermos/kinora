@@ -19,6 +19,8 @@ import (
 	"github.com/ermos/kinora/internal/config"
 	"github.com/ermos/kinora/internal/db"
 	"github.com/ermos/kinora/internal/scraper"
+	_ "github.com/ermos/kinora/internal/scraper/en" // English sources
+	_ "github.com/ermos/kinora/internal/scraper/fr" // French sources
 	"github.com/ermos/kinora/internal/store"
 	"github.com/ermos/kinora/internal/stream"
 	"github.com/ermos/kinora/internal/tmdb"
@@ -133,6 +135,6 @@ func syncSources(ctx context.Context, st *store.Store) error {
 			return err
 		}
 	}
-	slog.Info("source URLs synced from vStream", "count", len(urls))
+	slog.Info("source URLs synced", "count", len(urls))
 	return nil
 }

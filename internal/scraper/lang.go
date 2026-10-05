@@ -1,7 +1,5 @@
 package scraper
 
-import "strings"
-
 // Language is an instance language: the language of the catalog (TMDB), of the UI, and of the sources
 // that get queried. A language is offered at setup only once it is supported end to end: at least one
 // source, UI strings (ui/src/i18n) and home row titles (api/i18n.go).
@@ -13,24 +11,11 @@ type Language struct {
 	AudioRank func(tag string) int
 }
 
-var Languages = []Language{
-	{Code: "fr", Label: "Français", TMDB: "fr-FR", AudioRank: frenchAudio},
-}
+// Languages is filled by the language packages (fr, en) when imported.
+var Languages []Language
 
 // DefaultLanguage is used by instances set up before languages existed.
 const DefaultLanguage = "fr"
-
-// frenchAudio: French audio first, then original with French subtitles. An unknown tag counts as French:
-// French sites only label the exceptions.
-func frenchAudio(tag string) int {
-	switch strings.ToUpper(tag) {
-	case "", "VF", "MULTI", "TRUEFRENCH", "FRENCH", "VFF", "VFQ":
-		return 2
-	case "VOSTFR":
-		return 1
-	}
-	return 0
-}
 
 func LanguageByCode(code string) (Language, bool) {
 	for _, l := range Languages {
