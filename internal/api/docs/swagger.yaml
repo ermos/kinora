@@ -314,6 +314,16 @@ components:
       properties:
         backdrop:
           type: string
+        badge:
+          description: |-
+            Badge is the Netflix-style tag shown on cards: in today's Top 10, newly released, or a show with a new
+            episode or season (details only).
+          enum:
+          - top10
+          - new
+          - newEpisode
+          - newSeason
+          type: string
         cast:
           items:
             type: string
@@ -358,6 +368,7 @@ components:
           type: integer
       required:
       - backdrop
+      - badge
       - cast
       - genres
       - id
@@ -406,6 +417,16 @@ components:
       properties:
         backdrop:
           type: string
+        badge:
+          description: |-
+            Badge is the Netflix-style tag shown on cards: in today's Top 10, newly released, or a show with a new
+            episode or season (details only).
+          enum:
+          - top10
+          - new
+          - newEpisode
+          - newSeason
+          type: string
         id:
           type: integer
         logo:
@@ -426,6 +447,7 @@ components:
           type: integer
       required:
       - backdrop
+      - badge
       - id
       - logo
       - overview

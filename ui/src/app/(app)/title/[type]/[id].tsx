@@ -39,6 +39,7 @@ export default function Title() {
         <View style={styles.meta}>
           {d.rating > 0 && <Text style={styles.match}>{t('title.positive', { n: Math.round(d.rating * 10) })}</Text>}
           {d.year > 0 && <Text style={styles.metaText}>{d.year}</Text>}
+          {!!d.badge && d.badge !== 'top10' && <Text style={styles.badgeText}>{t(`badges.${d.badge as 'new' | 'newEpisode' | 'newSeason'}`)}</Text>}
           <Text style={styles.metaText}>
             {type === 'tv' ? t(d.seasons.length > 1 ? 'title.seasons' : 'title.season', { n: d.seasons.length }) : formatRuntime(d.runtime)}
           </Text>
@@ -174,6 +175,7 @@ const styles = StyleSheet.create({
   meta: { flexDirection: 'row', gap: 12, alignItems: 'center', flexWrap: 'wrap' },
   match: { color: colors.green, fontWeight: '700', fontSize: 16 },
   metaText: { color: '#ddd', fontSize: 16 },
+  badgeText: { color: '#fff', fontSize: 13, fontWeight: '800', textTransform: 'uppercase', backgroundColor: colors.red, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 2 },
   info: { flexDirection: 'row', gap: 32 },
   fact: { color: '#fff', fontSize: 14 },
   episode: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 16, borderRadius: 4, borderBottomWidth: 1, borderBottomColor: '#404040' },

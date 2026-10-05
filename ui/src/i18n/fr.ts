@@ -69,6 +69,11 @@ export const fr = {
     episodes: 'Épisodes',
     similar: 'Titres similaires',
   },
+  badges: {
+    new: 'Nouveau',
+    newEpisode: 'Nouvel épisode',
+    newSeason: 'Nouvelle saison',
+  },
   watch: {
     sources: 'Sources',
     audio: 'Audio',

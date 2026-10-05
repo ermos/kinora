@@ -50,6 +50,9 @@ type Item struct {
 	Rating   float64 `json:"rating"`
 	// Logo is the title artwork (transparent PNG), set on the home banner titles and on details.
 	Logo string `json:"logo,omitempty"`
+	// Badge is the Netflix-style tag shown on cards: in today's Top 10, newly released, or a show with a new
+	// episode or season (details only).
+	Badge string `json:"badge,omitempty" enums:"top10,new,newEpisode,newSeason"`
 }
 
 type Genre struct {
@@ -112,7 +115,25 @@ func (r raw) item(kind string) Item {
 	if len(date) >= 4 {
 		it.Year, _ = strconv.Atoi(date[:4])
 	}
+	if recent(date, newDays, time.Now()) {
+		it.Badge = "new"
+	}
 	return it
+}
+
+const (
+	newDays        = 30 // a title counts as new for a month after its release
+	newEpisodeDays = 14
+)
+
+// recent reports whether a TMDB date ("2006-01-02") falls in the last days, today included; future dates don't.
+func recent(date string, days int, now time.Time) bool {
+	d, err := time.Parse(time.DateOnly, date)
+	if err != nil {
+		return false
+	}
+	age := now.Sub(d)
+	return age >= 0 && age < time.Duration(days+1)*24*time.Hour
 }
 
 type page struct {
@@ -176,7 +197,12 @@ func (c *Client) Details(ctx context.Context, kind string, id int) (Details, err
 		} `json:"credits"`
 		Similar page   `json:"similar"`
 		Images  images `json:"images"`
-		Alt     struct {
+		LastEp  struct {
+			AirDate string `json:"air_date"`
+			Episode int    `json:"episode_number"`
+			Season  int    `json:"season_number"`
+		} `json:"last_episode_to_air"`
+		Alt struct {
 			Titles  []altTitle `json:"titles"`  // movies
 			Results []altTitle `json:"results"` // shows
 		} `json:"alternative_titles"`
@@ -187,10 +213,11 @@ func (c *Client) Details(ctx context.Context, kind string, id int) (Details, err
 	}
 	d := Details{Item: r.item(kind), OriginalTitle: r.OriginalTitle, Runtime: r.Runtime, Genres: r.Genres, Similar: items(r.Similar, kind)}
 	d.Logo = r.Images.logo(c.lang2())
-	if kind == "tv" {
-		d.OriginalTitle = r.OriginalName
-		if len(r.EpisodeRunTime) > 0 {
-			d.Runtime = r.EpisodeRunTime[0]
+	// A show still airing: its latest episode makes the badge, a premiere opens a new season. Brand-new shows stay "new".
+	if kind == "tv" && d.Badge == "" && recent(r.LastEp.AirDate, newEpisodeDays, time.Now()) {
+		d.Badge = "newEpisode"
+		if r.LastEp.Episode == 1 && r.LastEp.Season > 1 {
+			d.Badge = "newSeason"
 		}
 	}
 	for _, s := range r.Seasons {

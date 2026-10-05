@@ -437,6 +437,16 @@
                     "backdrop": {
                         "type": "string"
                     },
+                    "badge": {
+                        "description": "Badge is the Netflix-style tag shown on cards: in today's Top 10, newly released, or a show with a new\nepisode or season (details only).",
+                        "enum": [
+                            "top10",
+                            "new",
+                            "newEpisode",
+                            "newSeason"
+                        ],
+                        "type": "string"
+                    },
                     "cast": {
                         "items": {
                             "type": "string"
@@ -499,6 +509,7 @@
                 },
                 "required": [
                     "backdrop",
+                    "badge",
                     "cast",
                     "genres",
                     "id",
@@ -563,6 +574,16 @@
                     "backdrop": {
                         "type": "string"
                     },
+                    "badge": {
+                        "description": "Badge is the Netflix-style tag shown on cards: in today's Top 10, newly released, or a show with a new\nepisode or season (details only).",
+                        "enum": [
+                            "top10",
+                            "new",
+                            "newEpisode",
+                            "newSeason"
+                        ],
+                        "type": "string"
+                    },
                     "id": {
                         "type": "integer"
                     },
@@ -591,6 +612,7 @@
                 },
                 "required": [
                     "backdrop",
+                    "badge",
                     "id",
                     "logo",
                     "overview",
