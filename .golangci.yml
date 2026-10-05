@@ -1,0 +1,35 @@
+version: "2"
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - misspell
+    - bodyclose
+    - unconvert
+  settings:
+    misspell:
+      ignore-rules:
+        - documentaires # French UI strings
+    errcheck:
+      exclude-functions:
+        - (*database/sql.Rows).Close
+        - (io.Closer).Close
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
+          - bodyclose
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/ermos/istream
