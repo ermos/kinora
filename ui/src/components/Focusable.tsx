@@ -1,6 +1,6 @@
 import { router, type Href } from 'expo-router';
 import { useState, type ReactNode } from 'react';
-import { Pressable, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
+import { Platform, Pressable, type NativeSyntheticEvent, type PressableProps, type StyleProp, type TargetedEvent, type ViewStyle } from 'react-native';
 
 type Props = Omit<PressableProps, 'style' | 'children'> & {
   /** Navigates on press. */
@@ -29,6 +29,7 @@ export function Focusable({ href, style, children, onPress, onFocus, onBlur, onH
         if (href) router.push(href);
       }}
       onFocus={(e) => {
+        if (!keyboardFocus(e)) return;
         setFocused(true);
         onFocus?.(e);
       }}
@@ -49,4 +50,14 @@ export function Focusable({ href, style, children, onPress, onFocus, onBlur, onH
       {typeof children === 'function' ? children(active) : children}
     </Pressable>
   );
+}
+
+/**
+ * On the web a click also focuses what was clicked: it must not count, or the sidebar and the cards would stay
+ * highlighted until the next click. Only keyboard focus does, the one browsers draw their focus ring for.
+ */
+function keyboardFocus(e: NativeSyntheticEvent<TargetedEvent>) {
+  if (Platform.OS !== 'web') return true; // TV remote and phones: every focus is meant
+  const el = e.target as unknown as Element | null;
+  return typeof el?.matches !== 'function' || el.matches(':focus-visible');
 }
