@@ -1,4 +1,4 @@
-import createClient, { type Middleware } from 'openapi-fetch';
+import createClient, { type Client, type Middleware } from 'openapi-fetch';
 import { useSyncExternalStore } from 'react';
 import { Platform } from 'react-native';
 import { t, type TKey } from '../i18n';
@@ -50,13 +50,13 @@ export function setServer(url: string) {
 
 function applyServer(url: string) {
   origin = url;
-  api = makeClient();
+  client = makeClient();
 }
 
 function makeClient() {
-  const client = createClient<paths>({ baseUrl: origin + '/api/v1', credentials: 'include' });
-  client.use(middleware);
-  return client;
+  const c = createClient<paths>({ baseUrl: origin + '/api/v1', credentials: 'include' });
+  c.use(middleware);
+  return c;
 }
 
 // --- selected profile: kept in memory for synchronous access, persisted per device.
@@ -103,7 +103,8 @@ const middleware: Middleware = {
     if (request.method !== 'GET' && !request.headers.has('Content-Type')) {
       request.headers.set('Content-Type', 'application/json');
     }
-    return request;
+    // Nothing returned: headers are changed in place. On React Native, fetch's Request and Response aren't instances
+    // of the globals openapi-fetch checks returned values against, so returning them fails every request.
   },
   onResponse({ request, response }) {
     const path = new URL(request.url, 'http://x').pathname;
@@ -112,12 +113,17 @@ const middleware: Middleware = {
       setCurrentProfile(null); // profile deleted from another device
       authEvents.onUnknownProfile();
     }
-    return response;
   },
 };
 
-// Rebuilt when the server changes: importers read the live binding. Defined after the middleware it uses.
-export let api = makeClient();
+// Rebuilt when the server changes. Defined after the middleware it uses.
+let client = makeClient();
+
+/**
+ * The API client, always the one of the current server. A proxy rather than a reassigned export, so importers never
+ * depend on how the bundler compiles live bindings.
+ */
+export const api = new Proxy({} as Client<paths>, { get: (_, key) => client[key as keyof Client<paths>] });
 
 export class ApiError extends Error {
   constructor(

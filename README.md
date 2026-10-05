@@ -120,11 +120,15 @@ Construire l'APK :
 
 Tester sur un Mac :
 
-1. Installer [Android Studio](https://developer.android.com/studio), puis dans *SDK Manager* : Android SDK Platform
-   récente et une image système **Android TV (arm64-v8a)** sur un Mac Apple Silicon.
-2. *Device Manager* > *Create device* > catégorie **TV** > *Television (1080p)*, avec l'image installée. Le démarrer.
-3. Pointer le terminal vers le SDK et le JDK d'Android Studio (Gradle refuse les JDK trop récents) :
-   `export ANDROID_HOME=~/Library/Android/sdk JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"`
+1. Installer [Android Studio](https://developer.android.com/studio), puis dans *SDK Manager* (*Show Package
+   Details*) une image système **Android TV** ou **Google TV** en **ARM 64 v8a** (API 31 ou plus) sur un Mac Apple
+   Silicon.
+2. *Device Manager* > *Create device* > catégorie **TV** > *Television (1080p)*, avec l'image installée ; dans
+   *Advanced Settings*, 4 Go de stockage interne suffisent (12 Go par défaut). Le démarrer avant l'étape 4.
+3. Installer le JDK 17, celui que React Native recommande (`brew install openjdk@17`) : avec Java 24 et plus, dont
+   le JDK livré avec Android Studio, la configuration CMake du plugin Android échoue sur un avertissement de la JVM.
+   Puis pointer le terminal vers le SDK et ce JDK :
+   `export ANDROID_HOME=~/Library/Android/sdk JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home`
    et `export PATH=$ANDROID_HOME/platform-tools:$PATH`.
 4. `cd ui && npm run tv:android` : prebuild TV, compilation et installation sur l'émulateur, avec rechargement à chaud.
 5. Dans l'app, l'adresse du serveur vue depuis l'émulateur est `http://10.0.2.2:8080` (le `localhost` du Mac).

@@ -134,8 +134,11 @@ export function Chip({ label, selected, onPress }: { label: string; selected?: b
 }
 
 export function Field(props: TextInputProps & { label?: string }) {
-  const { label, style, ...rest } = props;
-  const input = <TextInput placeholderTextColor="#777" accessibilityLabel={label ?? rest.placeholder} {...rest} style={[styles.input, style]} />;
+  const { label, style, autoFocus, ...rest } = props;
+  // On TV a focused field opens the on-screen keyboard over the whole form: the remote reaches it instead.
+  const input = (
+    <TextInput placeholderTextColor="#777" accessibilityLabel={label ?? rest.placeholder} {...rest} autoFocus={autoFocus && !Platform.isTV} style={[styles.input, style]} />
+  );
   return label ? (
     <View style={{ gap: 6 }}>
       <Text style={styles.label}>{label}</Text>
