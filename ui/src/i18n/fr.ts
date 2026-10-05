@@ -51,6 +51,7 @@ export const fr = {
     name: 'Nom',
     delete: 'Supprimer le profil',
     confirmDelete: 'Confirmer la suppression',
+    skipSegments: "Boutons « Passer l'intro » et « Passer le générique »",
   },
   browse: {
     continueWatching: 'Reprendre la lecture',
@@ -79,6 +80,8 @@ export const fr = {
     allFailed: 'Aucun lien ne fonctionne pour le moment.',
     offline: ' (hors ligne)',
     track: 'Piste {n}',
+    skipIntro: "Passer l'intro",
+    skipCredits: 'Passer le générique',
   },
   account: {
     title: 'Compte',

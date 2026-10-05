@@ -1,6 +1,6 @@
 import { useEvent } from 'expo';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { useEffect, useRef } from 'react';
+import { useEffect, useImperativeHandle, useRef } from 'react';
 import { StyleSheet } from 'react-native';
 import { PROGRESS_INTERVAL, type PlayerProps } from './Player.types';
 import { t } from '../i18n';
@@ -10,12 +10,13 @@ import { t } from '../i18n';
  * already handle the remote. The proxied URL carries its own credential, no cookie needed.
  * ponytail: not exercised yet, the web build is the only target for now.
  */
-export function Player({ url, startAt, audioTrack, onReady, onError, onEnded, onProgress, onAudioTracks }: PlayerProps) {
-  const cb = useRef({ onReady, onError, onEnded, onProgress, onAudioTracks });
-  cb.current = { onReady, onError, onEnded, onProgress, onAudioTracks };
+export function Player({ ref, url, startAt, audioTrack, onReady, onError, onEnded, onProgress, onAudioTracks, onTime }: PlayerProps) {
+  const cb = useRef({ onReady, onError, onEnded, onProgress, onAudioTracks, onTime });
+  cb.current = { onReady, onError, onEnded, onProgress, onAudioTracks, onTime };
+  const lastReport = useRef(0);
 
   const player = useVideoPlayer(url, (p) => {
-    p.timeUpdateEventInterval = PROGRESS_INTERVAL / 1000;
+    p.timeUpdateEventInterval = 1;
     if (startAt) p.currentTime = startAt;
     p.play();
   });
@@ -30,7 +31,11 @@ export function Player({ url, startAt, audioTrack, onReady, onError, onEnded, on
     const subs = [
       player.addListener('playToEnd', () => cb.current.onEnded()),
       player.addListener('timeUpdate', ({ currentTime }) => {
-        if (player.playing && player.duration > 0 && currentTime > 5) cb.current.onProgress(currentTime, player.duration);
+        if (player.duration > 0) cb.current.onTime?.(currentTime, player.duration);
+        if (player.playing && player.duration > 0 && currentTime > 5 && Date.now() - lastReport.current >= PROGRESS_INTERVAL) {
+          lastReport.current = Date.now();
+          cb.current.onProgress(currentTime, player.duration);
+        }
       }),
       player.addListener('availableAudioTracksChange', ({ availableAudioTracks }) => {
         if (availableAudioTracks.length > 1) {
@@ -44,6 +49,12 @@ export function Player({ url, startAt, audioTrack, onReady, onError, onEnded, on
       subs.forEach((s) => s.remove());
     };
   }, [player]);
+
+  useImperativeHandle(ref, () => ({
+    seek: (seconds) => {
+      player.currentTime = seconds;
+    },
+  }));
 
   useEffect(() => {
     const track = audioTrack !== undefined ? player.availableAudioTracks[audioTrack] : undefined;

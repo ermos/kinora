@@ -115,7 +115,7 @@ func (h *Handler) createAccount(r *http.Request, c credentials, admin bool) (sto
 	if err != nil {
 		return store.User{}, err
 	}
-	_, err = h.store.CreateProfile(r.Context(), u.ID, u.Username, "red")
+	_, err = h.store.CreateProfile(r.Context(), u.ID, u.Username, "red", true)
 	return u, err
 }
 
@@ -205,6 +205,8 @@ func (h *Handler) changePassword(w http.ResponseWriter, r *http.Request) {
 type profileBody struct {
 	Name   string `json:"name"`
 	Avatar string `json:"avatar"`
+	// SkipSegments shows the "skip intro" and "skip credits" buttons.
+	SkipSegments bool `json:"skipSegments"`
 }
 
 func validProfile(w http.ResponseWriter, p *profileBody) bool {
@@ -254,7 +256,7 @@ func (h *Handler) createProfile(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusConflict, errProfileLimit)
 		return
 	}
-	created, err := h.store.CreateProfile(r.Context(), uid, p.Name, p.Avatar)
+	created, err := h.store.CreateProfile(r.Context(), uid, p.Name, p.Avatar, p.SkipSegments)
 	if err != nil {
 		internalError(w, err)
 		return
@@ -274,7 +276,7 @@ func (h *Handler) updateProfile(w http.ResponseWriter, r *http.Request) {
 	if !ok || !readJSON(w, r, &p) || !validProfile(w, &p) {
 		return
 	}
-	if err := h.store.UpdateProfile(r.Context(), currentUser(r).ID, int64(id), p.Name, p.Avatar); err != nil {
+	if err := h.store.UpdateProfile(r.Context(), currentUser(r).ID, int64(id), p.Name, p.Avatar, p.SkipSegments); err != nil {
 		storeError(w, err)
 		return
 	}

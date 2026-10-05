@@ -2,9 +2,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { absolute, api, unwrap, type Link, type MediaType } from '../../../api/client';
+import { absolute, api, unwrap, type Link, type MediaType, type Segment } from '../../../api/client';
 import { Focusable } from '../../../components/Focusable';
 import { Player } from '../../../components/Player';
+import type { PlayerHandle } from '../../../components/Player.types';
 import { Button, Chip, Icon, icons, styles as ui } from '../../../components/ui';
 import { Gate } from '../../../lib/auth';
 import { colors, useLayout } from '../../../theme';
@@ -75,6 +76,9 @@ function Watch() {
   const [audio, setAudio] = useState<{ tracks: string[]; current: number } | null>(null);
   const [menu, setMenu] = useState(false);
   const [chrome, setChrome] = useState(true);
+  const [duration, setDuration] = useState(0);
+  const [skip, setSkip] = useState<Segment | null>(null);
+  const player = useRef<PlayerHandle>(null);
   const resumeAt = useRef<number | null>(null);
   const position = useRef(0);
   const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -94,6 +98,8 @@ function Watch() {
     const done = links.isPending || progress.isPending ? 'searching' : !list.length ? 'none' : index >= list.length ? 'failed' : null;
     setStream(null);
     setAudio(null);
+    setDuration(0);
+    setSkip(null);
     if (done) {
       setStatus(done);
       return;
@@ -121,6 +127,27 @@ function Watch() {
     },
     [queryClient],
   );
+
+  // Opening and ending, timed for the length of this file (empty when unknown or turned off in the profile).
+  const segments = useQuery({
+    queryKey: ['segments', type, id, season, episode, duration],
+    queryFn: () =>
+      unwrap(
+        api.GET('/titles/{type}/{id}/segments', {
+          params: { path: { type, id }, query: { duration, ...(type === 'tv' ? { season, episode } : {}) } },
+        }),
+      ),
+    enabled: duration > 0,
+    staleTime: Infinity,
+  });
+
+  const onTime = (pos: number, dur: number) => {
+    const d = Math.round(dur);
+    if (d !== duration) setDuration(d);
+    // Hidden during the last second, so the button doesn't flash once the segment is over.
+    const seg = segments.data?.find((s) => pos >= s.start && pos < s.end - 1) ?? null;
+    if (seg !== skip) setSkip(seg);
+  };
 
   const saveProgress = (pos: number, duration: number) => {
     position.current = pos;
@@ -166,6 +193,7 @@ function Watch() {
     <View style={styles.watch} onPointerMove={poke}>
       {stream && (
         <Player
+          ref={player}
           key={stream.url}
           url={stream.url}
           kind={stream.kind}
@@ -176,7 +204,20 @@ function Watch() {
           onEnded={goNext}
           onProgress={saveProgress}
           onAudioTracks={(tracks, cur) => setAudio({ tracks, current: cur })}
+          onTime={onTime}
         />
+      )}
+
+      {skip && status === 'playing' && (
+        <View style={[styles.skip, { right: gutter }]}>
+          <Button
+            kind="grey"
+            label={skip.kind === 'intro' ? t('watch.skipIntro') : nextEpisode ? t('watch.nextEpisode') : t('watch.skipCredits')}
+            icon={skip.kind === 'credits' && nextEpisode ? icons.next : undefined}
+            onPress={() => (skip.kind === 'credits' && nextEpisode ? goNext() : player.current?.seek(skip.end))}
+            hasTVPreferredFocus
+          />
+        </View>
       )}
 
       {showChrome && (
@@ -264,5 +305,6 @@ const styles = StyleSheet.create({
   title: { color: '#fff', fontSize: 18, fontWeight: '700' },
   menu: { position: 'absolute', top: 80, maxHeight: '70%', width: 360, maxWidth: '90%', backgroundColor: 'rgba(20,20,20,0.95)', borderRadius: 6, borderWidth: 1, borderColor: '#333' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  skip: { position: 'absolute', bottom: 90, zIndex: 3 },
   status: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', gap: 16, padding: 16 },
 });

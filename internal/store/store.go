@@ -24,6 +24,8 @@ type Profile struct {
 	ID     int64  `json:"id"`
 	Name   string `json:"name"`
 	Avatar string `json:"avatar"`
+	// SkipSegments shows the "skip intro" and "skip credits" buttons.
+	SkipSegments bool `json:"skipSegments"`
 }
 
 type ListItem struct {
@@ -127,7 +129,7 @@ func (s *Store) DeleteSession(ctx context.Context, tokenHash string) error {
 // --- profiles
 
 func (s *Store) ListProfiles(ctx context.Context, userID int64) ([]Profile, error) {
-	rows, err := s.db.QueryContext(ctx, "SELECT id, name, avatar FROM profiles WHERE user_id = ? ORDER BY id", userID)
+	rows, err := s.db.QueryContext(ctx, "SELECT id, name, avatar, skip_segments FROM profiles WHERE user_id = ? ORDER BY id", userID)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +137,7 @@ func (s *Store) ListProfiles(ctx context.Context, userID int64) ([]Profile, erro
 	out := []Profile{}
 	for rows.Next() {
 		var p Profile
-		if err := rows.Scan(&p.ID, &p.Name, &p.Avatar); err != nil {
+		if err := rows.Scan(&p.ID, &p.Name, &p.Avatar, &p.SkipSegments); err != nil {
 			return nil, err
 		}
 		out = append(out, p)
@@ -143,17 +145,23 @@ func (s *Store) ListProfiles(ctx context.Context, userID int64) ([]Profile, erro
 	return out, rows.Err()
 }
 
-func (s *Store) CreateProfile(ctx context.Context, userID int64, name, avatar string) (Profile, error) {
-	res, err := s.db.ExecContext(ctx, "INSERT INTO profiles (user_id, name, avatar) VALUES (?, ?, ?)", userID, name, avatar)
+func (s *Store) CreateProfile(ctx context.Context, userID int64, name, avatar string, skipSegments bool) (Profile, error) {
+	res, err := s.db.ExecContext(ctx, "INSERT INTO profiles (user_id, name, avatar, skip_segments) VALUES (?, ?, ?, ?)", userID, name, avatar, skipSegments)
 	if err != nil {
 		return Profile{}, err
 	}
 	id, _ := res.LastInsertId()
-	return Profile{ID: id, Name: name, Avatar: avatar}, nil
+	return Profile{ID: id, Name: name, Avatar: avatar, SkipSegments: skipSegments}, nil
 }
 
-func (s *Store) UpdateProfile(ctx context.Context, userID, id int64, name, avatar string) error {
-	return s.affectOne(s.db.ExecContext(ctx, "UPDATE profiles SET name = ?, avatar = ? WHERE id = ? AND user_id = ?", name, avatar, id, userID))
+func (s *Store) UpdateProfile(ctx context.Context, userID, id int64, name, avatar string, skipSegments bool) error {
+	return s.affectOne(s.db.ExecContext(ctx, "UPDATE profiles SET name = ?, avatar = ?, skip_segments = ? WHERE id = ? AND user_id = ?", name, avatar, skipSegments, id, userID))
+}
+
+func (s *Store) ProfileSkipSegments(ctx context.Context, id int64) (bool, error) {
+	var on bool
+	err := s.db.QueryRowContext(ctx, "SELECT skip_segments FROM profiles WHERE id = ?", id).Scan(&on)
+	return on, err
 }
 
 func (s *Store) DeleteProfile(ctx context.Context, userID, id int64) error {

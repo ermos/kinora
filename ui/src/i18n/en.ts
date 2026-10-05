@@ -51,6 +51,7 @@ export const en = {
     name: 'Name',
     delete: 'Delete profile',
     confirmDelete: 'Confirm deletion',
+    skipSegments: '"Skip intro" and "Skip credits" buttons',
   },
   browse: {
     continueWatching: 'Continue watching',
@@ -79,6 +80,8 @@ export const en = {
     allFailed: 'No link works right now.',
     offline: ' (offline)',
     track: 'Track {n}',
+    skipIntro: 'Skip intro',
+    skipCredits: 'Skip credits',
   },
   account: {
     title: 'Account',
