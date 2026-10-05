@@ -1,11 +1,12 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { absolute, api, unwrap, type Link, type MediaType, type Segment } from '../../../api/client';
 import { Focusable } from '../../../components/Focusable';
 import { Player } from '../../../components/Player';
 import type { PlayerHandle } from '../../../components/Player.types';
+import { PlayerControls, SEEK_STEP, toggleFullscreen } from '../../../components/PlayerControls';
 import { Button, Chip, Icon, icons, styles as ui } from '../../../components/ui';
 import { Gate } from '../../../lib/auth';
 import { colors, useLayout } from '../../../theme';
@@ -77,6 +78,9 @@ function Watch() {
   const [menu, setMenu] = useState(false);
   const [chrome, setChrome] = useState(true);
   const [duration, setDuration] = useState(0);
+  const [time, setTime] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [muted, setMuted] = useState(false);
   const [skip, setSkip] = useState<Segment | null>(null);
   const player = useRef<PlayerHandle>(null);
   const resumeAt = useRef<number | null>(null);
@@ -99,6 +103,8 @@ function Watch() {
     setStream(null);
     setAudio(null);
     setDuration(0);
+    setTime(0);
+    setPlaying(false);
     setSkip(null);
     if (done) {
       setStatus(done);
@@ -142,6 +148,7 @@ function Watch() {
   });
 
   const onTime = (pos: number, dur: number) => {
+    setTime(pos);
     const d = Math.round(dur);
     if (d !== duration) setDuration(d);
     // Hidden during the last second, so the button doesn't flash once the segment is over.
@@ -184,10 +191,42 @@ function Watch() {
     hideTimer.current = setTimeout(() => setChrome(false), 3000);
   };
 
+  const toggle = () => (playing ? player.current?.pause() : player.current?.play());
+  const seek = (s: number) => {
+    player.current?.seek(s);
+    setTime(s);
+  };
+
+  // Keyboard, like Netflix on the web: space or K plays/pauses, arrows seek, F fullscreen, M mute.
+  const keys = useRef({ toggle, seek, time, duration, poke });
+  keys.current = { toggle, seek, time, duration, poke };
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.metaKey || e.ctrlKey || e.altKey) return;
+      const k = keys.current;
+      const actions: Record<string, () => void> = {
+        ' ': k.toggle,
+        k: k.toggle,
+        ArrowLeft: () => k.seek(Math.max(0, k.time - SEEK_STEP)),
+        ArrowRight: () => k.seek(Math.min(k.duration, k.time + SEEK_STEP)),
+        f: toggleFullscreen,
+        m: () => setMuted((m) => !m),
+      };
+      const action = actions[e.key];
+      if (!action) return;
+      e.preventDefault();
+      action();
+      k.poke();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   const epName = episodes.data?.find((e) => e.number === episode)?.name;
   const backTo = `/title/${type}/${id}` as Href;
   const current = list[Math.min(index, list.length - 1)];
-  const showChrome = chrome || menu || status !== 'playing';
+  const showChrome = chrome || menu || status !== 'playing' || !playing;
 
   return (
     <View style={styles.watch} onPointerMove={poke}>
@@ -198,6 +237,7 @@ function Watch() {
           url={stream.url}
           kind={stream.kind}
           startAt={resumeAt.current}
+          muted={muted}
           audioTrack={audio?.current}
           onReady={() => setStatus('playing')}
           onError={next}
@@ -205,11 +245,24 @@ function Watch() {
           onProgress={saveProgress}
           onAudioTracks={(tracks, cur) => setAudio({ tracks, current: cur })}
           onTime={onTime}
+          onPlaying={setPlaying}
+        />
+      )}
+
+      {/* Click or tap on the picture: shows the controls, then plays/pauses. Below every control. */}
+      {status === 'playing' && (
+        <Pressable
+          focusable={false}
+          style={StyleSheet.absoluteFill}
+          onPress={() => {
+            if (showChrome) toggle();
+            poke();
+          }}
         />
       )}
 
       {skip && status === 'playing' && (
-        <View style={[styles.skip, { right: gutter }]}>
+        <View style={[styles.skip, { right: gutter, bottom: showChrome ? 150 : 60 }]}>
           <Button
             kind="grey"
             label={skip.kind === 'intro' ? t('watch.skipIntro') : nextEpisode ? t('watch.nextEpisode') : t('watch.skipCredits')}
@@ -225,26 +278,34 @@ function Watch() {
           <Focusable href={backTo} accessibilityLabel={t('common.back')} onFocus={poke} style={(active) => [styles.iconBtn, active && styles.iconBtnActive]}>
             <Icon d={icons.back} size={30} />
           </Focusable>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={styles.title} numberOfLines={1}>
-              {details.data?.title}
-            </Text>
-            {type === 'tv' && (
-              <Text style={ui.muted} numberOfLines={1}>
-                {t('common.episodeShort', { season, episode })}
-                {epName ? ` « ${epName} »` : ''}
-              </Text>
-            )}
-          </View>
-          {list.length > 0 && (
-            <Button kind="grey" small label={current ? [current.source, current.quality].filter(Boolean).join(' · ') : t('watch.sources')} onPress={() => setMenu(!menu)} />
-          )}
-          {nextEpisode && <Button small icon={icons.next} label={t('watch.nextEpisode')} onPress={goNext} />}
         </View>
       )}
 
+      {showChrome && status === 'playing' && (
+        <PlayerControls
+          position={time}
+          duration={duration}
+          playing={playing}
+          muted={muted}
+          title={details.data?.title ?? ''}
+          subtitle={type === 'tv' ? `${t('common.episodeShort', { season, episode })}${epName ? ` « ${epName} »` : ''}` : undefined}
+          onToggle={toggle}
+          onSeek={seek}
+          onMute={() => setMuted(!muted)}
+          onPoke={poke}
+          actions={
+            <>
+              {nextEpisode && <Button kind="grey" small icon={icons.next} label={t('watch.nextEpisode')} onPress={goNext} onFocus={poke} />}
+              {list.length > 0 && (
+                <Button kind="grey" small label={current ? [current.source, current.quality].filter(Boolean).join(' · ') : t('watch.sources')} onPress={() => setMenu(!menu)} onFocus={poke} />
+              )}
+            </>
+          }
+        />
+      )}
+
       {menu && (
-        <View style={[styles.menu, { right: gutter }]}>
+        <View style={[styles.menu, { right: gutter }]} onPointerMove={poke}>
           <ScrollView contentContainerStyle={{ gap: 16, padding: 20 }}>
             {audio && (
               <View style={{ gap: 8 }}>
@@ -299,12 +360,11 @@ function linkLabel(l: Link) {
 
 const styles = StyleSheet.create({
   watch: { flex: 1, backgroundColor: '#000' },
-  top: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', gap: 16, paddingVertical: 16, backgroundColor: 'rgba(0,0,0,0.55)' },
+  top: { position: 'absolute', top: 0, left: 0, flexDirection: 'row', alignItems: 'center', paddingVertical: 16 },
   iconBtn: { padding: 6, borderRadius: 30, borderWidth: 2, borderColor: 'transparent' },
   iconBtnActive: { borderColor: '#fff' },
-  title: { color: '#fff', fontSize: 18, fontWeight: '700' },
-  menu: { position: 'absolute', top: 80, maxHeight: '70%', width: 360, maxWidth: '90%', backgroundColor: 'rgba(20,20,20,0.95)', borderRadius: 6, borderWidth: 1, borderColor: '#333' },
+  menu: { position: 'absolute', bottom: 120, maxHeight: '65%', width: 360, maxWidth: '90%', backgroundColor: 'rgba(20,20,20,0.95)', borderRadius: 6, borderWidth: 1, borderColor: '#333' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  skip: { position: 'absolute', bottom: 90, zIndex: 3 },
+  skip: { position: 'absolute', zIndex: 3 },
   status: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', gap: 16, padding: 16 },
 });

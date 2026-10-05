@@ -1,7 +1,7 @@
 import type { Ref } from 'react';
 
 /** Imperative controls, for the buttons the watch screen draws over the video. */
-export type PlayerHandle = { seek: (seconds: number) => void };
+export type PlayerHandle = { seek: (seconds: number) => void; play: () => void; pause: () => void };
 
 /** Contract of the platform players: Player.web.tsx (hls.js) and Player.tsx (expo-video, phones and TVs). */
 export type PlayerProps = {
@@ -11,6 +11,7 @@ export type PlayerProps = {
   kind: 'hls' | 'file';
   /** Seconds to resume from, null to start at 0. */
   startAt: number | null;
+  muted?: boolean;
   /** Index into the tracks reported by onAudioTracks. */
   audioTrack?: number;
   onReady: () => void;
@@ -22,6 +23,7 @@ export type PlayerProps = {
   onAudioTracks: (tracks: string[], current: number) => void;
   /** Called about every second while playing, for what depends on the position (skip buttons). */
   onTime?: (position: number, duration: number) => void;
+  onPlaying?: (playing: boolean) => void;
 };
 
 export const PROGRESS_INTERVAL = 10_000;

@@ -82,6 +82,12 @@ export const fr = {
     track: 'Piste {n}',
     skipIntro: "Passer l'intro",
     skipCredits: 'Passer le générique',
+    pause: 'Pause',
+    back10: 'Reculer de 10 secondes',
+    forward10: 'Avancer de 10 secondes',
+    mute: 'Couper le son',
+    unmute: 'Remettre le son',
+    fullscreen: 'Plein écran',
   },
   account: {
     title: 'Compte',

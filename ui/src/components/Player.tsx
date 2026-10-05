@@ -6,13 +6,13 @@ import { PROGRESS_INTERVAL, type PlayerProps } from './Player.types';
 import { t } from '../i18n';
 
 /**
- * Phones, Android TV and tvOS: expo-video (ExoPlayer / AVPlayer) plays HLS natively and its native controls
- * already handle the remote. The proxied URL carries its own credential, no cookie needed.
+ * Phones, Android TV and tvOS: expo-video (ExoPlayer / AVPlayer) plays HLS natively. The watch screen draws its own
+ * controls over it, like on the web. The proxied URL carries its own credential, no cookie needed.
  * ponytail: not exercised yet, the web build is the only target for now.
  */
-export function Player({ ref, url, startAt, audioTrack, onReady, onError, onEnded, onProgress, onAudioTracks, onTime }: PlayerProps) {
-  const cb = useRef({ onReady, onError, onEnded, onProgress, onAudioTracks, onTime });
-  cb.current = { onReady, onError, onEnded, onProgress, onAudioTracks, onTime };
+export function Player({ ref, url, startAt, muted, audioTrack, onReady, onError, onEnded, onProgress, onAudioTracks, onTime, onPlaying }: PlayerProps) {
+  const cb = useRef({ onReady, onError, onEnded, onProgress, onAudioTracks, onTime, onPlaying });
+  cb.current = { onReady, onError, onEnded, onProgress, onAudioTracks, onTime, onPlaying };
   const lastReport = useRef(0);
 
   const player = useVideoPlayer(url, (p) => {
@@ -30,6 +30,7 @@ export function Player({ ref, url, startAt, audioTrack, onReady, onError, onEnde
   useEffect(() => {
     const subs = [
       player.addListener('playToEnd', () => cb.current.onEnded()),
+      player.addListener('playingChange', ({ isPlaying }) => cb.current.onPlaying?.(isPlaying)),
       player.addListener('timeUpdate', ({ currentTime }) => {
         if (player.duration > 0) cb.current.onTime?.(currentTime, player.duration);
         if (player.playing && player.duration > 0 && currentTime > 5 && Date.now() - lastReport.current >= PROGRESS_INTERVAL) {
@@ -54,12 +55,18 @@ export function Player({ ref, url, startAt, audioTrack, onReady, onError, onEnde
     seek: (seconds) => {
       player.currentTime = seconds;
     },
+    play: () => player.play(),
+    pause: () => player.pause(),
   }));
+
+  useEffect(() => {
+    player.muted = !!muted;
+  }, [muted, player]);
 
   useEffect(() => {
     const track = audioTrack !== undefined ? player.availableAudioTracks[audioTrack] : undefined;
     if (track) player.audioTrack = track;
   }, [audioTrack, player]);
 
-  return <VideoView player={player} style={StyleSheet.absoluteFill} nativeControls contentFit="contain" allowsPictureInPicture />;
+  return <VideoView player={player} style={StyleSheet.absoluteFill} nativeControls={false} contentFit="contain" allowsPictureInPicture />;
 }
