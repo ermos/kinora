@@ -78,6 +78,7 @@ func (h *Handler) Routes() http.Handler {
 	public("GET /api/v1/proxy", h.proxy.ServeHTTP) // the signed, expiring URL is the credential
 
 	profile("GET /api/v1/titles/{type}/{id}/segments", h.segments)
+	profile("GET /api/v1/catalog/foryou", h.forYou)
 	profile("GET /api/v1/library/list", h.myList)
 	profile("PUT /api/v1/library/list", h.addToList)
 	profile("DELETE /api/v1/library/list/{type}/{id}", h.removeFromList)

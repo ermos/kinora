@@ -961,6 +961,44 @@
                 ]
             }
         },
+        "/catalog/foryou": {
+            "get": {
+                "parameters": [
+                    {
+                        "description": "movie or tv, empty for both",
+                        "in": "query",
+                        "name": "type",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/api.row"
+                                    },
+                                    "type": "array"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "security": [
+                    {
+                        "ProfileHeader": []
+                    }
+                ],
+                "summary": "Rows personalized for the profile: \"Because you watched X\", from TMDB recommendations of recent titles",
+                "tags": [
+                    "catalog"
+                ]
+            }
+        },
         "/catalog/genres": {
             "get": {
                 "parameters": [
@@ -1751,6 +1789,11 @@
                         "description": "OK"
                     }
                 },
+                "security": [
+                    {
+                        "ProfileHeader": []
+                    }
+                ],
                 "summary": "Opening and ending of a movie or episode, for the skip buttons (empty when unknown or turned off for the profile)",
                 "tags": [
                     "catalog"

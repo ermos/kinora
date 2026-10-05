@@ -21,3 +21,12 @@ func TestMarkTop10(t *testing.T) {
 		}
 	}
 }
+
+func TestFreshPicks(t *testing.T) {
+	seen := map[string]bool{"movie1": true} // already played
+	first := freshPicks([]tmdb.Item{{ID: 1, Type: "movie"}, {ID: 2, Type: "movie"}, {ID: 1, Type: "tv"}}, seen)
+	second := freshPicks([]tmdb.Item{{ID: 2, Type: "movie"}, {ID: 3, Type: "movie"}}, seen)
+	if len(first) != 2 || first[0].ID != 2 || first[1].Type != "tv" || len(second) != 1 || second[0].ID != 3 {
+		t.Fatalf("first = %+v, second = %+v", first, second)
+	}
+}

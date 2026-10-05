@@ -130,6 +130,7 @@ function Watch() {
   useEffect(
     () => () => {
       queryClient.invalidateQueries({ queryKey: ['library', 'progress'] });
+      queryClient.invalidateQueries({ queryKey: ['foryou'] }); // recommendations follow what was just watched
     },
     [queryClient],
   );

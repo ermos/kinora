@@ -166,6 +166,11 @@ func (c *Client) Discover(ctx context.Context, kind string, genre, pageNum int) 
 	})
 }
 
+// Recommendations are the titles TMDB suggests to people who liked this one.
+func (c *Client) Recommendations(ctx context.Context, kind string, id int) ([]Item, error) {
+	return c.List(ctx, kind, fmt.Sprintf("%s/%d/recommendations", kind, id), nil)
+}
+
 func (c *Client) Search(ctx context.Context, query string) ([]Item, error) {
 	return c.List(ctx, "", "search/multi", url.Values{"query": {query}})
 }

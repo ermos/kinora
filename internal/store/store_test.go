@@ -42,4 +42,14 @@ func TestContinueWatching(t *testing.T) {
 	if len(got) != 2 || got[0].ID != 3 || got[0].Episode != 2 || got[1].ID != 1 {
 		t.Fatalf("ContinueWatching = %+v", got)
 	}
+
+	// Finished titles count too, one entry per title.
+	all, err := s.RecentlyWatched(ctx, p.ID, "", 10)
+	if err != nil || len(all) != 3 || all[0].ID != 3 || all[1].ID != 2 || all[2].ID != 1 {
+		t.Fatalf("RecentlyWatched = %+v, %v", all, err)
+	}
+	movies, _ := s.RecentlyWatched(ctx, p.ID, "movie", 1)
+	if len(movies) != 1 || movies[0].ID != 2 {
+		t.Fatalf("RecentlyWatched(movie, 1) = %+v", movies)
+	}
 }
