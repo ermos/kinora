@@ -15,14 +15,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ermos/istream/internal/api"
-	"github.com/ermos/istream/internal/config"
-	"github.com/ermos/istream/internal/db"
-	"github.com/ermos/istream/internal/scraper"
-	"github.com/ermos/istream/internal/store"
-	"github.com/ermos/istream/internal/stream"
-	"github.com/ermos/istream/internal/tmdb"
-	"github.com/ermos/istream/ui"
+	"github.com/ermos/kinora/internal/api"
+	"github.com/ermos/kinora/internal/config"
+	"github.com/ermos/kinora/internal/db"
+	"github.com/ermos/kinora/internal/scraper"
+	"github.com/ermos/kinora/internal/store"
+	"github.com/ermos/kinora/internal/stream"
+	"github.com/ermos/kinora/internal/tmdb"
+	"github.com/ermos/kinora/ui"
 )
 
 func main() {
@@ -40,7 +40,7 @@ func run() error {
 	if err := os.MkdirAll(cfg.DataDir, 0o750); err != nil {
 		return err
 	}
-	conn, err := db.Open(filepath.Join(cfg.DataDir, "istream.db"))
+	conn, err := db.Open(filepath.Join(cfg.DataDir, "kinora.db"))
 	if err != nil {
 		return err
 	}
@@ -85,7 +85,7 @@ func run() error {
 		defer cancel()
 		_ = srv.Shutdown(shutdown)
 	}()
-	slog.Info("istream listening", "addr", cfg.Addr)
+	slog.Info("kinora listening", "addr", cfg.Addr)
 	if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}

@@ -17,7 +17,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ermos/istream/internal/scraper"
+	"github.com/ermos/kinora/internal/scraper"
 )
 
 // Signer signs opaque tokens so clients can only reach URLs the server handed out.

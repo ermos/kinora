@@ -409,7 +409,7 @@ externalDocs:
   url: ""
 info:
   description: Self-hosted multi-source streaming (Go port of vStream).
-  title: istream API
+  title: kinora API
   version: "1.0"
 openapi: 3.1.0
 paths:

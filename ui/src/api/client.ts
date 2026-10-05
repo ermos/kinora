@@ -30,7 +30,7 @@ export const api = createClient<paths>({ baseUrl: API_ORIGIN + '/api/v1', creden
 
 // --- selected profile: kept in memory for synchronous access, persisted per device.
 
-const PROFILE_KEY = 'istream.profile';
+const PROFILE_KEY = 'kinora.profile';
 let profile: Profile | null = null;
 const listeners = new Set<() => void>();
 

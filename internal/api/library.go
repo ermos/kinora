@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/ermos/istream/internal/store"
+	"github.com/ermos/kinora/internal/store"
 )
 
 // @Summary  "My list" of the profile

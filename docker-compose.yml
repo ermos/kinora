@@ -1,5 +1,5 @@
 services:
-  istream:
+  kinora:
     build: .
     ports:
       - "8080:8080"

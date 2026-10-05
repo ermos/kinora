@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "istream",
-    "slug": "istream",
+    "name": "kinora",
+    "slug": "kinora",
     "version": "1.0.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
@@ -22,7 +22,7 @@
       "favicon": "./assets/favicon.png",
       "output": "single",
       "bundler": "metro",
-      "name": "istream",
+      "name": "kinora",
       "themeColor": "#141414",
       "backgroundColor": "#141414"
     },
@@ -32,7 +32,7 @@
       "expo-video",
       "expo-secure-store"
     ],
-    "scheme": "istream",
+    "scheme": "kinora",
     "backgroundColor": "#141414"
   }
 }

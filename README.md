@@ -1,4 +1,4 @@
-# istream
+# kinora
 
 Streaming multi-source auto-hébergé, interface façon Netflix. Le moteur de sources est un portage Go de
 [vStream](https://github.com/Kodi-vStream/venom-xbmc-addons) (addon Kodi), sans Kodi.
@@ -28,14 +28,14 @@ Au premier lancement, la page `/setup` crée le compte administrateur.
 En local sans Docker :
 
 ```sh
-make build-web && TMDB_API_KEY=... ./bin/istream
+make build-web && TMDB_API_KEY=... ./bin/kinora
 # en dev, avec rechargement à chaud : `make dev` (Expo sur :8081) + `make run-dev`, puis http://localhost:8080
 ```
 
 ## Architecture
 
 ```
-cmd/istream            point d'entrée, wiring, synchro sites.json
+cmd/kinora            point d'entrée, wiring, synchro sites.json
 internal/scraper       portage vStream : sources (source_*.go), hébergeurs (hosters.go), unpacker JS
 internal/stream        proxy HLS/fichiers, signature HMAC
 internal/tmdb          client TMDB avec cache mémoire
