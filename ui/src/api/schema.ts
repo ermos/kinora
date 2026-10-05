@@ -363,6 +363,45 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/catalog/foryou": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Rows personalized for the profile: "Because you watched X", from TMDB recommendations of recent titles */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description movie or tv, empty for both */
+                    type?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["api.row"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/catalog/genres": {
         parameters: {
             query?: never;

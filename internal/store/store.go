@@ -254,6 +254,35 @@ func (s *Store) ContinueWatching(ctx context.Context, profileID int64) ([]Progre
 	return scanProgress(rows)
 }
 
+// Watched is a title the profile played, finished or not.
+type Watched struct {
+	Type  string
+	ID    int
+	Title string
+}
+
+// RecentlyWatched lists the titles the profile played (kind "" for both), most recent first, one per title.
+func (s *Store) RecentlyWatched(ctx context.Context, profileID int64, kind string, limit int) ([]Watched, error) {
+	// SQLite takes the bare title from the row holding MAX(updated_at).
+	rows, err := s.db.QueryContext(ctx, `SELECT media_type, tmdb_id, title, MAX(updated_at) AS last FROM progress
+		WHERE profile_id = ? AND (? = '' OR media_type = ?)
+		GROUP BY media_type, tmdb_id ORDER BY last DESC LIMIT ?`, profileID, kind, kind, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Watched
+	for rows.Next() {
+		var w Watched
+		var last int64
+		if err := rows.Scan(&w.Type, &w.ID, &w.Title, &last); err != nil {
+			return nil, err
+		}
+		out = append(out, w)
+	}
+	return out, rows.Err()
+}
+
 func (s *Store) TitleProgress(ctx context.Context, profileID int64, kind string, id int) ([]Progress, error) {
 	rows, err := s.db.QueryContext(ctx, `SELECT `+progressCols+` FROM progress
 		WHERE profile_id = ? AND media_type = ? AND tmdb_id = ? ORDER BY updated_at DESC`, profileID, kind, id)

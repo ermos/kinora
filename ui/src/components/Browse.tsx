@@ -23,6 +23,10 @@ export function Browse({ type }: { type?: MediaType }) {
     queryFn: () => unwrap(api.GET('/catalog/home', { params: { query: { type } } })),
   });
   const { list, progress } = useLibrary();
+  const forYou = useQuery({
+    queryKey: ['foryou', type ?? ''],
+    queryFn: () => unwrap(api.GET('/catalog/foryou', { params: { query: { type } } })),
+  });
 
   if (rows.isPending) return <Spinner full />;
   if (rows.isError) return <Text style={[ui.error, { padding: gutter, paddingTop: 80 }]}>{rows.error.message}</Text>;
@@ -43,7 +47,8 @@ export function Browse({ type }: { type?: MediaType }) {
         {mine.length > 0 && (
           <Row<ListItem> title={t('common.myList')} data={mine} keyOf={(i) => `${i.type}-${i.id}`} render={(i) => itemCard({ ...i, backdrop: '' })} />
         )}
-        {rows.data.map((r) => (
+        {/* "Because you watched" rows go after the first catalog rows, like on Netflix. */}
+        {[...rows.data.slice(0, PERSONAL_AFTER), ...(forYou.data ?? []), ...rows.data.slice(PERSONAL_AFTER)].map((r) => (
           <Row<Item>
             key={r.title}
             title={r.title}
@@ -58,6 +63,7 @@ export function Browse({ type }: { type?: MediaType }) {
 }
 
 const HERO_COUNT = 8;
+const PERSONAL_AFTER = 2;
 const HERO_INTERVAL = 8000;
 
 /**

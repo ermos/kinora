@@ -148,6 +148,69 @@ func markTop10(rows []row) {
 	}
 }
 
+// personalSeeds is how many recently watched titles get their "Because you watched" row.
+const personalSeeds = 3
+
+// @Summary  Rows personalized for the profile: "Because you watched X", from TMDB recommendations of recent titles
+// @Tags     catalog
+// @Security ProfileHeader
+// @Param    type  query  string  false  "movie or tv, empty for both"
+// @Success  200   {array}  row
+// @Router   /catalog/foryou [get]
+func (h *Handler) forYou(w http.ResponseWriter, r *http.Request) {
+	kind := r.URL.Query().Get("type")
+	if kind != "" && kind != "movie" && kind != "tv" {
+		writeError(w, http.StatusBadRequest, errInvalidRequest)
+		return
+	}
+	watched, err := h.store.RecentlyWatched(r.Context(), currentProfile(r), kind, 100)
+	if err != nil {
+		internalError(w, err)
+		return
+	}
+	seeds := watched[:min(personalSeeds, len(watched))]
+	recs := make([][]tmdb.Item, len(seeds))
+	var wg sync.WaitGroup
+	for i, s := range seeds {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			items, err := h.tmdb.Recommendations(r.Context(), s.Type, s.ID)
+			if err != nil {
+				slog.Warn("tmdb recommendations failed", "type", s.Type, "id", s.ID, "err", err)
+			}
+			recs[i] = items
+		}()
+	}
+	wg.Wait()
+
+	seen := map[string]bool{}
+	for _, wt := range watched {
+		seen[wt.Type+strconv.Itoa(wt.ID)] = true
+	}
+	lang := h.language().Code
+	rows := []row{}
+	for i, s := range seeds {
+		if items := freshPicks(recs[i], seen); len(items) > 0 {
+			rows = append(rows, row{Title: fmt.Sprintf(rowTitle(lang, "becauseYouWatched"), s.Title), Items: items})
+		}
+	}
+	writeJSON(w, http.StatusOK, rows)
+}
+
+// freshPicks keeps the titles not yet played nor shown in an earlier row, and marks them as shown.
+func freshPicks(items []tmdb.Item, seen map[string]bool) []tmdb.Item {
+	var out []tmdb.Item
+	for _, it := range items {
+		k := it.Type + strconv.Itoa(it.ID)
+		if !seen[k] {
+			seen[k] = true
+			out = append(out, it)
+		}
+	}
+	return out
+}
+
 // heroCount is how many titles of the first row the UI banner cycles through (HERO_COUNT in Browse.tsx).
 const heroCount = 8
 
@@ -259,6 +322,7 @@ func (h *Handler) title(w http.ResponseWriter, r *http.Request) {
 
 // @Summary  Opening and ending of a movie or episode, for the skip buttons (empty when unknown or turned off for the profile)
 // @Tags     catalog
+// @Security ProfileHeader
 // @Param    type      path   string  true   "movie or tv"
 // @Param    id        path   int     true   "TMDB ID"
 // @Param    season    query  int     false  "Season (shows)"
