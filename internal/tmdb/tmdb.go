@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -47,6 +48,8 @@ type Item struct {
 	Backdrop string  `json:"backdrop"`
 	Year     int     `json:"year"`
 	Rating   float64 `json:"rating"`
+	// Logo is the title artwork (transparent PNG), set on the home banner titles and on details.
+	Logo string `json:"logo,omitempty"`
 }
 
 type Genre struct {
@@ -171,16 +174,19 @@ func (c *Client) Details(ctx context.Context, kind string, id int) (Details, err
 				Name string `json:"name"`
 			} `json:"cast"`
 		} `json:"credits"`
-		Similar page `json:"similar"`
+		Similar page   `json:"similar"`
+		Images  images `json:"images"`
 		Alt     struct {
 			Titles  []altTitle `json:"titles"`  // movies
 			Results []altTitle `json:"results"` // shows
 		} `json:"alternative_titles"`
 	}
-	if err := c.get(ctx, fmt.Sprintf("%s/%d", kind, id), url.Values{"append_to_response": {"credits,similar,alternative_titles"}}, &r); err != nil {
+	params := url.Values{"append_to_response": {"credits,similar,alternative_titles,images"}, "include_image_language": {c.imageLanguages()}}
+	if err := c.get(ctx, fmt.Sprintf("%s/%d", kind, id), params, &r); err != nil {
 		return Details{}, err
 	}
 	d := Details{Item: r.item(kind), OriginalTitle: r.OriginalTitle, Runtime: r.Runtime, Genres: r.Genres, Similar: items(r.Similar, kind)}
+	d.Logo = r.Images.logo(c.lang2())
 	if kind == "tv" {
 		d.OriginalTitle = r.OriginalName
 		if len(r.EpisodeRunTime) > 0 {
@@ -201,6 +207,43 @@ func (c *Client) Details(ctx context.Context, kind string, id int) (Details, err
 	}
 	return d, nil
 }
+
+type images struct {
+	Logos []struct {
+		Lang     string `json:"iso_639_1"`
+		FilePath string `json:"file_path"`
+	} `json:"logos"`
+}
+
+// logo picks the title artwork in the catalog language, else in English, else one without text.
+// SVG logos are skipped: not every player of the UI renders them.
+func (im images) logo(lang string) string {
+	for _, want := range []string{lang, "en", ""} {
+		for _, l := range im.Logos {
+			if l.Lang == want && !strings.HasSuffix(l.FilePath, ".svg") {
+				return l.FilePath
+			}
+		}
+	}
+	return ""
+}
+
+// Logo returns the title artwork of a movie or show ("" when TMDB has none).
+func (c *Client) Logo(ctx context.Context, kind string, id int) (string, error) {
+	var im images
+	if err := c.get(ctx, fmt.Sprintf("%s/%d/images", kind, id), url.Values{"include_image_language": {c.imageLanguages()}}, &im); err != nil {
+		return "", err
+	}
+	return im.logo(c.lang2()), nil
+}
+
+// lang2 is the ISO 639-1 part of the catalog locale ("fr-FR" -> "fr"), the language TMDB tags images with.
+func (c *Client) lang2() string {
+	l, _, _ := strings.Cut(c.lang.Load().(string), "-")
+	return l
+}
+
+func (c *Client) imageLanguages() string { return c.lang2() + ",en,null" }
 
 func (c *Client) Season(ctx context.Context, id, number int) ([]Episode, error) {
 	var r struct {

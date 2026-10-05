@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -105,7 +106,35 @@ func (h *Handler) home(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadGateway, errTMDBUnreachable)
 		return
 	}
+	h.addHeroLogos(r.Context(), out[0].Items)
 	writeJSON(w, http.StatusOK, out)
+}
+
+// heroCount is how many titles of the first row the UI banner cycles through (HERO_COUNT in Browse.tsx).
+const heroCount = 8
+
+// addHeroLogos sets the title artwork of the banner candidates: first-row titles with a backdrop and an overview.
+// A missing logo leaves the title as text.
+func (h *Handler) addHeroLogos(ctx context.Context, items []tmdb.Item) {
+	var wg sync.WaitGroup
+	n := 0
+	for i := range items {
+		if n == heroCount {
+			break
+		}
+		if items[i].Backdrop == "" || items[i].Overview == "" {
+			continue
+		}
+		n++
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if logo, err := h.tmdb.Logo(ctx, items[i].Type, items[i].ID); err == nil {
+				items[i].Logo = logo
+			}
+		}()
+	}
+	wg.Wait()
 }
 
 // @Summary  Genres of movies or shows

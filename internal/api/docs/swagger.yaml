@@ -297,6 +297,10 @@ components:
           uniqueItems: false
         id:
           type: integer
+        logo:
+          description: Logo is the title artwork (transparent PNG), set on the home
+            banner titles and on details.
+          type: string
         originalTitle:
           type: string
         overview:
@@ -328,6 +332,7 @@ components:
       - cast
       - genres
       - id
+      - logo
       - originalTitle
       - overview
       - poster
@@ -374,6 +379,10 @@ components:
           type: string
         id:
           type: integer
+        logo:
+          description: Logo is the title artwork (transparent PNG), set on the home
+            banner titles and on details.
+          type: string
         overview:
           type: string
         poster:
@@ -389,6 +398,7 @@ components:
       required:
       - backdrop
       - id
+      - logo
       - overview
       - poster
       - rating

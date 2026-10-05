@@ -152,7 +152,7 @@ export function Hero({
   height,
   overlay,
 }: {
-  item: Pick<Item, 'title' | 'overview' | 'backdrop'>;
+  item: Pick<Item, 'title' | 'overview' | 'backdrop' | 'logo'>;
   children?: ReactNode;
   height?: number;
   /** Absolutely positioned extras (carousel indicators). */
@@ -161,17 +161,32 @@ export function Hero({
   const { height: screenH, rail, gutter, phone } = useLayout();
   // The text fades in whenever the item changes (carousel); the image crossfades through expo-image.
   const fade = useRef(new Animated.Value(1)).current;
+  const [logoFailed, setLogoFailed] = useState(false);
   useEffect(() => {
+    setLogoFailed(false);
     fade.setValue(0);
     Animated.timing(fade, { toValue: 1, duration: 600, useNativeDriver: true }).start();
   }, [item.title, fade]);
+  const logo = !logoFailed && img(item.logo, 'w500');
   return (
     <View style={{ height: height ?? Math.max(460, screenH * 0.8), marginLeft: -rail }}>
       <Image source={img(item.backdrop, 'w1280')} style={StyleSheet.absoluteFill} contentFit="cover" contentPosition="top" transition={700} />
       <LinearGradient colors={['rgba(0,0,0,0.8)', 'transparent']} start={{ x: 0, y: 0.5 }} end={{ x: 0.75, y: 0.5 }} style={StyleSheet.absoluteFill} />
       <LinearGradient colors={['transparent', colors.bg]} locations={[0.6, 1]} style={StyleSheet.absoluteFill} />
       <Animated.View style={[styles.heroContent, { opacity: fade, paddingLeft: rail + gutter, paddingRight: gutter, maxWidth: phone ? undefined : 760 + rail }]}>
-        <Text style={[styles.heroTitle, phone && { fontSize: 34 }]}>{item.title}</Text>
+        {logo ? (
+          // Title artwork, like Netflix banners; the text title comes back if it fails to load.
+          <Image
+            source={logo}
+            style={phone ? styles.heroLogoPhone : styles.heroLogo}
+            contentFit="contain"
+            contentPosition="left"
+            accessibilityLabel={item.title}
+            onError={() => setLogoFailed(true)}
+          />
+        ) : (
+          <Text style={[styles.heroTitle, phone && { fontSize: 34 }]}>{item.title}</Text>
+        )}
         {!!item.overview && (
           <Text style={styles.heroOverview} numberOfLines={3}>
             {item.overview}
@@ -322,6 +337,8 @@ export const styles = StyleSheet.create({
   label: { color: colors.muted, fontSize: 13 },
   heroContent: { flex: 1, justifyContent: 'center', gap: 16 },
   heroTitle: { color: '#fff', fontSize: 60, fontWeight: '900', lineHeight: 64, textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 6, textShadowOffset: { width: 2, height: 2 } },
+  heroLogo: { width: 480, maxWidth: '100%', height: 170 },
+  heroLogoPhone: { width: 260, maxWidth: '100%', height: 100 },
   heroOverview: { color: '#fff', fontSize: 18, lineHeight: 25, textShadowColor: 'rgba(0,0,0,0.6)', textShadowRadius: 3, textShadowOffset: { width: 1, height: 1 } },
   heroActions: { flexDirection: 'row', gap: 12, flexWrap: 'wrap', marginTop: 4 },
   row: { marginBottom: 12 },
