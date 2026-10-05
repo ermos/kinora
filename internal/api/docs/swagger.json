@@ -416,6 +416,10 @@
                     "id": {
                         "type": "integer"
                     },
+                    "logo": {
+                        "description": "Logo is the title artwork (transparent PNG), set on the home banner titles and on details.",
+                        "type": "string"
+                    },
                     "originalTitle": {
                         "type": "string"
                     },
@@ -460,6 +464,7 @@
                     "cast",
                     "genres",
                     "id",
+                    "logo",
                     "originalTitle",
                     "overview",
                     "poster",
@@ -523,6 +528,10 @@
                     "id": {
                         "type": "integer"
                     },
+                    "logo": {
+                        "description": "Logo is the title artwork (transparent PNG), set on the home banner titles and on details.",
+                        "type": "string"
+                    },
                     "overview": {
                         "type": "string"
                     },
@@ -545,6 +554,7 @@
                 "required": [
                     "backdrop",
                     "id",
+                    "logo",
                     "overview",
                     "poster",
                     "rating",

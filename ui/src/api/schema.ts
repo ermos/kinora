@@ -1267,6 +1267,8 @@ export interface components {
             cast: string[];
             genres: components["schemas"]["tmdb.Genre"][];
             id: number;
+            /** @description Logo is the title artwork (transparent PNG), set on the home banner titles and on details. */
+            logo: string;
             originalTitle: string;
             overview: string;
             poster: string;
@@ -1292,6 +1294,8 @@ export interface components {
         "tmdb.Item": {
             backdrop: string;
             id: number;
+            /** @description Logo is the title artwork (transparent PNG), set on the home banner titles and on details. */
+            logo: string;
             overview: string;
             poster: string;
             rating: number;

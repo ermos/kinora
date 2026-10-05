@@ -105,6 +105,6 @@ export async function unwrap<T>(p: Promise<{ data?: T; error?: unknown; response
   return data as T;
 }
 
-export function img(path: string | undefined, size: 'w300' | 'w342' | 'w780' | 'w1280' = 'w780') {
+export function img(path: string | undefined, size: 'w300' | 'w342' | 'w500' | 'w780' | 'w1280' = 'w780') {
   return path ? `https://image.tmdb.org/t/p/${size}${path}` : undefined;
 }
