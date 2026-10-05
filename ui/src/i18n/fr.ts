@@ -42,6 +42,14 @@ export const fr = {
     language: 'Langue',
     languageHint: "La langue du catalogue, de l'interface et des sources interrogées.",
   },
+  server: {
+    title: 'Adresse du serveur',
+    hint: "L'adresse de ton instance kinora, par exemple http://192.168.1.10:8080.",
+    address: 'Adresse',
+    connect: 'Se connecter',
+    unreachable: 'Aucun serveur kinora ne répond à cette adresse.',
+    change: 'Changer de serveur',
+  },
   profiles: {
     whoIsWatching: 'Qui est-ce ?',
     manage: 'Gérer les profils',

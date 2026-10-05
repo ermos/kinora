@@ -54,7 +54,7 @@ internal/stream        proxy HLS/fichiers, signature HMAC
 internal/tmdb          client TMDB avec cache mémoire
 internal/api           API REST /api/v1 (annotations swaggo -> OpenAPI 3.1)
 internal/store, db     SQLite, migrations SQL embarquées
-ui/                    Expo (React Native) : web aujourd'hui, Android TV / tvOS ensuite
+ui/                    Expo (React Native) : web et Android TV, tvOS ensuite
   src/app/             routes expo-router
   src/components/      Focusable, Sidebar, Player.web.tsx (hls.js), Player.tsx (expo-video)
   src/api/             client typé généré depuis le spec (openapi-typescript)
@@ -87,7 +87,7 @@ traduit le code : chaque code doit figurer dans la section `errors` de chaque di
 
 ## UI : pensée pour la TV
 
-L'UI est une app Expo. Seul le build web est produit pour l'instant, mais tous les choix visent les apps TV :
+L'UI est une app Expo, construite pour le web et Android TV. Tous les choix visent les apps TV :
 
 - **Focus d'abord** : tout élément interactif passe par `Focusable`, qui gère focus (télécommande, clavier) et survol
   de la même façon. Entrée et Espace activent tout, la sidebar s'ouvre au focus comme sur l'app TV Netflix.
@@ -102,13 +102,34 @@ L'UI est une app Expo. Seul le build web est produit pour l'instant, mais tous l
 - **Proxy sans cookie** : l'URL de flux est signée et expire (12 h), elle suffit à elle seule. Les lecteurs natifs,
   AirPlay et Chromecast n'envoient pas les cookies de l'app.
 
-Pour activer les builds TV (non fait) :
+### Android TV
 
-1. `package.json` : `"react-native": "npm:react-native-tvos@0.86-stable"` (même version que le React Native d'Expo).
-2. `npx expo install @react-native-tvos/config-tv -- --dev`, puis l'ajouter aux `plugins` de `app.json`.
-3. `EXPO_TV=1 npx expo prebuild --clean`, puis `npx expo run:android` / `run:ios` sur un émulateur TV.
-4. Reste à faire côté app : un écran « adresse du serveur » (aujourd'hui `EXPO_PUBLIC_API_URL`) et éprouver le
-   lecteur natif sur appareil.
+L'app utilise le fork TV de React Native (`react-native-tvos`, même version que celui d'Expo) et le plugin
+`@react-native-tvos/config-tv` : avec `EXPO_TV=1`, le prebuild génère une app Android TV (lanceur leanback, bannière
+`assets/tv-banner.png`, icône `assets/tv-icon.png`). Le HTTP en clair est autorisé pour joindre une instance du réseau
+local. Au premier lancement, l'app demande l'adresse du serveur (`http://192.168.1.10:8080`), gardée sur l'appareil et
+modifiable depuis l'écran de connexion.
+
+Construire l'APK :
+
+- **En local** (SDK Android et JDK 17, voir ci-dessous) : `cd ui && npm run tv:apk`. L'APK sort dans
+  `ui/android/app/build/outputs/apk/release/app-release.apk`, signé avec la clé de debug : il s'installe tel quel
+  (`adb install`, ou une clé USB sur la TV).
+- **Dans le cloud, sans SDK** : `npx eas-cli@latest build -p android --profile tv` (compte Expo gratuit, `eas init`
+  la première fois). Le lien de l'APK s'affiche à la fin.
+
+Tester sur un Mac :
+
+1. Installer [Android Studio](https://developer.android.com/studio), puis dans *SDK Manager* : Android SDK Platform
+   récente et une image système **Android TV (arm64-v8a)** sur un Mac Apple Silicon.
+2. *Device Manager* > *Create device* > catégorie **TV** > *Television (1080p)*, avec l'image installée. Le démarrer.
+3. Pointer le terminal vers le SDK et le JDK d'Android Studio (Gradle refuse les JDK trop récents) :
+   `export ANDROID_HOME=~/Library/Android/sdk JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"`
+   et `export PATH=$ANDROID_HOME/platform-tools:$PATH`.
+4. `cd ui && npm run tv:android` : prebuild TV, compilation et installation sur l'émulateur, avec rechargement à chaud.
+5. Dans l'app, l'adresse du serveur vue depuis l'émulateur est `http://10.0.2.2:8080` (le `localhost` du Mac).
+
+La télécommande de l'émulateur se pilote avec les flèches du clavier, Entrée pour valider et Échap pour revenir.
 
 ## Porter une source ou un hébergeur
 

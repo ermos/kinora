@@ -16,7 +16,8 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.ermos.kinora"
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -30,7 +31,22 @@
       "expo-router",
       "expo-image",
       "expo-video",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "@react-native-tvos/config-tv",
+        {
+          "androidTVBanner": "./assets/tv-banner.png",
+          "androidTVIcon": "./assets/tv-icon.png"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
     ],
     "scheme": "kinora",
     "backgroundColor": "#141414"
