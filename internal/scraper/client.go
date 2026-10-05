@@ -71,6 +71,30 @@ func (c *Client) do(ctx context.Context, method, rawURL string, body io.Reader, 
 	return string(page), resp.Request.URL.String(), nil
 }
 
+// Location returns where rawURL redirects to without following it, for "go.php" style link pages.
+func (c *Client) Location(ctx context.Context, rawURL string, headers map[string]string) (string, error) {
+	nc := *c.http
+	nc.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("User-Agent", UserAgent)
+	for k, v := range headers {
+		req.Header.Set(k, v)
+	}
+	resp, err := nc.Do(req)
+	if err != nil {
+		return "", err
+	}
+	resp.Body.Close()
+	loc, err := resp.Location()
+	if err != nil {
+		return "", fmt.Errorf("GET %s: no redirect (status %d)", rawURL, resp.StatusCode)
+	}
+	return loc.String(), nil
+}
+
 func (c *Client) GetJSON(ctx context.Context, rawURL string, out any) error {
 	body, _, err := c.Get(ctx, rawURL, map[string]string{"Accept": "application/json"})
 	if err != nil {
@@ -157,4 +181,12 @@ func Origin(rawURL string) string {
 		return ""
 	}
 	return u.Scheme + "://" + u.Host
+}
+
+// AbsURL resolves a site-relative href against base.
+func AbsURL(base, href string) string {
+	if strings.HasPrefix(href, "http") {
+		return href
+	}
+	return strings.TrimRight(base, "/") + "/" + strings.TrimLeft(href, "/")
 }

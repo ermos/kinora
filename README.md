@@ -1,7 +1,8 @@
 # kinora
 
-Streaming multi-source auto-hébergé, interface façon Netflix. Le moteur de sources est un portage Go de
-[vStream](https://github.com/Kodi-vStream/venom-xbmc-addons) (addon Kodi), sans Kodi.
+Streaming multi-source auto-hébergé, interface façon Netflix. Le moteur de sources est un portage Go d'addons Kodi,
+sans Kodi : [vStream](https://github.com/Kodi-vStream/venom-xbmc-addons) pour le français,
+[Scrubs V2](https://github.com/jewbmx/repo) pour l'anglais.
 
 - **Catalogue** : TMDB (tendances, genres, fiches, saisons, épisodes).
 - **Sources** : quand on lance un titre, toutes les sources actives sont interrogées en parallèle pour ce film ou cet
@@ -11,8 +12,10 @@ Streaming multi-source auto-hébergé, interface façon Netflix. Le moteur de so
   signées en HMAC et expirent après 12 h : ce n'est pas un proxy ouvert.
 - **Comptes et profils** : comptes créés par l'admin, jusqu'à 5 profils par compte. Chaque profil a sa liste et son
   historique de lecture ("Reprendre la lecture").
-- **Domaines** : les URLs des sites sont synchronisées automatiquement toutes les 6 h depuis le `sites.json` de vStream,
-  que leur équipe met à jour plusieurs fois par semaine. Rien à configurer.
+- **Domaines** : les URLs des sites sont synchronisées automatiquement toutes les 6 h depuis un `sites.json` par
+  langue : celui de vStream pour le français (mis à jour par leur équipe plusieurs fois par semaine), et
+  `internal/scraper/en/sites.json` de ce dépôt pour l'anglais (Scrubs garde ses domaines dans le code). Rien à
+  configurer.
 
 Un seul binaire Go (UI Expo exportée pour le web et embarquée, SQLite pur Go), aucune dépendance système.
 
@@ -36,7 +39,9 @@ make build-web && TMDB_API_KEY=... ./bin/kinora
 
 ```
 cmd/kinora            point d'entrée, wiring, synchro sites.json
-internal/scraper       portage vStream : sources (source_*.go), hébergeurs (hosters.go), unpacker JS
+internal/scraper       moteur : hébergeurs (hosters.go), unpacker JS, synchro des domaines
+  fr/                  sources françaises (portage vStream)
+  en/                  sources anglaises (portage Scrubs V2) et leur sites.json
 internal/stream        proxy HLS/fichiers, signature HMAC
 internal/tmdb          client TMDB avec cache mémoire
 internal/api           API REST /api/v1 (annotations swaggo -> OpenAPI 3.1)
@@ -55,12 +60,13 @@ spec committé est périmé.
 La langue est un réglage de l'instance, choisi au setup parmi les langues gérées de bout en bout, et modifiable ensuite
 par un admin (page Compte). Elle fixe la langue
 du catalogue TMDB, de l'interface, les sources interrogées (chaque source déclare son public dans `Langs`) et l'ordre
-des pistes (pour le français : VF, puis VOSTFR). Aujourd'hui, seul le français est géré : toutes les sources portées
-viennent de vStream, qui vise un public francophone.
+des pistes (pour le français : VF, puis VOSTFR). Langues gérées : français (sources vStream) et anglais (sources
+Scrubs V2). Chaque langue est un package de `internal/scraper` qui enregistre sa langue et ses sources.
 
 Ajouter une langue :
 
-1. `internal/scraper/lang.go` : une entrée dans `Languages` (code, nom, locale TMDB, ordre des pistes).
+1. `internal/scraper/<code>/` : un package qui ajoute sa `Language` (code, nom, locale TMDB, ordre des pistes) et ses
+   sources, importé dans `cmd/kinora/main.go`.
 2. `internal/api/i18n.go` : les titres des rangées de l'accueil (un test vérifie qu'il n'en manque aucun).
 3. `internal/api/auth.go` : le code dans les tags `enums`, puis `make openapi`.
 4. `ui/src/i18n/<code>.ts` : le dictionnaire de l'interface, déclaré dans `ui/src/i18n/index.ts`. Le build TypeScript
@@ -99,7 +105,9 @@ Pour activer les builds TV (non fait) :
 Les sites changent souvent : `make test-live` interroge les vraies sources (un film, un épisode) et résout chaque lien.
 C'est le premier réflexe quand une source semble cassée.
 
-**Source** : un fichier `internal/scraper/source_<id>.go` (l'id est celui de vStream, pour la synchro des domaines).
+**Source** : un fichier dans le package de sa langue, `internal/scraper/fr/<id>.go` ou `internal/scraper/en/<id>.go`.
+L'id est la clé du site dans le `sites.json` de la langue (celui de vStream, ou `en/sites.json` pour l'anglais, dont
+les clés sont les noms de fichiers des scrapers Scrubs).
 Il n'y a pas de menus à porter : seule compte la fonction `Find`, qui reçoit le titre (localisé et original), l'année,
 l'ID TMDB et éventuellement saison/épisode, et renvoie des liens. Le code Python de vStream donne les URLs et les regex.
 `FindAll`/`Find` appliquent le même nettoyage que `cParser` de vStream, les regex se copient donc presque telles quelles
@@ -110,6 +118,8 @@ l'ID TMDB et éventuellement saison/épisode, et renvoie des liens. Le code Pyth
 `Unpack` gère les scripts `eval(function(p,a,c,k,e,d)...)`.
 
 ## État du portage
+
+### Français (vStream)
 
 Toutes les sources films, séries et animés que vStream maintient actives et qui répondent encore sont portées.
 Chacune est vérifiée en conditions réelles par `make test-live`.
@@ -130,6 +140,20 @@ Non portées : TV en direct et sport (pas un catalogue), téléchargement direct
 un débrideur), sources que vStream a lui-même désactivées ou retirées (souvent derrière un challenge Cloudflare),
 sites morts, et adkami / anime-ultime / otaku-attitude (licences redirigées vers Crunchyroll, recherche cassée,
 catalogue de téléchargement).
+
+### Anglais (Scrubs V2)
+
+Scrubs V2 est l'équivalent anglophone de vStream : un fork d'Exodus qui scrape les sites de streaming gratuits.
+`en/sites.json` reprend ses 58 scrapers « working » au format de vStream, avec `active` selon un test réel
+(octobre 2026) : 17 répondent encore.
+
+| Source | Contenu | Remarques |
+|---|---|---|
+| Levidia | films, séries | liens `go.php` redirigés vers Lulustream |
+
+Écartées après test : bstsrs (challenge Cloudflare sur le client Go, marqué `cloudflare` dans le `sites.json`),
+m4ufree et tvids (uniquement des lecteurs maison type vidsrc / 2embed), PrimeWire / PrimeSrc (chaque lien demande un
+captcha Turnstile), Goojara (lecteur Wootly maison), et les clones sflix / bflix (lecteurs chiffrés).
 
 Hébergeurs : Lulustream, Vidzy, Uqload, Voe (et ses clones, détectés au contenu), Vidmoly, Veev, Filemoon, Mixdrop,
 Streamtape, Sendvid, Sibnet, la famille JW player (Filelions, Streamhide, Streamwish, Savefiles...) et tout lien

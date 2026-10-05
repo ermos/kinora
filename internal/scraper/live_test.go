@@ -2,12 +2,16 @@
 
 // Live checks against the real sites: go test -tags live ./internal/scraper -run Live -v
 // Sites change often, run this when a source looks broken. LIVE_SOURCE=coflix limits the run to one source.
-package scraper
+package scraper_test
 
 import (
 	"context"
 	"os"
 	"testing"
+
+	. "github.com/ermos/kinora/internal/scraper"
+	_ "github.com/ermos/kinora/internal/scraper/en"
+	_ "github.com/ermos/kinora/internal/scraper/fr"
 )
 
 var liveQueries = map[string][]Query{
@@ -74,4 +78,6 @@ var sourceKinds = map[string]map[string]bool{
 	"kepliz_com":    {"film": true},
 	"animesama":     {"anime": true},
 	"frenchanimes":  {"anime-s2": true},
+
+	"levidia_ch": {"film": true, "serie": true},
 }

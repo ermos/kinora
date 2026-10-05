@@ -1,4 +1,4 @@
-package scraper
+package fr
 
 import (
 	"context"
@@ -6,11 +6,13 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/ermos/kinora/internal/scraper"
 )
 
 // Port of vStream sites/purstream.py. Purstream exposes a JSON API and serves HLS directly.
 func init() {
-	Sources = append(Sources, Source{ID: "purstream", Name: "Purstream", DefaultURL: "https://purstream.ad/", Langs: []string{"fr"}, Find: purstreamFind})
+	register(scraper.Source{ID: "purstream", Name: "Purstream", DefaultURL: "https://purstream.ad/", Find: purstreamFind})
 }
 
 type purstreamResp[T any] struct {
@@ -20,7 +22,7 @@ type purstreamResp[T any] struct {
 	} `json:"data"`
 }
 
-func purstreamFind(ctx context.Context, c *Client, base string, q Query) ([]Link, error) {
+func purstreamFind(ctx context.Context, c *scraper.Client, base string, q scraper.Query) ([]scraper.Link, error) {
 	// ponytail: the API host is derived from the site host (purstream.ad -> api.purstream.ad), like sites.json's url_api today.
 	u, err := url.Parse(base)
 	if err != nil {
@@ -45,11 +47,11 @@ func purstreamFind(ctx context.Context, c *Client, base string, q Query) ([]Link
 	if err := c.GetJSON(ctx, stream, &resp); err != nil {
 		return nil, err
 	}
-	var links []Link
+	var links []scraper.Link
 	for _, s := range resp.Data.Items.Sources {
 		// source_name looks like "pulse | 1080p | MULTI"
 		parts := strings.Split(s.Name, "|")
-		l := Link{URL: s.URL, Headers: map[string]string{"Referer": base}}
+		l := scraper.Link{URL: s.URL, Headers: map[string]string{"Referer": base}}
 		if len(parts) == 3 {
 			l.Quality, l.Lang = strings.TrimSpace(parts[1]), strings.TrimSpace(parts[2])
 		}
@@ -58,7 +60,7 @@ func purstreamFind(ctx context.Context, c *Client, base string, q Query) ([]Link
 	return links, nil
 }
 
-func purstreamSearch(ctx context.Context, c *Client, api string, q Query) (int, error) {
+func purstreamSearch(ctx context.Context, c *scraper.Client, api string, q scraper.Query) (int, error) {
 	for _, title := range q.Names() {
 		var resp purstreamResp[struct {
 			Movies struct {

@@ -20,7 +20,7 @@ type credentials struct {
 }
 
 type language struct {
-	Code  string `json:"code" enums:"fr"`
+	Code  string `json:"code" enums:"en,fr"`
 	Label string `json:"label"`
 }
 
@@ -28,14 +28,14 @@ type instanceInfo struct {
 	// SetupNeeded is true until the first admin account exists.
 	SetupNeeded bool `json:"setupNeeded"`
 	// Language of the instance: catalog, UI and sources.
-	Language string `json:"language" enums:"fr"`
+	Language string `json:"language" enums:"en,fr"`
 	// Languages that can be picked at setup: the ones supported end to end.
 	Languages []language `json:"languages"`
 }
 
 type setupRequest struct {
 	credentials
-	Language string `json:"language" enums:"fr"`
+	Language string `json:"language" enums:"en,fr"`
 }
 
 func validCredentials(w http.ResponseWriter, c credentials) bool {
@@ -395,7 +395,7 @@ func (h *Handler) setLanguage(r *http.Request, lang scraper.Language) error {
 }
 
 type instanceUpdate struct {
-	Language string `json:"language" enums:"fr"`
+	Language string `json:"language" enums:"en,fr"`
 }
 
 // @Summary  Change the instance language (catalog, UI and sources)

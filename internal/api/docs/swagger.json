@@ -66,6 +66,7 @@
                     "language": {
                         "description": "Language of the instance: catalog, UI and sources.",
                         "enum": [
+                            "en",
                             "fr"
                         ],
                         "type": "string"
@@ -94,6 +95,7 @@
                 "properties": {
                     "language": {
                         "enum": [
+                            "en",
                             "fr"
                         ],
                         "type": "string"
@@ -108,6 +110,7 @@
                 "properties": {
                     "code": {
                         "enum": [
+                            "en",
                             "fr"
                         ],
                         "type": "string"
@@ -255,6 +258,7 @@
                 "properties": {
                     "language": {
                         "enum": [
+                            "en",
                             "fr"
                         ],
                         "type": "string"

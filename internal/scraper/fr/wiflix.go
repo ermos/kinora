@@ -1,4 +1,4 @@
-package scraper
+package fr
 
 import (
 	"context"
@@ -7,16 +7,18 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/ermos/kinora/internal/scraper"
 )
 
 // Port of vStream sites/wiflix.py (DataLife Engine site, one page per season).
 func init() {
-	Sources = append(Sources, Source{ID: "wiflix", Name: "Wiflix", DefaultURL: "https://flemmix.eu/", Langs: []string{"fr"}, Find: wiflixFind})
+	register(scraper.Source{ID: "wiflix", Name: "Wiflix", DefaultURL: "https://flemmix.eu/", Find: wiflixFind})
 }
 
 var reWiflixSeason = regexp.MustCompile(`(?i)^(.*?)\s*-\s*saison\s*(\d+)`)
 
-func wiflixFind(ctx context.Context, c *Client, base string, q Query) ([]Link, error) {
+func wiflixFind(ctx context.Context, c *scraper.Client, base string, q scraper.Query) ([]scraper.Link, error) {
 	cats := []string{"1", "37"}
 	pattern := `mov clearfix.+?src="[^"]*" *alt="([^"]*).+?link="([^"]+)`
 	if q.Type == "tv" {
@@ -29,7 +31,7 @@ func wiflixFind(ctx context.Context, c *Client, base string, q Query) ([]Link, e
 		if err != nil {
 			return nil, err
 		}
-		for _, m := range FindAll(html, pattern) {
+		for _, m := range scraper.FindAll(html, pattern) {
 			name := strings.TrimSpace(strings.NewReplacer("flemmix", "", "wiflix", "").Replace(m[0]))
 			if q.Type == "tv" {
 				sm := reWiflixSeason.FindStringSubmatch(name)
@@ -56,16 +58,16 @@ func wiflixFind(ctx context.Context, c *Client, base string, q Query) ([]Link, e
 	if q.Type == "movie" {
 		return loadVideoLinks(html, "", page), nil
 	}
-	var links []Link
+	var links []scraper.Link
 	for suffix, lang := range map[string]string{"vf": "VF", "vs": "VOSTFR"} {
-		block := Between(Clean(html), fmt.Sprintf(`<div class="ep%d%s"`, q.Episode, suffix), "</div>")
+		block := scraper.Between(scraper.Clean(html), fmt.Sprintf(`<div class="ep%d%s"`, q.Episode, suffix), "</div>")
 		links = append(links, loadVideoLinks(block, lang, page)...)
 	}
 	return links, nil
 }
 
 // dleSearch runs the search form of DataLife Engine sites.
-func dleSearch(ctx context.Context, c *Client, base, story string, cats []string) (string, error) {
+func dleSearch(ctx context.Context, c *scraper.Client, base, story string, cats []string) (string, error) {
 	if _, _, err := c.Get(ctx, base, nil); err != nil { // session cookie
 		return "", err
 	}
@@ -83,10 +85,10 @@ func dleSearch(ctx context.Context, c *Client, base, story string, cats []string
 }
 
 // loadVideoLinks reads the players of DLE pages: onclick="loadVideo('<embed url>')".
-func loadVideoLinks(html, lang, referer string) []Link {
-	var links []Link
-	for _, m := range FindAll(html, `loadVideo\('([^']+)`) {
-		links = append(links, Link{URL: m[0], Lang: lang, Referer: referer})
+func loadVideoLinks(html, lang, referer string) []scraper.Link {
+	var links []scraper.Link
+	for _, m := range scraper.FindAll(html, `loadVideo\('([^']+)`) {
+		links = append(links, scraper.Link{URL: m[0], Lang: lang, Referer: referer})
 	}
 	return links
 }

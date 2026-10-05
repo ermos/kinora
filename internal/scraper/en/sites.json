@@ -1,0 +1,295 @@
+{
+  "sites": {
+    "123movies_skin": {
+      "label": "123Movies",
+      "active": "False",
+      "url": "https://123-movies.golf/"
+    },
+    "123moviestv_me": {
+      "label": "123Moviestv",
+      "active": "False",
+      "url": "https://123moviestv.me/"
+    },
+    "1movies_la": {
+      "label": "1Movies",
+      "active": "False",
+      "url": "https://1movies.la/"
+    },
+    "9pm_to": {
+      "label": "9Pm",
+      "active": "False",
+      "url": "https://9pm.to/"
+    },
+    "anymovies_co": {
+      "label": "Anymovies",
+      "active": "True",
+      "url": "https://www.downloads-anymovies.co/"
+    },
+    "bluray7_com": {
+      "label": "Bluray7",
+      "active": "True",
+      "url": "https://bluray7.com/"
+    },
+    "bnwmovies_com": {
+      "label": "Bnwmovies",
+      "active": "True",
+      "url": "https://bnwmovies.com/"
+    },
+    "bstsrs_one": {
+      "label": "Bstsrs",
+      "active": "True",
+      "url": "https://bstsrs.in/",
+      "cloudflare": "True"
+    },
+    "cinebox_cc": {
+      "label": "Cinebox",
+      "active": "False",
+      "url": "https://cinebox.cc/"
+    },
+    "couchtuner_show": {
+      "label": "Couchtuner",
+      "active": "False",
+      "url": "https://www.couchtuner.show/"
+    },
+    "doomovies_ga": {
+      "label": "Doomovies",
+      "active": "False",
+      "url": "https://doomovies.net/"
+    },
+    "dopebox_to": {
+      "label": "Dopebox",
+      "active": "False",
+      "url": "https://dopebox.to/"
+    },
+    "filepursuit": {
+      "label": "filepursuit",
+      "active": "False",
+      "url": "https://filepursuit.p.rapidapi.com/"
+    },
+    "filmxy_pw": {
+      "label": "Filmxy",
+      "active": "False",
+      "url": "https://www.filmxy.online/"
+    },
+    "flixhq_to": {
+      "label": "Flixhq",
+      "active": "False",
+      "url": "https://flixhq.to/"
+    },
+    "flixwave_me": {
+      "label": "Flixwave",
+      "active": "False",
+      "url": "https://flixwave.me/"
+    },
+    "gdriveplayer_us": {
+      "label": "Gdriveplayer",
+      "active": "False",
+      "url": "https://api.gdriveplayer.us/"
+    },
+    "gogoanime_bid": {
+      "label": "Gogoanime",
+      "active": "True",
+      "url": "https://anitaku.pe/"
+    },
+    "gogoanime_tel": {
+      "label": "Gogoanime",
+      "active": "False",
+      "url": "https://gogoanime3.co/"
+    },
+    "gogoanimes_to": {
+      "label": "Gogoanimes",
+      "active": "False",
+      "url": "https://gogoanimes.to/"
+    },
+    "goojara_club": {
+      "label": "Goojara",
+      "active": "False",
+      "url": "https://goojara.club/"
+    },
+    "goojara_to": {
+      "label": "Goojara",
+      "active": "True",
+      "url": "https://goojara.to/"
+    },
+    "hdbest_net": {
+      "label": "Hdbest",
+      "active": "False",
+      "url": "https://hdbest.net/"
+    },
+    "himovies_top": {
+      "label": "Himovies",
+      "active": "False",
+      "url": "https://hdtoday.cc/"
+    },
+    "iwaatch_com": {
+      "label": "Iwaatch",
+      "active": "True",
+      "url": "https://iwaatch.com/"
+    },
+    "levidia_ch": {
+      "label": "Levidia",
+      "active": "True",
+      "url": "https://www.levidia.ch/"
+    },
+    "levidiamovies_club": {
+      "label": "Levidiamovies",
+      "active": "False",
+      "url": "https://goojara.life/"
+    },
+    "m4ufree_se": {
+      "label": "M4Ufree",
+      "active": "False",
+      "url": "https://m4ufree.se/"
+    },
+    "m4uhd_tv": {
+      "label": "M4Uhd",
+      "active": "True",
+      "url": "https://ww1.m4uhd.tv/"
+    },
+    "movie4u_live": {
+      "label": "Movie4U",
+      "active": "False",
+      "url": "https://www1.movie4u.live/"
+    },
+    "movies2watch_tv": {
+      "label": "Movies2Watch",
+      "active": "False",
+      "url": "https://movies2watch.tv/"
+    },
+    "movies4fun_net": {
+      "label": "Movies4Fun",
+      "active": "False",
+      "url": "https://movies4fun.net/"
+    },
+    "moviesnipipay_me": {
+      "label": "Moviesnipipay",
+      "active": "True",
+      "url": "https://moviesnipipay.me/"
+    },
+    "myflixer_it": {
+      "label": "Myflixer",
+      "active": "False",
+      "url": "https://myflixer.pw/"
+    },
+    "noxx_to": {
+      "label": "Noxx",
+      "active": "False",
+      "url": "https://noxx.to/"
+    },
+    "okmov_to": {
+      "label": "Okmov",
+      "active": "False",
+      "url": "https://okmov.to/"
+    },
+    "pressplay_top": {
+      "label": "Pressplay",
+      "active": "True",
+      "url": "https://www.pressplay.top/"
+    },
+    "projectfreetv_cyou": {
+      "label": "Projectfreetv",
+      "active": "False",
+      "url": "https://freeprojecttv.cyou/"
+    },
+    "projectfreetv_lol": {
+      "label": "Projectfreetv",
+      "active": "False",
+      "url": "https://www.projectfreetv.lol/"
+    },
+    "putlocker_gives": {
+      "label": "Putlocker",
+      "active": "False",
+      "url": "https://putlocker.gives/"
+    },
+    "rarefilmm_com": {
+      "label": "Rarefilmm",
+      "active": "True",
+      "url": "https://rarefilmm.com/"
+    },
+    "series9movies_com": {
+      "label": "Series9Movies",
+      "active": "False",
+      "url": "https://series9movies.com/"
+    },
+    "series9mx_pro": {
+      "label": "Series9Mx",
+      "active": "False",
+      "url": "https://series9mx.pro/"
+    },
+    "sflixz_watch": {
+      "label": "Sflixz",
+      "active": "False",
+      "url": "https://sflixz.watch/"
+    },
+    "soap2day_fan": {
+      "label": "Soap2Day",
+      "active": "False",
+      "url": "https://soap2dayz.top/"
+    },
+    "streamlord_com": {
+      "label": "Streamlord",
+      "active": "True",
+      "url": "http://www.streamlord.com/"
+    },
+    "tinyzonetv_to": {
+      "label": "Tinyzonetv",
+      "active": "False",
+      "url": "https://ev01.to/"
+    },
+    "tubitv_com": {
+      "label": "Tubitv",
+      "active": "False",
+      "url": "https://tubitv.com/"
+    },
+    "tvids_net": {
+      "label": "Tvids",
+      "active": "True",
+      "url": "https://www.tvids.net/"
+    },
+    "tvmovieflix_com": {
+      "label": "Tvmovieflix",
+      "active": "True",
+      "url": "https://tvmovieflix.com/"
+    },
+    "tvseries_video": {
+      "label": "Tvseries",
+      "active": "True",
+      "url": "https://www.tvseries.video/"
+    },
+    "upmovies_net": {
+      "label": "Upmovies",
+      "active": "False",
+      "url": "https://upmovies.net/"
+    },
+    "vumoo_mx": {
+      "label": "Vumoo",
+      "active": "False",
+      "url": "https://vumoo.mx/"
+    },
+    "watchseries_cyou": {
+      "label": "Watchseries",
+      "active": "False",
+      "url": "https://watchseries.cyou/"
+    },
+    "watchserieshd_stream": {
+      "label": "Watchserieshd",
+      "active": "False",
+      "url": "https://watchserieshd.stream/"
+    },
+    "watchtvseries_net": {
+      "label": "Watchtvseries",
+      "active": "True",
+      "url": "https://watch-tvseries.net/"
+    },
+    "watchug_com": {
+      "label": "Watchug",
+      "active": "False",
+      "url": "https://watchug.com/"
+    },
+    "winnoise_com": {
+      "label": "Winnoise",
+      "active": "False",
+      "url": "https://winnoise.com/"
+    }
+  }
+}

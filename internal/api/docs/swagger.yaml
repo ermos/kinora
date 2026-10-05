@@ -54,6 +54,7 @@ components:
         language:
           description: 'Language of the instance: catalog, UI and sources.'
           enum:
+          - en
           - fr
           type: string
         languages:
@@ -75,6 +76,7 @@ components:
       properties:
         language:
           enum:
+          - en
           - fr
           type: string
       required:
@@ -84,6 +86,7 @@ components:
       properties:
         code:
           enum:
+          - en
           - fr
           type: string
         label:
@@ -184,6 +187,7 @@ components:
       properties:
         language:
           enum:
+          - en
           - fr
           type: string
         password:

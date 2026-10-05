@@ -1109,7 +1109,7 @@ export interface components {
              * @description Language of the instance: catalog, UI and sources.
              * @enum {string}
              */
-            language: "fr";
+            language: "en" | "fr";
             /** @description Languages that can be picked at setup: the ones supported end to end. */
             languages: components["schemas"]["api.language"][];
             /** @description SetupNeeded is true until the first admin account exists. */
@@ -1117,11 +1117,11 @@ export interface components {
         };
         "api.instanceUpdate": {
             /** @enum {string} */
-            language: "fr";
+            language: "en" | "fr";
         };
         "api.language": {
             /** @enum {string} */
-            code: "fr";
+            code: "en" | "fr";
             label: string;
         };
         "api.link": {
@@ -1159,7 +1159,7 @@ export interface components {
         };
         "api.setupRequest": {
             /** @enum {string} */
-            language: "fr";
+            language: "en" | "fr";
             password: string;
             username: string;
         };
