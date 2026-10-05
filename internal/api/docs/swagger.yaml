@@ -1,0 +1,1020 @@
+components:
+  schemas:
+    api.apiError:
+      properties:
+        code:
+          enum:
+          - invalid_json
+          - unsupported_media_type
+          - not_logged_in
+          - session_expired
+          - admin_only
+          - missing_profile
+          - unknown_profile
+          - internal
+          - not_found
+          - invalid_credentials
+          - already_set_up
+          - username_required
+          - password_length
+          - unsupported_language
+          - wrong_password
+          - name_required
+          - unknown_avatar
+          - profile_limit
+          - last_profile
+          - username_taken
+          - delete_self
+          - invalid_id
+          - invalid_request
+          - episode_required
+          - tmdb_unreachable
+          - invalid_link
+          - link_dead
+          - invalid_progress
+          type: string
+        error:
+          type: string
+      required:
+      - code
+      - error
+      type: object
+    api.credentials:
+      properties:
+        password:
+          type: string
+        username:
+          type: string
+      required:
+      - password
+      - username
+      type: object
+    api.instanceInfo:
+      properties:
+        language:
+          description: 'Language of the instance: catalog, UI and sources.'
+          enum:
+          - fr
+          type: string
+        languages:
+          description: 'Languages that can be picked at setup: the ones supported
+            end to end.'
+          items:
+            $ref: '#/components/schemas/api.language'
+          type: array
+          uniqueItems: false
+        setupNeeded:
+          description: SetupNeeded is true until the first admin account exists.
+          type: boolean
+      required:
+      - language
+      - languages
+      - setupNeeded
+      type: object
+    api.instanceUpdate:
+      properties:
+        language:
+          enum:
+          - fr
+          type: string
+      required:
+      - language
+      type: object
+    api.language:
+      properties:
+        code:
+          enum:
+          - fr
+          type: string
+        label:
+          type: string
+      required:
+      - code
+      - label
+      type: object
+    api.link:
+      properties:
+        dead:
+          type: boolean
+        hoster:
+          type: string
+        lang:
+          type: string
+        quality:
+          type: string
+        source:
+          type: string
+        token:
+          type: string
+      required:
+      - dead
+      - hoster
+      - lang
+      - quality
+      - source
+      - token
+      type: object
+    api.newUser:
+      properties:
+        isAdmin:
+          type: boolean
+        password:
+          type: string
+        username:
+          type: string
+      required:
+      - isAdmin
+      - password
+      - username
+      type: object
+    api.passwordChange:
+      properties:
+        current:
+          type: string
+        new:
+          type: string
+      required:
+      - current
+      - new
+      type: object
+    api.playRequest:
+      properties:
+        token:
+          type: string
+      required:
+      - token
+      type: object
+    api.playResponse:
+      properties:
+        kind:
+          enum:
+          - hls
+          - file
+          type: string
+        url:
+          type: string
+      required:
+      - kind
+      - url
+      type: object
+    api.profileBody:
+      properties:
+        avatar:
+          type: string
+        name:
+          type: string
+      required:
+      - avatar
+      - name
+      type: object
+    api.row:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/tmdb.Item'
+          type: array
+          uniqueItems: false
+        title:
+          type: string
+      required:
+      - items
+      - title
+      type: object
+    api.setupRequest:
+      properties:
+        language:
+          enum:
+          - fr
+          type: string
+        password:
+          type: string
+        username:
+          type: string
+      required:
+      - language
+      - password
+      - username
+      type: object
+    store.ListItem:
+      properties:
+        id:
+          type: integer
+        poster:
+          type: string
+        title:
+          type: string
+        type:
+          type: string
+      required:
+      - id
+      - poster
+      - title
+      - type
+      type: object
+    store.Profile:
+      properties:
+        avatar:
+          type: string
+        id:
+          type: integer
+        name:
+          type: string
+      required:
+      - avatar
+      - id
+      - name
+      type: object
+    store.Progress:
+      properties:
+        backdrop:
+          type: string
+        duration:
+          type: number
+        episode:
+          type: integer
+        id:
+          type: integer
+        position:
+          type: number
+        poster:
+          type: string
+        season:
+          type: integer
+        title:
+          type: string
+        type:
+          type: string
+      required:
+      - backdrop
+      - duration
+      - episode
+      - id
+      - position
+      - poster
+      - season
+      - title
+      - type
+      type: object
+    store.User:
+      properties:
+        id:
+          type: integer
+        isAdmin:
+          type: boolean
+        username:
+          type: string
+      required:
+      - id
+      - isAdmin
+      - username
+      type: object
+    tmdb.Details:
+      properties:
+        backdrop:
+          type: string
+        cast:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        genres:
+          items:
+            $ref: '#/components/schemas/tmdb.Genre'
+          type: array
+          uniqueItems: false
+        id:
+          type: integer
+        originalTitle:
+          type: string
+        overview:
+          type: string
+        poster:
+          type: string
+        rating:
+          type: number
+        runtime:
+          type: integer
+        seasons:
+          items:
+            $ref: '#/components/schemas/tmdb.Season'
+          type: array
+          uniqueItems: false
+        similar:
+          items:
+            $ref: '#/components/schemas/tmdb.Item'
+          type: array
+          uniqueItems: false
+        title:
+          type: string
+        type:
+          type: string
+        year:
+          type: integer
+      required:
+      - backdrop
+      - cast
+      - genres
+      - id
+      - originalTitle
+      - overview
+      - poster
+      - rating
+      - runtime
+      - seasons
+      - similar
+      - title
+      - type
+      - year
+      type: object
+    tmdb.Episode:
+      properties:
+        name:
+          type: string
+        number:
+          type: integer
+        overview:
+          type: string
+        runtime:
+          type: integer
+        still:
+          type: string
+      required:
+      - name
+      - number
+      - overview
+      - runtime
+      - still
+      type: object
+    tmdb.Genre:
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+      required:
+      - id
+      - name
+      type: object
+    tmdb.Item:
+      properties:
+        backdrop:
+          type: string
+        id:
+          type: integer
+        overview:
+          type: string
+        poster:
+          type: string
+        rating:
+          type: number
+        title:
+          type: string
+        type:
+          type: string
+        year:
+          type: integer
+      required:
+      - backdrop
+      - id
+      - overview
+      - poster
+      - rating
+      - title
+      - type
+      - year
+      type: object
+    tmdb.Season:
+      properties:
+        episodes:
+          type: integer
+        name:
+          type: string
+        number:
+          type: integer
+        poster:
+          type: string
+      required:
+      - episodes
+      - name
+      - number
+      - poster
+      type: object
+  securitySchemes:
+    SessionCookie:
+      in: header
+      name: X-Profile-ID
+      type: apiKey
+externalDocs:
+  description: ""
+  url: ""
+info:
+  description: Self-hosted multi-source streaming (Go port of vStream).
+  title: istream API
+  version: "1.0"
+openapi: 3.1.0
+paths:
+  /admin/instance:
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/api.instanceUpdate'
+              description: Language
+              summary: body
+        description: Language
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api.apiError'
+          description: Bad Request
+      summary: Change the instance language (catalog, UI and sources)
+      tags:
+      - admin
+  /admin/users:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/store.User'
+                type: array
+          description: OK
+      summary: List accounts
+      tags:
+      - admin
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/api.newUser'
+              description: Account
+              summary: body
+        description: Account
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/store.User'
+          description: Created
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api.apiError'
+          description: Conflict
+      summary: Create an account
+      tags:
+      - admin
+  /admin/users/{id}:
+    delete:
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      responses:
+        "204":
+          description: No Content
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api.apiError'
+          description: Conflict
+      summary: Delete an account
+      tags:
+      - admin
+  /auth/login:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/api.credentials'
+              description: Credentials
+              summary: body
+        description: Credentials
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/store.User'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api.apiError'
+          description: Unauthorized
+      summary: Log in
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      responses:
+        "204":
+          description: No Content
+      summary: Log out
+      tags:
+      - auth
+  /catalog/discover:
+    get:
+      parameters:
+      - description: movie or tv
+        in: query
+        name: type
+        required: true
+        schema:
+          type: string
+      - description: TMDB genre ID
+        in: query
+        name: genre
+        required: true
+        schema:
+          type: integer
+      - description: Page, from 1
+        in: query
+        name: page
+        schema:
+          type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/tmdb.Item'
+                type: array
+          description: OK
+      summary: Titles of a genre, most popular first
+      tags:
+      - catalog
+  /catalog/genres:
+    get:
+      parameters:
+      - description: movie or tv
+        in: query
+        name: type
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/tmdb.Genre'
+                type: array
+          description: OK
+      summary: Genres of movies or shows
+      tags:
+      - catalog
+  /catalog/home:
+    get:
+      parameters:
+      - description: movie or tv, empty for both
+        in: query
+        name: type
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/api.row'
+                type: array
+          description: OK
+      summary: Home rows (all, movies or shows)
+      tags:
+      - catalog
+  /catalog/search:
+    get:
+      parameters:
+      - description: Query
+        in: query
+        name: q
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/tmdb.Item'
+                type: array
+          description: OK
+      summary: Search movies and shows
+      tags:
+      - catalog
+  /instance:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api.instanceInfo'
+          description: OK
+      summary: 'Public instance information: setup state and language'
+      tags:
+      - auth
+  /library/list:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/store.ListItem'
+                type: array
+          description: OK
+      security:
+      - ProfileHeader: []
+      summary: '"My list" of the profile'
+      tags:
+      - library
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/store.ListItem'
+              description: Title
+              summary: body
+        description: Title
+        required: true
+      responses:
+        "204":
+          description: No Content
+      security:
+      - ProfileHeader: []
+      summary: Add a title to "My list"
+      tags:
+      - library
+  /library/list/{type}/{id}:
+    delete:
+      parameters:
+      - description: movie or tv
+        in: path
+        name: type
+        required: true
+        schema:
+          type: string
+      - description: TMDB ID
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      responses:
+        "204":
+          description: No Content
+      security:
+      - ProfileHeader: []
+      summary: Remove a title from "My list"
+      tags:
+      - library
+  /library/progress:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/store.Progress'
+                type: array
+          description: OK
+      security:
+      - ProfileHeader: []
+      summary: '"Continue watching" row of the profile'
+      tags:
+      - library
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/store.Progress'
+              description: Position
+              summary: body
+        description: Position
+        required: true
+      responses:
+        "204":
+          description: No Content
+      security:
+      - ProfileHeader: []
+      summary: Save the playback position
+      tags:
+      - library
+  /library/progress/{type}/{id}:
+    get:
+      parameters:
+      - description: movie or tv
+        in: path
+        name: type
+        required: true
+        schema:
+          type: string
+      - description: TMDB ID
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/store.Progress'
+                type: array
+          description: OK
+      security:
+      - ProfileHeader: []
+      summary: Watch progress of a title (every episode for a show), most recent first
+      tags:
+      - library
+  /me:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/store.User'
+          description: OK
+      summary: Current account
+      tags:
+      - auth
+  /me/password:
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/api.passwordChange'
+              description: Passwords
+              summary: body
+        description: Passwords
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api.apiError'
+          description: Unauthorized
+      summary: Change the account password (logs out every session)
+      tags:
+      - auth
+  /play:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/api.playRequest'
+              description: Link token
+              summary: body
+        description: Link token
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api.playResponse'
+          description: OK
+        "502":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api.apiError'
+          description: Bad Gateway
+      summary: Resolve a link into a proxied stream URL
+      tags:
+      - playback
+  /profiles:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/store.Profile'
+                type: array
+          description: OK
+      summary: Profiles of the account
+      tags:
+      - profiles
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/api.profileBody'
+              description: Profile
+              summary: body
+        description: Profile
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/store.Profile'
+          description: Created
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api.apiError'
+          description: Conflict
+      summary: Create a profile (5 max per account)
+      tags:
+      - profiles
+  /profiles/{id}:
+    delete:
+      parameters:
+      - description: Profile ID
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      responses:
+        "204":
+          description: No Content
+      summary: Delete a profile and its history
+      tags:
+      - profiles
+    patch:
+      parameters:
+      - description: Profile ID
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/api.profileBody'
+              description: Profile
+              summary: body
+        description: Profile
+        required: true
+      responses:
+        "204":
+          description: No Content
+      summary: Rename or change the avatar of a profile
+      tags:
+      - profiles
+  /setup:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/api.setupRequest'
+              description: Admin credentials and language
+              summary: body
+        description: Admin credentials and language
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/store.User'
+          description: Created
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api.apiError'
+          description: Conflict
+      summary: Create the first admin account and pick the instance language (only
+        while no account exists), then log in
+      tags:
+      - auth
+  /titles/{type}/{id}:
+    get:
+      parameters:
+      - description: movie or tv
+        in: path
+        name: type
+        required: true
+        schema:
+          type: string
+      - description: TMDB ID
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tmdb.Details'
+          description: OK
+      summary: Details of a movie or show
+      tags:
+      - catalog
+  /titles/{type}/{id}/links:
+    get:
+      parameters:
+      - description: movie or tv
+        in: path
+        name: type
+        required: true
+        schema:
+          type: string
+      - description: TMDB ID
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      - description: Season (shows)
+        in: query
+        name: season
+        schema:
+          type: integer
+      - description: Episode (shows)
+        in: query
+        name: episode
+        schema:
+          type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/api.link'
+                type: array
+          description: OK
+      summary: Find links for a movie or an episode across the sources of the instance
+        language
+      tags:
+      - playback
+  /titles/tv/{id}/seasons/{season}:
+    get:
+      parameters:
+      - description: TMDB ID
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      - description: Season number
+        in: path
+        name: season
+        required: true
+        schema:
+          type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/tmdb.Episode'
+                type: array
+          description: OK
+      summary: Episodes of a season
+      tags:
+      - catalog
+servers:
+- url: /api/v1

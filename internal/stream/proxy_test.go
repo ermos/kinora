@@ -1,0 +1,87 @@
+package stream
+
+import (
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/ermos/istream/internal/scraper"
+)
+
+func TestSignerRejectsTampering(t *testing.T) {
+	s := NewSigner([]byte("k"))
+	tok, _ := s.Sign(target{URL: "https://a"})
+	var got target
+	if err := s.Verify(tok, &got); err != nil || got.URL != "https://a" {
+		t.Fatalf("Verify = %v, %+v", err, got)
+	}
+	payload, sig, _ := strings.Cut(tok, ".")
+	if s.Verify(payload+"x."+sig, &got) == nil || NewSigner([]byte("other")).Verify(tok, &got) == nil {
+		t.Fatal("tampered or foreign token accepted")
+	}
+}
+
+// The proxy must rewrite every URI of a playlist to itself, forward the stream headers upstream,
+// and resolve relative URIs against the playlist URL.
+func TestProxyRewritesPlaylist(t *testing.T) {
+	var gotReferer string
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/v/master.m3u8":
+			gotReferer = r.Referer()
+			_, _ = io.WriteString(w, "#EXTM3U\n#EXT-X-MEDIA:TYPE=AUDIO,URI=\"audio/fr.m3u8\"\n#EXT-X-STREAM-INF:BANDWIDTH=1\nhd/index.m3u8\n")
+		case "/v/hd/seg1.ts":
+			_, _ = io.WriteString(w, "SEGMENT")
+		case "/v/broken.m3u8":
+			http.Error(w, "down", 522)
+		}
+	}))
+	defer upstream.Close()
+
+	p := NewProxy(NewSigner([]byte("k")), "/proxy")
+	get := func(u string) *httptest.ResponseRecorder {
+		rec := httptest.NewRecorder()
+		p.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, u, nil))
+		return rec
+	}
+	master, _ := p.URL(scraper.Stream{URL: upstream.URL + "/v/master.m3u8", Headers: map[string]string{"Referer": "https://site/"}})
+	rec := get(master)
+	if rec.Code != http.StatusOK || gotReferer != "https://site/" {
+		t.Fatalf("status %d, referer %q", rec.Code, gotReferer)
+	}
+
+	var uris []string
+	for _, line := range strings.Split(rec.Body.String(), "\n") {
+		if i := strings.Index(line, `URI="`); i >= 0 {
+			uris = append(uris, strings.TrimSuffix(line[i+5:], `"`))
+		} else if line != "" && !strings.HasPrefix(line, "#") {
+			uris = append(uris, line)
+		}
+	}
+	if len(uris) != 2 {
+		t.Fatalf("expected 2 rewritten URIs, got %q", rec.Body.String())
+	}
+	var tg target
+	for i, want := range []string{"/v/audio/fr.m3u8", "/v/hd/index.m3u8"} {
+		tok := strings.TrimPrefix(uris[i], "/proxy?t=")
+		if err := p.signer.Verify(tok, &tg); err != nil || tg.URL != upstream.URL+want || tg.Headers["Referer"] != "https://site/" {
+			t.Fatalf("uri %d: %v %+v", i, err, tg)
+		}
+	}
+
+	seg, _ := p.URL(scraper.Stream{URL: upstream.URL + "/v/hd/seg1.ts"})
+	if rec := get(seg); rec.Body.String() != "SEGMENT" {
+		t.Fatalf("segment body %q", rec.Body.String())
+	}
+	expired, _ := p.sign(target{URL: upstream.URL + "/v/hd/seg1.ts", Expires: time.Now().Add(-time.Minute).Unix()})
+	if rec := get(expired); rec.Code != http.StatusForbidden {
+		t.Fatalf("expired link should be 403, got %d", rec.Code)
+	}
+	broken, _ := p.URL(scraper.Stream{URL: upstream.URL + "/v/broken.m3u8"})
+	if rec := get(broken); rec.Code != http.StatusBadGateway {
+		t.Fatalf("upstream error should be 502, got %d", rec.Code)
+	}
+}
