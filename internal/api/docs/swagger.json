@@ -32,7 +32,8 @@
                             "tmdb_unreachable",
                             "invalid_link",
                             "link_dead",
-                            "invalid_progress"
+                            "invalid_progress",
+                            "flaresolverr_unreachable"
                         ],
                         "type": "string"
                     },
@@ -58,6 +59,18 @@
                 "required": [
                     "password",
                     "username"
+                ],
+                "type": "object"
+            },
+            "api.flareSolverrSettings": {
+                "properties": {
+                    "url": {
+                        "description": "URL of the FlareSolverr server, \"\" when disabled.",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "url"
                 ],
                 "type": "object"
             },
@@ -583,6 +596,60 @@
         "url": ""
     },
     "paths": {
+        "/admin/flaresolverr": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.flareSolverrSettings"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "summary": "FlareSolverr server used for sources behind Cloudflare",
+                "tags": [
+                    "admin"
+                ]
+            },
+            "put": {
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/api.flareSolverrSettings",
+                                "summary": "body",
+                                "description": "FlareSolverr URL"
+                            }
+                        }
+                    },
+                    "description": "FlareSolverr URL",
+                    "required": true
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.apiError"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    }
+                },
+                "summary": "Set the FlareSolverr server (empty URL disables it), checked before saving. Sources behind Cloudflare are queried while it is set.",
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
         "/admin/instance": {
             "put": {
                 "requestBody": {

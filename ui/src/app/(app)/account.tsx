@@ -37,6 +37,7 @@ export default function Account() {
         {me.data.isAdmin && (
           <>
             <InstanceLanguage />
+            <FlareSolverr />
             <Users me={me.data} />
           </>
         )}
@@ -113,6 +114,31 @@ function InstanceLanguage() {
         {instance.data?.languages.map((l) => (
           <Chip key={l.code} label={l.label} selected={l.code === language} onPress={() => change(l.code as LangCode)} />
         ))}
+      </View>
+      {view}
+    </Panel>
+  );
+}
+
+function FlareSolverr() {
+  const current = useQuery({ queryKey: ['admin', 'flaresolverr'], queryFn: () => unwrap(api.GET('/admin/flaresolverr')) });
+  const [url, setUrl] = useState<string | null>(null);
+  const { run, view } = useAction();
+  const value = url ?? current.data?.url ?? '';
+
+  const save = (next: string) =>
+    run(async () => {
+      await unwrap(api.PUT('/admin/flaresolverr', { body: { url: next } }));
+      setUrl(next);
+    }, next ? t('account.flaresolverrOn') : t('account.flaresolverrOff'));
+
+  return (
+    <Panel title="FlareSolverr">
+      <Text style={ui.muted}>{t('account.flaresolverrHint')}</Text>
+      <View style={styles.form}>
+        <Field style={styles.input} placeholder="http://flaresolverr:8191" value={value} onChangeText={setUrl} autoCapitalize="none" autoCorrect={false} />
+        <Button small label={t('common.save')} onPress={() => save(value.trim())} />
+        {!!current.data?.url && <Button kind="outline" small label={t('account.disable')} onPress={() => save('')} />}
       </View>
       {view}
     </Panel>

@@ -99,6 +99,10 @@ export const en = {
     language: 'Instance language',
     languageHint: 'Catalog, interface and sources searched. Applies to every account.',
     languageChanged: 'Language updated.',
+    flaresolverrHint: 'FlareSolverr server, to also search the sites protected by Cloudflare. Empty: those sites are skipped.',
+    flaresolverrOn: 'FlareSolverr enabled: sites protected by Cloudflare are searched.',
+    flaresolverrOff: 'FlareSolverr disabled.',
+    disable: 'Disable',
   },
   // One message per API error code: the build fails when the server adds a code not translated here.
   errors: {
@@ -130,5 +134,6 @@ export const en = {
     invalid_link: 'Invalid link.',
     link_dead: "This link doesn't work anymore, try another one.",
     invalid_progress: 'Invalid progress.',
+    flaresolverr_unreachable: 'No FlareSolverr server answers at this URL.',
   } satisfies Record<ErrorCode, string>,
 };

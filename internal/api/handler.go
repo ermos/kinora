@@ -86,6 +86,8 @@ func (h *Handler) Routes() http.Handler {
 	admin("POST /api/v1/admin/users", h.createUser)
 	admin("DELETE /api/v1/admin/users/{id}", h.deleteUser)
 	admin("PUT /api/v1/admin/instance", h.updateInstance)
+	admin("GET /api/v1/admin/flaresolverr", h.getFlareSolverr)
+	admin("PUT /api/v1/admin/flaresolverr", h.updateFlareSolverr)
 
 	return csrf(mux)
 }

@@ -420,3 +420,42 @@ func (h *Handler) updateInstance(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+
+type flareSolverrSettings struct {
+	// URL of the FlareSolverr server, "" when disabled.
+	URL string `json:"url"`
+}
+
+// @Summary  FlareSolverr server used for sources behind Cloudflare
+// @Tags     admin
+// @Success  200  {object}  flareSolverrSettings
+// @Router   /admin/flaresolverr [get]
+func (h *Handler) getFlareSolverr(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, flareSolverrSettings{URL: scraper.FlareSolverr()})
+}
+
+// @Summary  Set the FlareSolverr server (empty URL disables it), checked before saving. Sources behind Cloudflare are queried while it is set.
+// @Tags     admin
+// @Param    body  body  flareSolverrSettings  true  "FlareSolverr URL"
+// @Success  204
+// @Failure  400  {object}  apiError
+// @Router   /admin/flaresolverr [put]
+func (h *Handler) updateFlareSolverr(w http.ResponseWriter, r *http.Request) {
+	var req flareSolverrSettings
+	if !readJSON(w, r, &req) {
+		return
+	}
+	u := strings.TrimRight(strings.TrimSpace(req.URL), "/")
+	if u != "" {
+		if err := scraper.PingFlareSolverr(r.Context(), u); err != nil {
+			writeError(w, http.StatusBadRequest, errFlareSolverr)
+			return
+		}
+	}
+	if err := h.store.SetSetting(r.Context(), "flaresolverr", u); err != nil {
+		internalError(w, err)
+		return
+	}
+	scraper.SetFlareSolverr(u)
+	w.WriteHeader(http.StatusNoContent)
+}

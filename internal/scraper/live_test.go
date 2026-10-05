@@ -2,6 +2,7 @@
 
 // Live checks against the real sites: go test -tags live ./internal/scraper -run Live -v
 // Sites change often, run this when a source looks broken. LIVE_SOURCE=coflix limits the run to one source.
+// Sources behind Cloudflare need a FlareSolverr server: FLARESOLVERR=http://localhost:8191.
 package scraper_test
 
 import (
@@ -30,13 +31,20 @@ func TestLiveSources(t *testing.T) {
 		if only != "" && s.ID != only {
 			continue
 		}
+		c := NewClient()
+		if s.Cloudflare {
+			if c.Solver = os.Getenv("FLARESOLVERR"); c.Solver == "" {
+				t.Logf("%s: skipped, needs FLARESOLVERR", s.ID)
+				continue
+			}
+		}
 		for kind, qs := range liveQueries {
 			if !sourceKinds[s.ID][kind] {
 				continue
 			}
 			for _, q := range qs {
 				t.Run(s.ID+"/"+kind, func(t *testing.T) {
-					links, err := s.Find(context.Background(), NewClient(), s.DefaultURL, q)
+					links, err := s.Find(context.Background(), c, s.DefaultURL, q)
 					if err != nil {
 						t.Fatal(err)
 					}
@@ -79,5 +87,7 @@ var sourceKinds = map[string]map[string]bool{
 	"animesama":     {"anime": true},
 	"frenchanimes":  {"anime-s2": true},
 
-	"levidia_ch": {"film": true, "serie": true},
+	"levidia_ch":         {"film": true, "serie": true},
+	"bstsrs_one":         {"serie": true},
+	"projectfreetv_cyou": {"film": true, "serie": true},
 }
