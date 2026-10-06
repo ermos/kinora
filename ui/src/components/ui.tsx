@@ -408,7 +408,8 @@ export function progressCard(p: Progress) {
       title={p.title}
       subtitle={p.type === 'tv' ? t('common.episodeShort', { season: p.season, episode: p.episode }) : undefined}
       image={img(p.backdrop || p.poster, 'w780')}
-      progress={p.position / p.duration}
+      progress={p.duration ? p.position / p.duration : undefined}
+      badge={p.badge}
     />
   );
 }

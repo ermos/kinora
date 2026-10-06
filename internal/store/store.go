@@ -45,6 +45,8 @@ type Progress struct {
 	Backdrop string  `json:"backdrop"`
 	Position float64 `json:"position"`
 	Duration float64 `json:"duration"`
+	// Badge marks a show's next episode that aired since the profile caught up (duration 0, not started).
+	Badge string `json:"badge,omitempty" enums:"newEpisode,newSeason" validate:"optional"`
 }
 
 func notFound(err error) error {

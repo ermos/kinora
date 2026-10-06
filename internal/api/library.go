@@ -1,7 +1,10 @@
 package api
 
 import (
+	"context"
+	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/ermos/kinora/internal/store"
 )
@@ -63,18 +66,65 @@ func (h *Handler) removeFromList(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// @Summary  "Continue watching" row of the profile
-// @Tags     library
-// @Security ProfileHeader
-// @Success  200  {array}  store.Progress
-// @Router   /library/progress [get]
+// @Summary      "Continue watching" row of the profile
+// @Description  Titles in progress, and the next episode of the shows the profile caught up with once it aired
+// @Description  (with a badge): first if it aired in the last month, last otherwise.
+// @Tags         library
+// @Security     ProfileHeader
+// @Success      200  {array}  store.Progress
+// @Router       /library/progress [get]
 func (h *Handler) continueWatching(w http.ResponseWriter, r *http.Request) {
 	ps, err := h.store.ContinueWatching(r.Context(), currentProfile(r))
 	if err != nil {
 		internalError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, ps)
+	news, err := h.store.NewEpisodes(r.Context(), currentProfile(r), time.Now())
+	if err != nil {
+		internalError(w, err)
+		return
+	}
+	started := map[int]bool{}
+	for _, p := range ps {
+		if p.Type == "tv" {
+			started[p.ID] = true
+		}
+	}
+	recent, old := []store.Progress{}, []store.Progress{}
+	for _, n := range news {
+		if started[n.ID] { // rewatching an older episode: that one stays the card
+			continue
+		}
+		if n.Recent {
+			recent = append(recent, n.Progress)
+		} else {
+			old = append(old, n.Progress)
+		}
+	}
+	writeJSON(w, http.StatusOK, append(append(recent, ps...), old...))
+}
+
+// RefreshShows updates the airing state of the watched shows that are due (see store.ShowsToCheck). Run in the
+// background: TMDB has no batch endpoint, but only a few shows are due at a time.
+func (h *Handler) RefreshShows(ctx context.Context) {
+	now := time.Now()
+	ids, err := h.store.ShowsToCheck(ctx, now)
+	if err != nil {
+		slog.Warn("shows to check", "err", err)
+		return
+	}
+	for _, id := range ids {
+		a, err := h.tmdb.Airing(ctx, id)
+		if err == nil {
+			err = h.store.SaveShow(ctx, id, a, now)
+		}
+		if err != nil {
+			slog.Warn("show refresh failed", "id", id, "err", err)
+		}
+	}
+	if len(ids) > 0 {
+		slog.Info("shows refreshed", "count", len(ids))
+	}
 }
 
 // @Summary  Watch progress of a title (every episode for a show), most recent first

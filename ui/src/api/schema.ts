@@ -801,7 +801,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** "Continue watching" row of the profile */
+        /**
+         * "Continue watching" row of the profile
+         * @description Titles in progress, and the next episode of the shows the profile caught up with once it aired
+         *     (with a badge): first if it aired in the last month, last otherwise.
+         */
         get: {
             parameters: {
                 query?: never;
@@ -1507,6 +1511,11 @@ export interface components {
         };
         "store.Progress": {
             backdrop: string;
+            /**
+             * @description Badge marks a show's next episode that aired since the profile caught up (duration 0, not started).
+             * @enum {string}
+             */
+            badge?: "newEpisode" | "newSeason";
             duration: number;
             episode: number;
             id: number;

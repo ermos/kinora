@@ -183,6 +183,57 @@ func (c *Client) Genres(ctx context.Context, kind string) ([]Genre, error) {
 	return r.Genres, err
 }
 
+// Airing is where a show stands: its latest aired episode, the date of the next one if announced.
+type Airing struct {
+	// Status is TMDB's: "Returning Series", "In Production", "Ended", "Canceled"...
+	Status      string
+	LastSeason  int
+	LastEpisode int
+	LastAirDate string // "2006-01-02", "" before the first episode
+	NextAirDate string
+	// Episodes[n] is the episode count of season n (0 holds specials).
+	Episodes []int
+}
+
+// Airing fetches a show without the extras Details appends, for the background new episodes check.
+func (c *Client) Airing(ctx context.Context, id int) (Airing, error) {
+	var r struct {
+		Status  string `json:"status"`
+		Seasons []struct {
+			SeasonNumber int `json:"season_number"`
+			EpisodeCount int `json:"episode_count"`
+		} `json:"seasons"`
+		LastEp *struct {
+			AirDate string `json:"air_date"`
+			Episode int    `json:"episode_number"`
+			Season  int    `json:"season_number"`
+		} `json:"last_episode_to_air"`
+		NextEp *struct {
+			AirDate string `json:"air_date"`
+		} `json:"next_episode_to_air"`
+	}
+	if err := c.get(ctx, fmt.Sprintf("tv/%d", id), nil, &r); err != nil {
+		return Airing{}, err
+	}
+	a := Airing{Status: r.Status}
+	if r.LastEp != nil {
+		a.LastSeason, a.LastEpisode, a.LastAirDate = r.LastEp.Season, r.LastEp.Episode, r.LastEp.AirDate
+	}
+	if r.NextEp != nil {
+		a.NextAirDate = r.NextEp.AirDate
+	}
+	for _, s := range r.Seasons {
+		if s.SeasonNumber < 0 {
+			continue
+		}
+		for len(a.Episodes) <= s.SeasonNumber {
+			a.Episodes = append(a.Episodes, 0)
+		}
+		a.Episodes[s.SeasonNumber] = s.EpisodeCount
+	}
+	return a, nil
+}
+
 func (c *Client) Details(ctx context.Context, kind string, id int) (Details, error) {
 	var r struct {
 		raw
