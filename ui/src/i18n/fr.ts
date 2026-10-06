@@ -88,6 +88,14 @@ export const fr = {
     searchPlaceholder: 'Films, séries...',
     noResults: 'Aucun résultat pour « {q} ».',
   },
+  search: {
+    recent: 'Recherches récentes',
+    suggestions: 'Suggestions',
+    trending: 'Tendances',
+    clear: 'Effacer',
+    space: 'Espace',
+    delete: 'Supprimer une lettre',
+  },
   title: {
     positive: "{n}% d'avis positifs",
     seasons: '{n} saisons',
