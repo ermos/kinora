@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 import { File, Paths } from 'expo-file-system';
-import { startActivityAsync } from 'expo-intent-launcher';
+import { ActivityAction, startActivityAsync } from 'expo-intent-launcher';
 import { useEffect, useState } from 'react';
 import { BackHandler, Platform, ScrollView, StyleSheet, Text, TVFocusGuideView, View } from 'react-native';
 import { getItem, setItem } from '../lib/storage';
@@ -15,6 +15,7 @@ import { Button, Spinner, styles as ui } from './ui';
 const UPDATE_URL = process.env.EXPO_PUBLIC_UPDATE_URL;
 const SKIPPED = 'update.skipped';
 const GRANT_READ_URI_PERMISSION = 1;
+const PACKAGE = 'com.ermos.kinora';
 
 type Release = { version: string; notes: string; apk: string };
 
@@ -87,6 +88,8 @@ export function UpdatePrompt({ onShow }: { onShow?: (shown: boolean) => void }) 
       setPhase('failed');
     }
   };
+  // Android asks, the first time, to allow kinora to install apps; its own dialog only leads to a generic settings page.
+  const allowInstalls = () => startActivityAsync(ActivityAction.MANAGE_UNKNOWN_APP_SOURCES, { data: `package:${PACKAGE}` }).catch(() => {});
   const skip = async () => {
     await setItem(SKIPPED, release.version);
     setRelease(null);
@@ -113,11 +116,13 @@ export function UpdatePrompt({ onShow }: { onShow?: (shown: boolean) => void }) 
           ) : (
             <>
               {phase === 'failed' && <Text style={ui.error}>{t('update.failed')}</Text>}
+              <Text style={ui.muted}>{t('update.permission')}</Text>
               {/* Up goes nowhere: above are only the notes, the focus would vanish there. */}
               <Box style={styles.row} trapFocusUp>
                 <Button kind="red" label={phase === 'failed' ? t('update.retry') : t('update.install')} onPress={install} hasTVPreferredFocus={focusReady} />
                 <Button kind="grey" label={t('update.later')} onPress={() => setRelease(null)} />
                 <Button kind="outline" label={t('update.skip')} onPress={skip} />
+                <Button kind="outline" label={t('update.allow')} onPress={allowInstalls} />
               </Box>
             </>
           )}

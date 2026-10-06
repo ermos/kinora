@@ -55,6 +55,8 @@ export const fr = {
     downloading: 'Téléchargement de la mise à jour…',
     failed: "La mise à jour n'a pas pu être téléchargée.",
     retry: 'Réessayer',
+    permission: "La première fois, Android bloque l'installation : autorise kinora à installer des applications, puis relance la mise à jour.",
+    allow: 'Autoriser',
   },
   link: {
     title: 'Connecter un appareil',
