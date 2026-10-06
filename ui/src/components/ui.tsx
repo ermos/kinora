@@ -43,6 +43,8 @@ export const icons = {
   info: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20ZM12 16v-5M12 8h.01',
   next: 'M5 4v16l10-8zM19 5v14',
   edit: 'M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4',
+  history: 'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2',
+  backspace: 'M21 5H8l-6 7 6 7h13zM16 9l-5 6M11 9l5 6',
 };
 
 export function Spinner({ full }: { full?: boolean }) {
@@ -444,15 +446,32 @@ export function ProgressBar({ value, style }: { value: number; style?: ViewStyle
   );
 }
 
-export function PosterGrid({ items }: { items: (Pick<Item, 'id' | 'type' | 'title' | 'poster'> & { badge?: string })[] }) {
+export function PosterGrid({
+  items,
+  width: available,
+  columnWidth = 160,
+  onOpen,
+}: {
+  items: (Pick<Item, 'id' | 'type' | 'title' | 'poster'> & { badge?: string })[];
+  /** Width to lay the grid out in, the page's by default. */
+  width?: number;
+  /** Narrowest poster: as many columns as fit. */
+  columnWidth?: number;
+  onOpen?: (item: Pick<Item, 'id' | 'type' | 'title'>) => void;
+}) {
   const { width, rail, gutter } = useLayout();
-  const inner = width - rail - 2 * gutter;
-  const columns = Math.max(2, Math.floor(inner / 160));
+  const inner = available ?? width - rail - 2 * gutter;
+  const columns = Math.max(2, Math.floor(inner / columnWidth));
   const w = (inner - (columns - 1) * 12) / columns;
   return (
     <View style={styles.grid}>
       {items.map((it) => (
-        <Focusable key={`${it.type}-${it.id}`} href={`/title/${it.type}/${it.id}`} style={(active) => [styles.poster, { width: w }, active && styles.cardActive]}>
+        <Focusable
+          key={`${it.type}-${it.id}`}
+          href={`/title/${it.type}/${it.id}`}
+          onPress={() => onOpen?.(it)}
+          style={(active) => [styles.poster, { width: w }, active && styles.cardActive]}
+        >
           {it.poster ? (
             <Image source={img(it.poster, 'w342')} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} accessibilityLabel={it.title} />
           ) : (

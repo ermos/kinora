@@ -89,6 +89,14 @@ export const en = {
     searchPlaceholder: 'Movies, shows...',
     noResults: 'No results for "{q}".',
   },
+  search: {
+    recent: 'Recent searches',
+    suggestions: 'Suggestions',
+    trending: 'Trending',
+    clear: 'Clear',
+    space: 'Space',
+    delete: 'Delete a letter',
+  },
   title: {
     positive: '{n}% positive reviews',
     seasons: '{n} seasons',
