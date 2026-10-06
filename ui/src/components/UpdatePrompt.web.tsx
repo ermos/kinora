@@ -1,4 +1,4 @@
 /** The web app updates with the server, nothing to install. */
-export function UpdatePrompt() {
+export function UpdatePrompt(_: { onShow?: (shown: boolean) => void }) {
   return null;
 }

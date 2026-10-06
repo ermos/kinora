@@ -2,7 +2,7 @@ import Constants from 'expo-constants';
 import { File, Paths } from 'expo-file-system';
 import { startActivityAsync } from 'expo-intent-launcher';
 import { useEffect, useState } from 'react';
-import { Modal, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { BackHandler, Platform, ScrollView, StyleSheet, Text, TVFocusGuideView, View } from 'react-native';
 import { getItem, setItem } from '../lib/storage';
 import { t } from '../i18n';
 import { colors } from '../theme';
@@ -42,10 +42,28 @@ async function latestRelease(): Promise<Release | null> {
  * Android: on launch, offers the latest release when it is newer than this build and not skipped. Updating downloads
  * the APK and opens the system installer (it asks to confirm, and the first time to allow installs from kinora).
  */
-export function UpdatePrompt() {
+export function UpdatePrompt({ onShow }: { onShow?: (shown: boolean) => void }) {
   const current = Constants.expoConfig?.version ?? '0';
   const [release, setRelease] = useState<Release | null>(null);
   const [phase, setPhase] = useState<'ask' | 'downloading' | 'failed'>('ask');
+  useEffect(() => onShow?.(!!release), [release, onShow]);
+  // Asked once the app behind is hidden: hiding it moves the focus, the button would lose it right away.
+  const [focusReady, setFocusReady] = useState(false);
+  useEffect(() => {
+    if (!release) return;
+    const timer = setTimeout(() => setFocusReady(true), 200);
+    return () => clearTimeout(timer);
+  }, [release]);
+
+  // Back on the remote is "Later".
+  useEffect(() => {
+    if (!release) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      setRelease(null);
+      return true;
+    });
+    return () => sub.remove();
+  }, [release]);
 
   useEffect(() => {
     if (Platform.OS !== 'android') return;
@@ -75,9 +93,11 @@ export function UpdatePrompt() {
   };
 
   return (
-    <Modal transparent animationType="fade" onRequestClose={() => setRelease(null)}>
-      <View style={styles.backdrop}>
-        <View style={styles.box}>
+    // An overlay rather than a Modal: a Modal is a separate Android window, the TV focus stayed on the screen behind it.
+    // The focus guide keeps the remote inside the box; the layout hides the app meanwhile (onShow), or the page loading
+    // behind would take the focus.
+    <View style={styles.backdrop}>
+      <Box style={styles.box} trapFocusUp trapFocusDown trapFocusLeft trapFocusRight autoFocus>
           <Text style={ui.h2}>{t('update.title', { version: release.version })}</Text>
           <Text style={ui.muted}>{t('update.current', { version: current })}</Text>
           {!!release.notes && (
@@ -93,21 +113,23 @@ export function UpdatePrompt() {
           ) : (
             <>
               {phase === 'failed' && <Text style={ui.error}>{t('update.failed')}</Text>}
-              <View style={styles.row}>
-                <Button kind="red" label={phase === 'failed' ? t('update.retry') : t('update.install')} onPress={install} hasTVPreferredFocus />
+              {/* Up goes nowhere: above are only the notes, the focus would vanish there. */}
+              <Box style={styles.row} trapFocusUp>
+                <Button kind="red" label={phase === 'failed' ? t('update.retry') : t('update.install')} onPress={install} hasTVPreferredFocus={focusReady} />
                 <Button kind="grey" label={t('update.later')} onPress={() => setRelease(null)} />
                 <Button kind="outline" label={t('update.skip')} onPress={skip} />
-              </View>
+              </Box>
             </>
           )}
-        </View>
-      </View>
-    </Modal>
+      </Box>
+    </View>
   );
 }
 
+const Box = Platform.isTV ? TVFocusGuideView : View;
+
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', alignItems: 'center', justifyContent: 'center', padding: 24 },
+  backdrop: { ...StyleSheet.absoluteFill, zIndex: 2000, backgroundColor: 'rgba(0,0,0,0.75)', alignItems: 'center', justifyContent: 'center', padding: 24 },
   box: { width: '100%', maxWidth: 720, maxHeight: '90%', backgroundColor: '#181818', borderRadius: 8, borderWidth: 1, borderColor: '#333', padding: 32, gap: 16 },
   notes: { maxHeight: 260, backgroundColor: colors.bg, borderRadius: 6 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap' },
