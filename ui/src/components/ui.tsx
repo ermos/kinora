@@ -452,7 +452,7 @@ export function PosterGrid({
   columnWidth = 160,
   onOpen,
 }: {
-  items: (Pick<Item, 'id' | 'type' | 'title' | 'poster'> & { badge?: string })[];
+  items: (Pick<Item, 'id' | 'type' | 'title' | 'poster'> & { badge?: string; year?: number })[];
   /** Width to lay the grid out in, the page's by default. */
   width?: number;
   /** Narrowest poster: as many columns as fit. */
@@ -470,14 +470,28 @@ export function PosterGrid({
           key={`${it.type}-${it.id}`}
           href={`/title/${it.type}/${it.id}`}
           onPress={() => onOpen?.(it)}
-          style={(active) => [styles.poster, { width: w }, active && styles.cardActive]}
+          accessibilityLabel={it.title}
+          style={{ width: w, gap: 6 }}
         >
-          {it.poster ? (
-            <Image source={img(it.poster, 'w342')} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} accessibilityLabel={it.title} />
-          ) : (
-            <Text style={styles.posterFallback}>{it.title}</Text>
+          {(active) => (
+            <>
+              <View style={[styles.poster, active && styles.cardActive]}>
+                {it.poster ? (
+                  <Image source={img(it.poster, 'w342')} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} />
+                ) : (
+                  <Text style={styles.posterFallback}>{it.title}</Text>
+                )}
+                <Badge badge={it.badge} />
+              </View>
+              {/* The poster alone often does not say what the title is (artwork without text, several versions). */}
+              <Text style={[styles.posterTitle, active && { color: '#fff' }]} numberOfLines={2}>
+                {it.title}
+              </Text>
+              <Text style={styles.posterMeta} numberOfLines={1}>
+                {[it.year || '', it.type === 'tv' ? t('browse.show') : t('browse.movie')].filter(Boolean).join(' · ')}
+              </Text>
+            </>
           )}
-          <Badge badge={it.badge} />
         </Focusable>
       ))}
     </View>
@@ -531,6 +545,8 @@ export const styles = StyleSheet.create({
   progressFill: { height: '100%', backgroundColor: colors.red },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   poster: { aspectRatio: 2 / 3, borderRadius: 4, overflow: 'hidden', backgroundColor: colors.bg3, justifyContent: 'center', borderWidth: 3, borderColor: 'transparent' },
+  posterTitle: { color: '#ddd', fontSize: 15, fontWeight: '600' },
+  posterMeta: { color: colors.muted, fontSize: 13, marginTop: -4 },
   posterFallback: { color: '#fff', textAlign: 'center', padding: 8 },
   page: { flex: 1, backgroundColor: colors.bg },
   h1: { color: '#fff', fontSize: 32, fontWeight: '700', marginBottom: 20 },
