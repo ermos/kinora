@@ -26,6 +26,7 @@ dev:
 run-dev:
 	UI_DEV_URL=http://localhost:8081 go run ./cmd/kinora
 
+## test: store tests need a PostgreSQL (make test TEST_DATABASE_URL=postgres://...), skipped without it
 test:
 	go test -race ./...
 

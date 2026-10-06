@@ -6,19 +6,23 @@ import (
 )
 
 type Config struct {
-	Addr    string
-	DataDir string
-	TMDBKey string
+	Addr string
+	// DatabaseURL is the PostgreSQL connection URL (postgres://user:password@host:5432/db).
+	DatabaseURL string
+	TMDBKey     string
 	// UIDevURL proxies the UI to an Expo dev server (make dev) instead of serving the embedded export.
 	UIDevURL string
 }
 
 func Load() (Config, error) {
 	c := Config{
-		Addr:     env("ADDR", ":8080"),
-		DataDir:  env("DATA_DIR", "./data"),
-		TMDBKey:  os.Getenv("TMDB_API_KEY"),
-		UIDevURL: os.Getenv("UI_DEV_URL"),
+		Addr:        env("ADDR", ":8080"),
+		DatabaseURL: os.Getenv("DATABASE_URL"),
+		TMDBKey:     os.Getenv("TMDB_API_KEY"),
+		UIDevURL:    os.Getenv("UI_DEV_URL"),
+	}
+	if c.DatabaseURL == "" {
+		return c, errors.New("DATABASE_URL is required (postgres://user:password@host:5432/kinora)")
 	}
 	if c.TMDBKey == "" {
 		return c, errors.New("TMDB_API_KEY is required (free key: https://www.themoviedb.org/settings/api)")

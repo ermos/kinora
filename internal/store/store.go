@@ -63,11 +63,11 @@ func (s *Store) CountUsers(ctx context.Context) (int, error) {
 }
 
 func (s *Store) CreateUser(ctx context.Context, username, hash string, admin bool) (User, error) {
-	res, err := s.db.ExecContext(ctx, "INSERT INTO users (username, password_hash, is_admin) VALUES (?, ?, ?)", username, hash, admin)
+	var id int64
+	err := s.db.QueryRowContext(ctx, "INSERT INTO users (username, password_hash, is_admin) VALUES ($1, $2, $3) RETURNING id", username, hash, admin).Scan(&id)
 	if err != nil {
 		return User{}, err
 	}
-	id, _ := res.LastInsertId()
 	return User{ID: id, Username: username, IsAdmin: admin, PasswordHash: hash}, nil
 }
 
@@ -78,7 +78,7 @@ func (s *Store) scanUser(row *sql.Row) (User, error) {
 }
 
 func (s *Store) UserByUsername(ctx context.Context, username string) (User, error) {
-	return s.scanUser(s.db.QueryRowContext(ctx, "SELECT id, username, is_admin, password_hash FROM users WHERE username = ?", username))
+	return s.scanUser(s.db.QueryRowContext(ctx, "SELECT id, username, is_admin, password_hash FROM users WHERE lower(username) = lower($1)", username))
 }
 
 func (s *Store) ListUsers(ctx context.Context) ([]User, error) {
@@ -99,37 +99,37 @@ func (s *Store) ListUsers(ctx context.Context) ([]User, error) {
 }
 
 func (s *Store) DeleteUser(ctx context.Context, id int64) error {
-	_, err := s.db.ExecContext(ctx, "DELETE FROM users WHERE id = ?", id)
+	_, err := s.db.ExecContext(ctx, "DELETE FROM users WHERE id = $1", id)
 	return err
 }
 
 func (s *Store) SetPassword(ctx context.Context, id int64, hash string) error {
-	if _, err := s.db.ExecContext(ctx, "UPDATE users SET password_hash = ? WHERE id = ?", hash, id); err != nil {
+	if _, err := s.db.ExecContext(ctx, "UPDATE users SET password_hash = $1 WHERE id = $2", hash, id); err != nil {
 		return err
 	}
-	_, err := s.db.ExecContext(ctx, "DELETE FROM sessions WHERE user_id = ?", id)
+	_, err := s.db.ExecContext(ctx, "DELETE FROM sessions WHERE user_id = $1", id)
 	return err
 }
 
 func (s *Store) CreateSession(ctx context.Context, tokenHash string, userID int64, expires time.Time) error {
-	_, err := s.db.ExecContext(ctx, "INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)", tokenHash, userID, expires.Unix())
+	_, err := s.db.ExecContext(ctx, "INSERT INTO sessions (token_hash, user_id, expires_at) VALUES ($1, $2, $3)", tokenHash, userID, expires.Unix())
 	return err
 }
 
 func (s *Store) UserBySession(ctx context.Context, tokenHash string) (User, error) {
 	return s.scanUser(s.db.QueryRowContext(ctx, `SELECT u.id, u.username, u.is_admin, u.password_hash
-		FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = ? AND s.expires_at > unixepoch()`, tokenHash))
+		FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = $1 AND s.expires_at > extract(epoch FROM now())::bigint`, tokenHash))
 }
 
 func (s *Store) DeleteSession(ctx context.Context, tokenHash string) error {
-	_, err := s.db.ExecContext(ctx, "DELETE FROM sessions WHERE token_hash = ? OR expires_at <= unixepoch()", tokenHash)
+	_, err := s.db.ExecContext(ctx, "DELETE FROM sessions WHERE token_hash = $1 OR expires_at <= extract(epoch FROM now())::bigint", tokenHash)
 	return err
 }
 
 // --- profiles
 
 func (s *Store) ListProfiles(ctx context.Context, userID int64) ([]Profile, error) {
-	rows, err := s.db.QueryContext(ctx, "SELECT id, name, avatar, skip_segments FROM profiles WHERE user_id = ? ORDER BY id", userID)
+	rows, err := s.db.QueryContext(ctx, "SELECT id, name, avatar, skip_segments FROM profiles WHERE user_id = $1 ORDER BY id", userID)
 	if err != nil {
 		return nil, err
 	}
@@ -146,31 +146,31 @@ func (s *Store) ListProfiles(ctx context.Context, userID int64) ([]Profile, erro
 }
 
 func (s *Store) CreateProfile(ctx context.Context, userID int64, name, avatar string, skipSegments bool) (Profile, error) {
-	res, err := s.db.ExecContext(ctx, "INSERT INTO profiles (user_id, name, avatar, skip_segments) VALUES (?, ?, ?, ?)", userID, name, avatar, skipSegments)
+	var id int64
+	err := s.db.QueryRowContext(ctx, "INSERT INTO profiles (user_id, name, avatar, skip_segments) VALUES ($1, $2, $3, $4) RETURNING id", userID, name, avatar, skipSegments).Scan(&id)
 	if err != nil {
 		return Profile{}, err
 	}
-	id, _ := res.LastInsertId()
 	return Profile{ID: id, Name: name, Avatar: avatar, SkipSegments: skipSegments}, nil
 }
 
 func (s *Store) UpdateProfile(ctx context.Context, userID, id int64, name, avatar string, skipSegments bool) error {
-	return s.affectOne(s.db.ExecContext(ctx, "UPDATE profiles SET name = ?, avatar = ?, skip_segments = ? WHERE id = ? AND user_id = ?", name, avatar, skipSegments, id, userID))
+	return s.affectOne(s.db.ExecContext(ctx, "UPDATE profiles SET name = $1, avatar = $2, skip_segments = $3 WHERE id = $4 AND user_id = $5", name, avatar, skipSegments, id, userID))
 }
 
 func (s *Store) ProfileSkipSegments(ctx context.Context, id int64) (bool, error) {
 	var on bool
-	err := s.db.QueryRowContext(ctx, "SELECT skip_segments FROM profiles WHERE id = ?", id).Scan(&on)
+	err := s.db.QueryRowContext(ctx, "SELECT skip_segments FROM profiles WHERE id = $1", id).Scan(&on)
 	return on, err
 }
 
 func (s *Store) DeleteProfile(ctx context.Context, userID, id int64) error {
-	return s.affectOne(s.db.ExecContext(ctx, "DELETE FROM profiles WHERE id = ? AND user_id = ?", id, userID))
+	return s.affectOne(s.db.ExecContext(ctx, "DELETE FROM profiles WHERE id = $1 AND user_id = $2", id, userID))
 }
 
 func (s *Store) ProfileOwner(ctx context.Context, id int64) (int64, error) {
 	var uid int64
-	err := s.db.QueryRowContext(ctx, "SELECT user_id FROM profiles WHERE id = ?", id).Scan(&uid)
+	err := s.db.QueryRowContext(ctx, "SELECT user_id FROM profiles WHERE id = $1", id).Scan(&uid)
 	return uid, notFound(err)
 }
 
@@ -187,7 +187,7 @@ func (s *Store) affectOne(res sql.Result, err error) error {
 // --- my list
 
 func (s *Store) MyList(ctx context.Context, profileID int64) ([]ListItem, error) {
-	rows, err := s.db.QueryContext(ctx, "SELECT media_type, tmdb_id, title, poster FROM my_list WHERE profile_id = ? ORDER BY added_at DESC", profileID)
+	rows, err := s.db.QueryContext(ctx, "SELECT media_type, tmdb_id, title, poster FROM my_list WHERE profile_id = $1 ORDER BY added_at DESC", profileID)
 	if err != nil {
 		return nil, err
 	}
@@ -204,13 +204,13 @@ func (s *Store) MyList(ctx context.Context, profileID int64) ([]ListItem, error)
 }
 
 func (s *Store) AddToList(ctx context.Context, profileID int64, it ListItem) error {
-	_, err := s.db.ExecContext(ctx, `INSERT INTO my_list (profile_id, media_type, tmdb_id, title, poster) VALUES (?, ?, ?, ?, ?)
+	_, err := s.db.ExecContext(ctx, `INSERT INTO my_list (profile_id, media_type, tmdb_id, title, poster) VALUES ($1, $2, $3, $4, $5)
 		ON CONFLICT DO NOTHING`, profileID, it.Type, it.ID, it.Title, it.Poster)
 	return err
 }
 
 func (s *Store) RemoveFromList(ctx context.Context, profileID int64, kind string, id int) error {
-	_, err := s.db.ExecContext(ctx, "DELETE FROM my_list WHERE profile_id = ? AND media_type = ? AND tmdb_id = ?", profileID, kind, id)
+	_, err := s.db.ExecContext(ctx, "DELETE FROM my_list WHERE profile_id = $1 AND media_type = $2 AND tmdb_id = $3", profileID, kind, id)
 	return err
 }
 
@@ -218,7 +218,7 @@ func (s *Store) RemoveFromList(ctx context.Context, profileID int64, kind string
 
 func (s *Store) SaveProgress(ctx context.Context, profileID int64, p Progress) error {
 	_, err := s.db.ExecContext(ctx, `INSERT INTO progress (profile_id, media_type, tmdb_id, season, episode, title, poster, backdrop, position, duration, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch())
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, extract(epoch FROM now())::bigint)
 		ON CONFLICT (profile_id, media_type, tmdb_id, season, episode) DO UPDATE SET
 		position = excluded.position, duration = excluded.duration, updated_at = excluded.updated_at`,
 		profileID, p.Type, p.ID, p.Season, p.Episode, p.Title, p.Poster, p.Backdrop, p.Position, p.Duration)
@@ -244,7 +244,7 @@ func scanProgress(rows *sql.Rows) ([]Progress, error) {
 // ponytail: a show whose last watched episode is finished drops out of the row, "next episode" suggestions come later.
 func (s *Store) ContinueWatching(ctx context.Context, profileID int64) ([]Progress, error) {
 	rows, err := s.db.QueryContext(ctx, `SELECT `+progressCols+` FROM progress p
-		WHERE profile_id = ? AND position < duration * 0.95
+		WHERE profile_id = $1 AND position < duration * 0.95
 		AND updated_at = (SELECT MAX(updated_at) FROM progress q
 			WHERE q.profile_id = p.profile_id AND q.media_type = p.media_type AND q.tmdb_id = p.tmdb_id)
 		ORDER BY updated_at DESC LIMIT 20`, profileID)
@@ -263,10 +263,12 @@ type Watched struct {
 
 // RecentlyWatched lists the titles the profile played (kind "" for both), most recent first, one per title.
 func (s *Store) RecentlyWatched(ctx context.Context, profileID int64, kind string, limit int) ([]Watched, error) {
-	// SQLite takes the bare title from the row holding MAX(updated_at).
-	rows, err := s.db.QueryContext(ctx, `SELECT media_type, tmdb_id, title, MAX(updated_at) AS last FROM progress
-		WHERE profile_id = ? AND (? = '' OR media_type = ?)
-		GROUP BY media_type, tmdb_id ORDER BY last DESC LIMIT ?`, profileID, kind, kind, limit)
+	// DISTINCT ON keeps the latest row of each title, the outer query orders titles by it.
+	rows, err := s.db.QueryContext(ctx, `SELECT media_type, tmdb_id, title, updated_at FROM (
+			SELECT DISTINCT ON (media_type, tmdb_id) media_type, tmdb_id, title, updated_at FROM progress
+			WHERE profile_id = $1 AND ($2 = '' OR media_type = $2)
+			ORDER BY media_type, tmdb_id, updated_at DESC
+		) t ORDER BY updated_at DESC LIMIT $3`, profileID, kind, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +287,7 @@ func (s *Store) RecentlyWatched(ctx context.Context, profileID int64, kind strin
 
 func (s *Store) TitleProgress(ctx context.Context, profileID int64, kind string, id int) ([]Progress, error) {
 	rows, err := s.db.QueryContext(ctx, `SELECT `+progressCols+` FROM progress
-		WHERE profile_id = ? AND media_type = ? AND tmdb_id = ? ORDER BY updated_at DESC`, profileID, kind, id)
+		WHERE profile_id = $1 AND media_type = $2 AND tmdb_id = $3 ORDER BY updated_at DESC`, profileID, kind, id)
 	if err != nil {
 		return nil, err
 	}
@@ -297,12 +299,12 @@ func (s *Store) TitleProgress(ctx context.Context, profileID int64, kind string,
 // SourceURL returns the URL of a source synced from vStream's sites.json, "" before the first sync.
 func (s *Store) SourceURL(ctx context.Context, id string) string {
 	var u string
-	_ = s.db.QueryRowContext(ctx, "SELECT url FROM sources WHERE id = ?", id).Scan(&u)
+	_ = s.db.QueryRowContext(ctx, "SELECT url FROM sources WHERE id = $1", id).Scan(&u)
 	return u
 }
 
 func (s *Store) SetSyncedURL(ctx context.Context, id, url string) error {
-	_, err := s.db.ExecContext(ctx, `INSERT INTO sources (id, url) VALUES (?, ?)
+	_, err := s.db.ExecContext(ctx, `INSERT INTO sources (id, url) VALUES ($1, $2)
 		ON CONFLICT (id) DO UPDATE SET url = excluded.url`, id, url)
 	return err
 }
@@ -311,11 +313,11 @@ func (s *Store) SetSyncedURL(ctx context.Context, id, url string) error {
 
 func (s *Store) Setting(ctx context.Context, key string) (string, error) {
 	var v string
-	err := s.db.QueryRowContext(ctx, "SELECT value FROM settings WHERE key = ?", key).Scan(&v)
+	err := s.db.QueryRowContext(ctx, "SELECT value FROM settings WHERE key = $1", key).Scan(&v)
 	return v, notFound(err)
 }
 
 func (s *Store) SetSetting(ctx context.Context, key, value string) error {
-	_, err := s.db.ExecContext(ctx, "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value", key, value)
+	_, err := s.db.ExecContext(ctx, "INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = excluded.value", key, value)
 	return err
 }

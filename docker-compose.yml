@@ -4,8 +4,25 @@ services:
     ports:
       - "8080:8080"
     env_file: .env
+    environment:
+      DATABASE_URL: postgres://kinora:kinora@postgres:5432/kinora?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: kinora
+      POSTGRES_PASSWORD: kinora
+      POSTGRES_DB: kinora
     volumes:
-      - ./data:/data
+      - postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "kinora"]
+      interval: 5s
+      retries: 10
     restart: unless-stopped
 
   # Optional: lets kinora search the sites behind Cloudflare. Enable it in Account > FlareSolverr with
@@ -13,3 +30,6 @@ services:
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:latest
     restart: unless-stopped
+
+volumes:
+  postgres:

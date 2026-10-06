@@ -2,17 +2,50 @@ package store
 
 import (
 	"context"
-	"path/filepath"
+	"database/sql"
+	"fmt"
+	"net/url"
+	"os"
 	"testing"
+	"time"
 
 	"github.com/ermos/kinora/internal/db"
 )
 
-func TestContinueWatching(t *testing.T) {
-	conn, err := db.Open(filepath.Join(t.TempDir(), "t.db"))
+// testDB opens TEST_DATABASE_URL (skips without it) in a schema of its own, dropped after the test.
+func testDB(t *testing.T) *sql.DB {
+	t.Helper()
+	raw := os.Getenv("TEST_DATABASE_URL")
+	if raw == "" {
+		t.Skip("TEST_DATABASE_URL not set")
+	}
+	ctx := context.Background()
+	admin, err := sql.Open("pgx", raw)
 	if err != nil {
 		t.Fatal(err)
 	}
+	schema := fmt.Sprintf("test_%d", time.Now().UnixNano())
+	if _, err := admin.ExecContext(ctx, "CREATE SCHEMA "+schema); err != nil {
+		t.Fatal(err)
+	}
+	u, _ := url.Parse(raw)
+	q := u.Query()
+	q.Set("search_path", schema)
+	u.RawQuery = q.Encode()
+	conn, err := db.Open(ctx, u.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_ = conn.Close()
+		_, _ = admin.ExecContext(ctx, "DROP SCHEMA "+schema+" CASCADE")
+		_ = admin.Close()
+	})
+	return conn
+}
+
+func TestContinueWatching(t *testing.T) {
+	conn := testDB(t)
 	s, ctx := New(conn), context.Background()
 	u, _ := s.CreateUser(ctx, "a", "h", false)
 	p, _ := s.CreateProfile(ctx, u.ID, "a", "red", true)
@@ -24,7 +57,7 @@ func TestContinueWatching(t *testing.T) {
 			t.Fatal(err)
 		}
 		// pin updated_at so ordering does not depend on the clock
-		if _, err := conn.Exec("UPDATE progress SET updated_at = ? WHERE profile_id = ? AND tmdb_id = ? AND season = ? AND episode = ?",
+		if _, err := conn.Exec("UPDATE progress SET updated_at = $1 WHERE profile_id = $2 AND tmdb_id = $3 AND season = $4 AND episode = $5",
 			at, profile, pr.ID, pr.Season, pr.Episode); err != nil {
 			t.Fatal(err)
 		}
