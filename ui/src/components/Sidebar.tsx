@@ -37,6 +37,8 @@ export function Sidebar() {
   const [focused, setFocused] = useState(false);
   const [hovered, setHovered] = useState(false);
   const blurTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  // TV: entering the rail lands on the current page's item, not on the one nearest to where the focus was.
+  const [current, setCurrent] = useState<View | null>(null);
   const open = !phone && (focused || hovered);
   const width = useRef(new Animated.Value(rail)).current;
 
@@ -67,7 +69,7 @@ export function Sidebar() {
   const item = (href: Href | undefined, label: string, icon: React.ReactNode, onPress?: () => void, key?: string) => {
     const selected = href ? isActive(href) : false;
     return (
-      <Focusable key={key ?? label} href={href} onPress={onPress} {...focusProps} style={[styles.item, phone && styles.itemPhone]} accessibilityLabel={label}>
+      <Focusable key={key ?? label} ref={selected ? setCurrent : undefined} href={href} onPress={onPress} {...focusProps} style={[styles.item, phone && styles.itemPhone]} accessibilityLabel={label}>
         {(active) => (
           <>
             {selected && <View style={[styles.marker, phone && styles.markerPhone]} />}
@@ -114,7 +116,7 @@ export function Sidebar() {
         end={{ x: 1, y: 0.5 }}
         style={StyleSheet.absoluteFill}
       />
-      <Rail style={styles.items} trapFocusUp trapFocusDown trapFocusLeft>
+      <Rail style={styles.items} trapFocusUp trapFocusDown trapFocusLeft {...(Platform.isTV && current ? { destinations: [current] } : {})}>
         {profileItem}
         <View style={styles.main}>{MAIN.map((m) => item(m.href, t(m.label), <Icon d={m.icon} />))}</View>
         <View>
