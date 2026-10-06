@@ -40,7 +40,7 @@ export function Browse({ type }: { type?: MediaType }) {
   return (
     <ScrollView style={ui.page}>
       {heroes.length > 0 && <HeroCarousel items={heroes} />}
-      <View style={{ marginTop: -80, paddingBottom: 60 }}>
+      <View style={{ marginTop: -ROWS_OVERLAP, paddingBottom: 60 }}>
         {resume.length > 0 && (
           <Row<Progress> title={t('browse.continueWatching')} data={resume} keyOf={(p) => `${p.type}-${p.id}`} render={progressCard} />
         )}
@@ -63,6 +63,8 @@ export function Browse({ type }: { type?: MediaType }) {
 }
 
 const HERO_COUNT = 8;
+/** The rows start over the hero's fading bottom, like on Netflix. */
+const ROWS_OVERLAP = 80;
 const PERSONAL_AFTER = 2;
 const HERO_INTERVAL = 8000;
 
@@ -96,6 +98,8 @@ function HeroCarousel({ items }: { items: Item[] }) {
     <View onPointerEnter={() => setHovered(true)} onPointerLeave={() => setHovered(false)}>
       <Hero
         item={item}
+        // Bottom-aligned clear of the rows: centered, the buttons fell on the first row's title on a TV's short screen.
+        bottomInset={ROWS_OVERLAP + 40}
         overlay={
           items.length > 1 && (
             <View style={[styles.dots, { right: gutter, bottom: 110 }]}>

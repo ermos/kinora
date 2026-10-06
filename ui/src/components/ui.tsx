@@ -153,11 +153,14 @@ export function Hero({
   item,
   children,
   height,
+  bottomInset,
   overlay,
 }: {
   item: Pick<Item, 'title' | 'overview' | 'backdrop' | 'logo'>;
   children?: ReactNode;
   height?: number;
+  /** Content aligned to the bottom, this far above it (what follows overlaps the hero), instead of centered. */
+  bottomInset?: number;
   /** Absolutely positioned extras (carousel indicators). */
   overlay?: ReactNode;
 }) {
@@ -176,7 +179,13 @@ export function Hero({
       <Image source={img(item.backdrop, 'w1280')} style={StyleSheet.absoluteFill} contentFit="cover" contentPosition="top" transition={700} />
       <LinearGradient colors={['rgba(0,0,0,0.8)', 'transparent']} start={{ x: 0, y: 0.5 }} end={{ x: 0.75, y: 0.5 }} style={StyleSheet.absoluteFill} />
       <LinearGradient colors={['transparent', colors.bg]} locations={[0.6, 1]} style={StyleSheet.absoluteFill} />
-      <Animated.View style={[styles.heroContent, { opacity: fade, paddingLeft: rail + gutter, paddingRight: gutter, maxWidth: phone ? undefined : 760 + rail }]}>
+      <Animated.View
+        style={[
+          styles.heroContent,
+          bottomInset !== undefined && { justifyContent: 'flex-end', paddingBottom: bottomInset },
+          { opacity: fade, paddingLeft: rail + gutter, paddingRight: gutter, maxWidth: phone ? undefined : 760 + rail },
+        ]}
+      >
         {logo ? (
           // Title artwork, like Netflix banners; the text title comes back if it fails to load.
           <Image
