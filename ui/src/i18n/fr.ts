@@ -91,7 +91,7 @@ export const fr = {
     show: 'Série',
   },
   search: {
-    recent: 'Recherches récentes',
+    recent: 'Historique',
     suggestions: 'Suggestions',
     trending: 'Tendances',
     clear: 'Effacer',
