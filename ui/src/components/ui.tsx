@@ -92,6 +92,7 @@ export function Button({
         small && styles.buttonSmall,
         buttonBg[kind],
         active && buttonActive[kind],
+        active && tvFocus,
         disabled && { opacity: 0.6 },
       ]}
     >
@@ -117,18 +118,33 @@ const buttonBg: Record<ButtonKind, ViewStyle> = {
   outline: { borderWidth: 1, borderColor: colors.muted },
   danger: { borderWidth: 1, borderColor: colors.muted },
 };
-const buttonActive: Record<ButtonKind, ViewStyle> = {
-  white: { backgroundColor: 'rgba(255,255,255,0.75)' },
-  grey: { backgroundColor: 'rgba(109,109,110,0.4)' },
-  red: { backgroundColor: '#c11119' },
-  outline: { borderColor: '#fff' },
-  danger: { borderColor: colors.red },
-};
+/**
+ * Focused (remote) or hovered (mouse). The web keeps Netflix's hover, which dims the button; on a TV a dimmed button
+ * reads as disabled, so focus there brightens it and adds a detached ring (tvFocus).
+ */
+const buttonActive: Record<ButtonKind, ViewStyle> = Platform.isTV
+  ? {
+      white: {},
+      grey: { backgroundColor: 'rgba(150,150,150,0.9)' },
+      red: { backgroundColor: '#ff1f2b' },
+      outline: { borderColor: '#fff' },
+      danger: { borderColor: colors.red },
+    }
+  : {
+      white: { backgroundColor: 'rgba(255,255,255,0.75)' },
+      grey: { backgroundColor: 'rgba(109,109,110,0.4)' },
+      red: { backgroundColor: '#c11119' },
+      outline: { borderColor: '#fff' },
+      danger: { borderColor: colors.red },
+    };
+
+/** TV focus ring, kept off the element so it shows on white buttons and selected chips too. */
+export const tvFocus: ViewStyle = Platform.isTV ? { outlineWidth: 3, outlineStyle: 'solid', outlineColor: '#fff', outlineOffset: 3, transform: [{ scale: 1.06 }] } : {};
 
 /** Small selectable pill: seasons, sources, audio tracks. Replaces <select>, which does not exist on TV. */
 export function Chip({ label, selected, onPress }: { label: string; selected?: boolean; onPress: () => void }) {
   return (
-    <Focusable onPress={onPress} style={(active) => [styles.chip, selected && styles.chipSelected, active && styles.chipActive]}>
+    <Focusable onPress={onPress} style={(active) => [styles.chip, selected && styles.chipSelected, active && styles.chipActive, active && tvFocus]}>
       <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{label}</Text>
     </Focusable>
   );
