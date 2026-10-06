@@ -18,6 +18,8 @@ const MAIN: { href: Href; label: TKey; icon: string }[] = [
 ];
 
 const EXPANDED = 260;
+const ANIMATION = 120; // ms
+const IDLE_OPACITY = 0.4;
 
 /**
  * TV: up and down stay in the rail. It overlaps the content once expanded, and Android's focus search would otherwise
@@ -42,10 +44,15 @@ export function Sidebar({ content }: { content?: RefObject<{ requestTVFocus(): v
   const [current, setCurrent] = useState<View | null>(null);
   const open = !phone && (focused || hovered);
   const width = useRef(new Animated.Value(rail)).current;
+  // Collapsed, the rail fades out of the way of the content; it comes back as soon as it gets the focus or the mouse.
+  const opacity = useRef(new Animated.Value(IDLE_OPACITY)).current;
 
   useEffect(() => {
-    Animated.timing(width, { toValue: open ? EXPANDED : rail, duration: 200, useNativeDriver: false }).start();
-  }, [open, rail, width]);
+    Animated.parallel([
+      Animated.timing(width, { toValue: open ? EXPANDED : rail, duration: ANIMATION, useNativeDriver: false }),
+      Animated.timing(opacity, { toValue: open ? 1 : IDLE_OPACITY, duration: ANIMATION, useNativeDriver: false }),
+    ]).start();
+  }, [open, rail, width, opacity]);
 
   // Focus moves item to item: a blur immediately followed by a focus must not close the rail.
   const focusProps = {
@@ -127,7 +134,7 @@ export function Sidebar({ content }: { content?: RefObject<{ requestTVFocus(): v
 
   return (
     <Animated.View
-      style={[styles.rail, { width }]}
+      style={[styles.rail, { width, opacity }]}
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
     >
