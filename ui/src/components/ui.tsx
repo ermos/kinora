@@ -6,6 +6,7 @@ import { ActivityIndicator, Animated, FlatList, Platform, Pressable, StyleSheet,
 import Svg, { Circle, Path, Rect, Text as SvgText } from 'react-native-svg';
 import { img, type Item, type Progress } from '../api/client';
 import { AVATARS, colors, useLayout } from '../theme';
+import { setTyping } from './TypingPreview';
 import { Focusable } from './Focusable';
 import { t } from '../i18n';
 
@@ -135,9 +136,31 @@ export function Chip({ label, selected, onPress }: { label: string; selected?: b
 
 export function Field(props: TextInputProps & { label?: string }) {
   const { label, style, autoFocus, ...rest } = props;
+  // TV: what is typed shows in TypingPreview, above the on-screen keyboard that may cover this field.
+  const [focused, setFocused] = useState(false);
+  const preview = { label: label ?? rest.placeholder ?? '', value: rest.value ?? '', secure: !!rest.secureTextEntry };
+  useEffect(() => {
+    if (!Platform.isTV || !focused) return;
+    setTyping(preview);
+    return () => setTyping(null);
+  }, [focused, preview.label, preview.value, preview.secure]);
   // On TV a focused field opens the on-screen keyboard over the whole form: the remote reaches it instead.
   const input = (
-    <TextInput placeholderTextColor="#777" accessibilityLabel={label ?? rest.placeholder} {...rest} autoFocus={autoFocus && !Platform.isTV} style={[styles.input, style]} />
+    <TextInput
+      placeholderTextColor="#777"
+      accessibilityLabel={label ?? rest.placeholder}
+      {...rest}
+      onFocus={(e) => {
+        setFocused(true);
+        rest.onFocus?.(e);
+      }}
+      onBlur={(e) => {
+        setFocused(false);
+        rest.onBlur?.(e);
+      }}
+      autoFocus={autoFocus && !Platform.isTV}
+      style={[styles.input, style]}
+    />
   );
   return label ? (
     <View style={{ gap: 6 }}>
