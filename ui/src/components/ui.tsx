@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { type Href } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode, type Ref } from 'react';
 import { ActivityIndicator, Animated, FlatList, Platform, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps, type ViewStyle } from 'react-native';
 import Svg, { Circle, Path, Rect, Text as SvgText } from 'react-native-svg';
 import { img, type Item, type Progress } from '../api/client';
@@ -134,7 +134,7 @@ export function Chip({ label, selected, onPress }: { label: string; selected?: b
   );
 }
 
-export function Field(props: TextInputProps & { label?: string }) {
+export function Field(props: TextInputProps & { label?: string; ref?: Ref<TextInput> }) {
   const { label, style, autoFocus, ...rest } = props;
   // TV: what is typed shows in TypingPreview, above the on-screen keyboard that may cover this field.
   const [focused, setFocused] = useState(false);

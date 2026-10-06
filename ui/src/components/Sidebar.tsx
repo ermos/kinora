@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, usePathname, type Href } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import { Animated, Platform, StyleSheet, Text, TVFocusGuideView, View } from 'react-native';
 import { api, setCurrentProfile, useProfile } from '../api/client';
 import { colors, useLayout } from '../theme';
@@ -29,7 +29,7 @@ const Rail = Platform.isTV ? TVFocusGuideView : View;
  * Netflix TV style navigation rail. It expands when any item has focus (remote / keyboard) or under the mouse,
  * so it behaves the same on a TV and in a browser. Phones get a bottom tab bar instead.
  */
-export function Sidebar() {
+export function Sidebar({ content }: { content?: RefObject<{ requestTVFocus(): void } | null> }) {
   const { rail, phone } = useLayout();
   const profile = useProfile();
   const pathname = usePathname();
@@ -37,6 +37,9 @@ export function Sidebar() {
   const [focused, setFocused] = useState(false);
   const [hovered, setHovered] = useState(false);
   const blurTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const inRail = useRef(false);
+  // TV: entering the rail lands on the current page's item, not on the one nearest to where the focus was.
+  const [current, setCurrent] = useState<View | null>(null);
   const open = !phone && (focused || hovered);
   const width = useRef(new Animated.Value(rail)).current;
 
@@ -48,11 +51,26 @@ export function Sidebar() {
   const focusProps = {
     onFocus: () => {
       clearTimeout(blurTimer.current);
+      inRail.current = true;
       setFocused(true);
     },
     onBlur: () => {
+      inRail.current = false;
       blurTimer.current = setTimeout(() => setFocused(false), 50);
     },
+  };
+
+  // TV: after choosing a page, hand the focus to it, which closes the rail. Retried while the page has nothing
+  // focusable yet (a spinner while loading), and given up once the focus left the rail or after 3s.
+  const leave = () => {
+    if (!Platform.isTV || !content) return;
+    let tries = 0;
+    const tick = () => {
+      if (!inRail.current || tries++ >= 20) return;
+      content.current?.requestTVFocus();
+      setTimeout(tick, 150);
+    };
+    setTimeout(tick, 50);
   };
 
   const logout = async () => {
@@ -67,7 +85,13 @@ export function Sidebar() {
   const item = (href: Href | undefined, label: string, icon: React.ReactNode, onPress?: () => void, key?: string) => {
     const selected = href ? isActive(href) : false;
     return (
-      <Focusable key={key ?? label} href={href} onPress={onPress} {...focusProps} style={[styles.item, phone && styles.itemPhone]} accessibilityLabel={label}>
+      <Focusable key={key ?? label} ref={selected ? setCurrent : undefined}
+        href={href}
+        onPress={() => {
+          onPress?.();
+          if (href) leave();
+        }}
+        {...focusProps} style={[styles.item, phone && styles.itemPhone]} accessibilityLabel={label}>
         {(active) => (
           <>
             {selected && <View style={[styles.marker, phone && styles.markerPhone]} />}
@@ -114,7 +138,7 @@ export function Sidebar() {
         end={{ x: 1, y: 0.5 }}
         style={StyleSheet.absoluteFill}
       />
-      <Rail style={styles.items} trapFocusUp trapFocusDown trapFocusLeft>
+      <Rail style={styles.items} trapFocusUp trapFocusDown trapFocusLeft {...(Platform.isTV && current ? { destinations: [current] } : {})}>
         {profileItem}
         <View style={styles.main}>{MAIN.map((m) => item(m.href, t(m.label), <Icon d={m.icon} />))}</View>
         <View>

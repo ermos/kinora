@@ -1,10 +1,11 @@
 import { router, type Href } from 'expo-router';
-import { useState, type ReactNode } from 'react';
-import { Platform, Pressable, type NativeSyntheticEvent, type PressableProps, type StyleProp, type TargetedEvent, type ViewStyle } from 'react-native';
+import { useState, type ReactNode, type Ref } from 'react';
+import { Platform, Pressable, type View, type NativeSyntheticEvent, type PressableProps, type StyleProp, type TargetedEvent, type ViewStyle } from 'react-native';
 
 type Props = Omit<PressableProps, 'style' | 'children'> & {
   /** Navigates on press. */
   href?: Href;
+  ref?: Ref<View>;
   style?: StyleProp<ViewStyle> | ((active: boolean) => StyleProp<ViewStyle>);
   children: ReactNode | ((active: boolean) => ReactNode);
 };
