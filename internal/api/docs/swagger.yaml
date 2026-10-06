@@ -270,6 +270,13 @@ components:
       properties:
         backdrop:
           type: string
+        badge:
+          description: Badge marks a show's next episode that aired since the profile
+            caught up (duration 0, not started).
+          enum:
+          - newEpisode
+          - newSeason
+          type: string
         duration:
           type: number
         episode:
@@ -829,6 +836,9 @@ paths:
       - library
   /library/progress:
     get:
+      description: |-
+        Titles in progress, and the next episode of the shows the profile caught up with once it aired
+        (with a badge): first if it aired in the last month, last otherwise.
       responses:
         "200":
           content:

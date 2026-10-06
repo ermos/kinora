@@ -80,6 +80,16 @@ func run() error {
 		}
 	}
 	h := api.New(st, tmdb.New(cfg.TMDBKey, lang.TMDB), stream.NewSigner(secret), lang)
+	go func() {
+		for {
+			h.RefreshShows(ctx)
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(time.Hour):
+			}
+		}
+	}()
 	mux := http.NewServeMux()
 	mux.Handle("/api/", h.Routes())
 	mux.Handle("/", uiHandler(cfg.UIDevURL))
