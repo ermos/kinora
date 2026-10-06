@@ -1,4 +1,4 @@
-import createClient from 'openapi-fetch';
+import createClient, { type Client, type Middleware } from 'openapi-fetch';
 import { useSyncExternalStore } from 'react';
 import { Platform } from 'react-native';
 import { t, type TKey } from '../i18n';
@@ -19,15 +19,45 @@ export type ListItem = S['store.ListItem'];
 export type MediaType = 'movie' | 'tv';
 
 /**
- * Server origin. The web app is served by the Go binary, so it is relative. Native and TV apps will need the
- * address of the instance (EXPO_PUBLIC_API_URL for now, a "server address" screen when the TV builds land).
+ * Server origin. The web app is served by the Go binary, so it is relative. Native and TV apps ask for the address
+ * of the instance on first launch (server screen) and keep it on the device; EXPO_PUBLIC_API_URL can preset it.
  */
-export const API_ORIGIN = Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_API_URL ?? '');
+const SERVER_KEY = 'kinora.server';
+let origin = Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_API_URL ?? '');
+
+export const needsServer = () => Platform.OS !== 'web' && !origin;
+export const serverOrigin = () => origin;
 
 /** Absolute URL for a server path, e.g. the proxied stream handed to a native player. */
-export const absolute = (path: string) => (path.startsWith('http') ? path : API_ORIGIN + path);
+export const absolute = (path: string) => (path.startsWith('http') ? path : origin + path);
 
-export const api = createClient<paths>({ baseUrl: API_ORIGIN + '/api/v1', credentials: 'include' });
+/** Normalizes what a user typed: "192.168.1.10:8080" -> "http://192.168.1.10:8080". */
+export function normalizeServer(input: string) {
+  const v = input.trim().replace(/\/+$/, '');
+  return v && !/^https?:\/\//i.test(v) ? `http://${v}` : v;
+}
+
+export async function loadServer() {
+  if (Platform.OS === 'web') return;
+  const saved = await getItem(SERVER_KEY);
+  if (saved) applyServer(saved);
+}
+
+export function setServer(url: string) {
+  applyServer(url);
+  void setItem(SERVER_KEY, url);
+}
+
+function applyServer(url: string) {
+  origin = url;
+  client = makeClient();
+}
+
+function makeClient() {
+  const c = createClient<paths>({ baseUrl: origin + '/api/v1', credentials: 'include' });
+  c.use(middleware);
+  return c;
+}
 
 // --- selected profile: kept in memory for synchronous access, persisted per device.
 
@@ -66,14 +96,15 @@ export function useProfile() {
 /** Called on 401/403 so the app can route to login or the profile picker. */
 export const authEvents = { onUnauthorized: () => {}, onUnknownProfile: () => {} };
 
-api.use({
+const middleware: Middleware = {
   onRequest({ request }) {
     if (profile) request.headers.set('X-Profile-ID', String(profile.id));
     // The server rejects non-JSON writes (CSRF guard), even body-less ones.
     if (request.method !== 'GET' && !request.headers.has('Content-Type')) {
       request.headers.set('Content-Type', 'application/json');
     }
-    return request;
+    // Nothing returned: headers are changed in place. On React Native, fetch's Request and Response aren't instances
+    // of the globals openapi-fetch checks returned values against, so returning them fails every request.
   },
   onResponse({ request, response }) {
     const path = new URL(request.url, 'http://x').pathname;
@@ -82,9 +113,17 @@ api.use({
       setCurrentProfile(null); // profile deleted from another device
       authEvents.onUnknownProfile();
     }
-    return response;
   },
-});
+};
+
+// Rebuilt when the server changes. Defined after the middleware it uses.
+let client = makeClient();
+
+/**
+ * The API client, always the one of the current server. A proxy rather than a reassigned export, so importers never
+ * depend on how the bundler compiles live bindings.
+ */
+export const api = new Proxy({} as Client<paths>, { get: (_, key) => client[key as keyof Client<paths>] });
 
 export class ApiError extends Error {
   constructor(

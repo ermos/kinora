@@ -5,6 +5,7 @@
   "dependencies": {
     "@tanstack/react-query": "^5.104.1",
     "expo": "~57.0.26",
+    "expo-build-properties": "~57.0.22",
     "expo-constants": "~57.0.20",
     "expo-image": "~57.0.5",
     "expo-linear-gradient": "~57.0.2",
@@ -17,13 +18,14 @@
     "openapi-fetch": "^0.17.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "react-native": "0.86.3",
+    "react-native": "npm:react-native-tvos@^0.86.3-0",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
     "react-native-svg": "15.15.4",
     "react-native-web": "^0.21.2"
   },
   "devDependencies": {
+    "@react-native-tvos/config-tv": "^0.1.7",
     "@types/react": "~19.2.2",
     "openapi-typescript": "^7.13.0",
     "typescript": "^5.9.3"
@@ -33,7 +35,10 @@
     "web": "expo start --web",
     "build": "expo export -p web",
     "typecheck": "tsc --noEmit",
-    "gen:api": "openapi-typescript ../internal/api/docs/swagger.json -o src/api/schema.ts"
+    "gen:api": "openapi-typescript ../internal/api/docs/swagger.json -o src/api/schema.ts",
+    "tv:prebuild": "EXPO_TV=1 expo prebuild --platform android --clean",
+    "tv:android": "npm run tv:prebuild && expo run:android",
+    "tv:apk": "npm run tv:prebuild && cd android && ./gradlew assembleRelease"
   },
   "private": true
 }

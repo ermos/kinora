@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect, useState, type ReactNode } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Platform, StyleSheet, Text, TVFocusGuideView, View } from 'react-native';
 import Svg, { Path, Text as SvgText } from 'react-native-svg';
 import { colors, useLayout } from '../theme';
 import { Focusable } from './Focusable';
@@ -31,6 +31,7 @@ export function PlayerControls({
   onSeek,
   onMute,
   onPoke,
+  onScrubFocus,
 }: {
   position: number;
   duration: number;
@@ -45,6 +46,8 @@ export function PlayerControls({
   onMute: () => void;
   /** Keeps the controls shown while the remote moves through them. */
   onPoke: () => void;
+  /** TV: the progress bar has the focus, left and right seek. */
+  onScrubFocus?: (focused: boolean) => void;
 }) {
   const { gutter, phone } = useLayout();
   const fullscreen = useFullscreen();
@@ -54,12 +57,12 @@ export function PlayerControls({
     <View style={styles.wrap} pointerEvents="box-none">
       <LinearGradient colors={['transparent', 'rgba(0,0,0,0.85)']} style={StyleSheet.absoluteFill} pointerEvents="none" />
       <View style={[styles.inner, { paddingHorizontal: gutter }]}>
-        <View style={styles.progressRow}>
-          <Scrubber position={position} duration={duration} onSeek={onSeek} />
+        <ProgressRow style={styles.progressRow} trapFocusLeft trapFocusRight>
+          <Scrubber position={position} duration={duration} onSeek={onSeek} onPoke={onPoke} onFocusChange={onScrubFocus} />
           <Text style={styles.time}>{duration ? `-${clock(Math.max(0, duration - position))}` : ''}</Text>
-        </View>
+        </ProgressRow>
         <View style={styles.buttons}>
-          <ControlButton label={playing ? t('watch.pause') : t('common.play')} onPress={onToggle} onFocus={onPoke} hasTVPreferredFocus>
+          <ControlButton label={playing ? t('watch.pause') : t('common.play')} onPress={onToggle} onFocus={onPoke}>
             <Icon d={playing ? paths.pause : paths.play} size={34} fill />
           </ControlButton>
           <ControlButton label={t('watch.back10')} onPress={() => onSeek(Math.max(0, position - SEEK_STEP))} onFocus={onPoke}>
@@ -131,22 +134,54 @@ function SeekIcon({ forward }: { forward: boolean }) {
   );
 }
 
-/** Progress bar: click or tap anywhere to jump there. */
-function Scrubber({ position, duration, onSeek }: { position: number; duration: number; onSeek: (seconds: number) => void }) {
+/** Keeps left and right on the progress bar on TV, where they seek instead of moving the focus. */
+const ProgressRow = Platform.isTV ? TVFocusGuideView : View;
+
+/**
+ * Progress bar: click or tap anywhere to jump there. On TV it takes the focus first, the watch screen seeks with left
+ * and right and toggles with the center button while it has it.
+ */
+function Scrubber({
+  position,
+  duration,
+  onSeek,
+  onPoke,
+  onFocusChange,
+}: {
+  position: number;
+  duration: number;
+  onSeek: (seconds: number) => void;
+  onPoke: () => void;
+  onFocusChange?: (focused: boolean) => void;
+}) {
   const [width, setWidth] = useState(0);
   const ratio = duration ? Math.min(1, position / duration) : 0;
+  const focusChange = useRef(onFocusChange);
+  focusChange.current = onFocusChange;
+  useEffect(() => () => focusChange.current?.(false), []); // unmounted with the focus, no blur comes
   return (
-    <Pressable
-      focusable={false}
+    <Focusable
+      focusable={Platform.isTV}
+      hasTVPreferredFocus={Platform.isTV}
+      accessibilityRole="adjustable"
       onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
-      onPress={(e) => width && duration && onSeek((e.nativeEvent.locationX / width) * duration)}
+      onPress={Platform.isTV ? undefined : (e) => width && duration && onSeek((e.nativeEvent.locationX / width) * duration)}
+      onFocus={() => {
+        onFocusChange?.(true);
+        onPoke();
+      }}
+      onBlur={() => onFocusChange?.(false)}
       style={styles.scrubber}
     >
-      <View style={styles.track}>
-        <View style={[styles.fill, { width: `${ratio * 100}%` }]} />
-      </View>
-      <View style={[styles.knob, { left: ratio * width - 7 }]} />
-    </Pressable>
+      {(active) => (
+        <>
+          <View style={[styles.track, active && styles.trackActive]}>
+            <View style={[styles.fill, { width: `${ratio * 100}%` }]} />
+          </View>
+          <View style={[styles.knob, { left: ratio * width - 7 }, active && styles.knobActive]} />
+        </>
+      )}
+    </Focusable>
   );
 }
 
@@ -185,7 +220,9 @@ const styles = StyleSheet.create({
   scrubber: { flex: 1, height: 24, justifyContent: 'center' },
   track: { height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.3)', overflow: 'hidden' },
   fill: { height: '100%', backgroundColor: colors.red },
+  trackActive: { height: 6, borderRadius: 3 },
   knob: { position: 'absolute', top: 5, width: 14, height: 14, borderRadius: 7, backgroundColor: colors.red },
+  knobActive: { transform: [{ scale: 1.6 }], borderWidth: 1.5, borderColor: '#fff' },
   time: { color: '#fff', fontSize: 15, fontVariant: ['tabular-nums'], minWidth: 60, textAlign: 'right' },
   buttons: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   control: { padding: 8, borderRadius: 30, borderWidth: 2, borderColor: 'transparent' },

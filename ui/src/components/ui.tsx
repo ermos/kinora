@@ -134,8 +134,11 @@ export function Chip({ label, selected, onPress }: { label: string; selected?: b
 }
 
 export function Field(props: TextInputProps & { label?: string }) {
-  const { label, style, ...rest } = props;
-  const input = <TextInput placeholderTextColor="#777" accessibilityLabel={label ?? rest.placeholder} {...rest} style={[styles.input, style]} />;
+  const { label, style, autoFocus, ...rest } = props;
+  // On TV a focused field opens the on-screen keyboard over the whole form: the remote reaches it instead.
+  const input = (
+    <TextInput placeholderTextColor="#777" accessibilityLabel={label ?? rest.placeholder} {...rest} autoFocus={autoFocus && !Platform.isTV} style={[styles.input, style]} />
+  );
   return label ? (
     <View style={{ gap: 6 }}>
       <Text style={styles.label}>{label}</Text>
@@ -320,6 +323,9 @@ export function itemCard(it: Pick<Item, 'id' | 'type' | 'title' | 'backdrop' | '
  * Top 10 card, Netflix style: a huge outlined rank with the poster laid over its right side. The poster takes
  * half the width; "10" tucks its first digit behind it.
  */
+/** Advance of a digit, in em: digits are tabular in Roboto and the usual sans-serifs. */
+const DIGIT_WIDTH = 0.56;
+
 export function RankCard({ item, rank, width }: { item: Pick<Item, 'id' | 'type' | 'title' | 'poster' | 'badge'>; rank: number; width: number }) {
   const height = width * 0.75;
   const posterWidth = (height * 2) / 3;
@@ -328,19 +334,25 @@ export function RankCard({ item, rank, width }: { item: Pick<Item, 'id' | 'type'
       {(active) => (
         <>
           <Svg width={width} height={height} style={StyleSheet.absoluteFill}>
-            <SvgText
-              x={width - posterWidth + height * 0.1}
-              y={height * 0.97}
-              fontSize={height * 0.95}
-              fontWeight="900"
-              letterSpacing={rank >= 10 ? -height * 0.12 : 0}
-              textAnchor="end"
-              fill={colors.bg}
-              stroke="#595959"
-              strokeWidth={3}
-            >
-              {rank}
-            </SvgText>
+            {/* Outline drawn under the fill: stroking the fill itself also draws the glyphs' inner overlapping contours.
+                Digits placed one by one since Android ignores letterSpacing, left first so the 1 of "10" tucks behind the 0. */}
+            {[...String(rank)].map((digit, i, all) =>
+              [{ stroke: '#595959', strokeWidth: 6 }, { stroke: 'none', strokeWidth: 0 }].map((paint, layer) => (
+                <SvgText
+                  key={`${i}-${layer}`}
+                  x={width - posterWidth + height * 0.1 - (all.length - 1 - i) * (height * 0.95 * DIGIT_WIDTH - height * 0.2)}
+                  y={height * 0.97}
+                  fontSize={height * 0.95}
+                  fontWeight="900"
+                  textAnchor="end"
+                  fill={colors.bg}
+                  strokeLinejoin="round"
+                  {...paint}
+                >
+                  {digit}
+                </SvgText>
+              )),
+            )}
           </Svg>
           <View style={[styles.rankPoster, { width: posterWidth }, active && styles.rankPosterActive]}>
             {item.poster ? (

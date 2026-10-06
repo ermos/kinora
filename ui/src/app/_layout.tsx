@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { router, Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { api, authEvents, loadProfile } from '../api/client';
+import { api, authEvents, loadProfile, loadServer, needsServer } from '../api/client';
 import { Spinner } from '../components/ui';
 import { setLanguage } from '../i18n';
 import { colors } from '../theme';
@@ -14,10 +14,15 @@ authEvents.onUnauthorized = () => router.replace('/login');
 authEvents.onUnknownProfile = () => router.replace('/profiles');
 
 export default function RootLayout() {
-  // Before the first screen: the selected profile (async storage on native) and the instance language.
+  // Before the first screen: the server address and selected profile (async storage on native), the instance language.
   const [ready, setReady] = useState(false);
   useEffect(() => {
-    const instance = api.GET('/instance').then(({ data }) => data && setLanguage(data.language));
+    // TV and phone apps first need the saved server address.
+    const instance = loadServer().then(async () => {
+      if (needsServer()) return;
+      const { data } = await api.GET('/instance');
+      if (data) setLanguage(data.language);
+    });
     Promise.allSettled([loadProfile(), instance]).finally(() => setReady(true));
   }, []);
 

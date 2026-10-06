@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, usePathname, type Href } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, StyleSheet, Text, View } from 'react-native';
+import { Animated, Platform, StyleSheet, Text, TVFocusGuideView, View } from 'react-native';
 import { api, setCurrentProfile, useProfile } from '../api/client';
 import { colors, useLayout } from '../theme';
 import { Focusable } from './Focusable';
@@ -18,6 +18,12 @@ const MAIN: { href: Href; label: TKey; icon: string }[] = [
 ];
 
 const EXPANDED = 260;
+
+/**
+ * TV: up and down stay in the rail. It overlaps the content once expanded, and Android's focus search would otherwise
+ * pick a card under it instead of the next item.
+ */
+const Rail = Platform.isTV ? TVFocusGuideView : View;
 
 /**
  * Netflix TV style navigation rail. It expands when any item has focus (remote / keyboard) or under the mouse,
@@ -108,18 +114,21 @@ export function Sidebar() {
         end={{ x: 1, y: 0.5 }}
         style={StyleSheet.absoluteFill}
       />
-      {profileItem}
-      <View style={styles.main}>{MAIN.map((m) => item(m.href, t(m.label), <Icon d={m.icon} />))}</View>
-      <View>
-        {item('/account', t('nav.account'), <Icon d={icons.gear} size={22} />)}
-        {item(undefined, t('common.logout'), <Icon d={icons.logout} size={22} />, logout)}
-      </View>
+      <Rail style={styles.items} trapFocusUp trapFocusDown trapFocusLeft>
+        {profileItem}
+        <View style={styles.main}>{MAIN.map((m) => item(m.href, t(m.label), <Icon d={m.icon} />))}</View>
+        <View>
+          {item('/account', t('nav.account'), <Icon d={icons.gear} size={22} />)}
+          {item(undefined, t('common.logout'), <Icon d={icons.logout} size={22} />, logout)}
+        </View>
+      </Rail>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   rail: { position: 'absolute', top: 0, bottom: 0, left: 0, zIndex: 50, paddingVertical: 24, overflow: 'hidden' },
+  items: { flex: 1 },
   main: { flex: 1, justifyContent: 'center', gap: 6 },
   item: { flexDirection: 'row', alignItems: 'center', gap: 22, paddingVertical: 10, paddingLeft: 25 },
   itemPhone: { paddingLeft: 10, paddingRight: 10, gap: 0 },

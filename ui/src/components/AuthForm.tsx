@@ -42,6 +42,26 @@ export function AuthForm({
   };
 
   return (
+    <AuthShell title={title} hint={hint}>
+      <Field label={t('auth.username')} value={username} onChangeText={setUsername} autoCapitalize="none" autoComplete="username" autoFocus onSubmitEditing={onSubmit} />
+      <Field
+        label={t('auth.password')}
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+        autoComplete={existingAccount ? 'current-password' : 'new-password'}
+        onSubmitEditing={onSubmit}
+      />
+      {extra}
+      {!!error && <Text style={ui.error}>{error}</Text>}
+      <Button kind="red" label={busy ? '…' : cta} onPress={onSubmit} disabled={busy} />
+    </AuthShell>
+  );
+}
+
+/** Backdrop, logo and card shared by the sign-in, setup and server screens. */
+export function AuthShell({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
+  return (
     <View style={{ flex: 1, backgroundColor: '#000' }}>
       <LinearGradient colors={['#3a0a0d', '#000']} locations={[0, 0.7]} style={StyleSheet.absoluteFill} />
       <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
@@ -49,18 +69,7 @@ export function AuthForm({
         <View style={styles.card}>
           <Text style={styles.title}>{title}</Text>
           {hint && <Text style={ui.muted}>{hint}</Text>}
-          <Field label={t('auth.username')} value={username} onChangeText={setUsername} autoCapitalize="none" autoComplete="username" autoFocus onSubmitEditing={onSubmit} />
-          <Field
-            label={t('auth.password')}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoComplete={existingAccount ? 'current-password' : 'new-password'}
-            onSubmitEditing={onSubmit}
-          />
-          {extra}
-          {!!error && <Text style={ui.error}>{error}</Text>}
-          <Button kind="red" label={busy ? '…' : cta} onPress={onSubmit} disabled={busy} />
+          {children}
         </View>
       </ScrollView>
     </View>

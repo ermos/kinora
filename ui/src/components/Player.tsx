@@ -1,6 +1,6 @@
 import { useEvent } from 'expo';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { useEffect, useImperativeHandle, useRef } from 'react';
+import { useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 import { StyleSheet } from 'react-native';
 import { PROGRESS_INTERVAL, type PlayerProps } from './Player.types';
 import { t } from '../i18n';
@@ -10,12 +10,15 @@ import { t } from '../i18n';
  * controls over it, like on the web. The proxied URL carries its own credential, no cookie needed.
  * ponytail: not exercised yet, the web build is the only target for now.
  */
-export function Player({ ref, url, startAt, muted, audioTrack, onReady, onError, onEnded, onProgress, onAudioTracks, onTime, onPlaying }: PlayerProps) {
+export function Player({ ref, url, kind, startAt, muted, audioTrack, onReady, onError, onEnded, onProgress, onAudioTracks, onTime, onPlaying }: PlayerProps) {
   const cb = useRef({ onReady, onError, onEnded, onProgress, onAudioTracks, onTime, onPlaying });
   cb.current = { onReady, onError, onEnded, onProgress, onAudioTracks, onTime, onPlaying };
   const lastReport = useRef(0);
+  const last = useRef({ position: 0, duration: 0 });
 
-  const player = useVideoPlayer(url, (p) => {
+  // The proxy URL has no .m3u8 extension: without the content type, ExoPlayer reads HLS as a plain file and fails.
+  const source = useMemo(() => ({ uri: url, contentType: kind === 'hls' ? ('hls' as const) : ('auto' as const) }), [url, kind]);
+  const player = useVideoPlayer(source, (p) => {
     p.timeUpdateEventInterval = 1;
     if (startAt) p.currentTime = startAt;
     p.play();
@@ -32,7 +35,10 @@ export function Player({ ref, url, startAt, muted, audioTrack, onReady, onError,
       player.addListener('playToEnd', () => cb.current.onEnded()),
       player.addListener('playingChange', ({ isPlaying }) => cb.current.onPlaying?.(isPlaying)),
       player.addListener('timeUpdate', ({ currentTime }) => {
-        if (player.duration > 0) cb.current.onTime?.(currentTime, player.duration);
+        if (player.duration > 0) {
+          last.current = { position: currentTime, duration: player.duration };
+          cb.current.onTime?.(currentTime, player.duration);
+        }
         if (player.playing && player.duration > 0 && currentTime > 5 && Date.now() - lastReport.current >= PROGRESS_INTERVAL) {
           lastReport.current = Date.now();
           cb.current.onProgress(currentTime, player.duration);
@@ -46,8 +52,17 @@ export function Player({ ref, url, startAt, muted, audioTrack, onReady, onError,
       }),
     ];
     return () => {
-      if (player.duration > 0 && player.currentTime > 5) cb.current.onProgress(player.currentTime, player.duration);
-      subs.forEach((s) => s.remove());
+      // useVideoPlayer releases the native player before this cleanup runs, and touching a released player crashes
+      // the app: the last position comes from the time updates instead.
+      const { position, duration } = last.current;
+      if (duration > 0 && position > 5) cb.current.onProgress(position, duration);
+      subs.forEach((s) => {
+        try {
+          s.remove();
+        } catch {
+          // already gone with the released player
+        }
+      });
     };
   }, [player]);
 

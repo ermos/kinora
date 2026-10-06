@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, BackHandler, Platform, Pressable, ScrollView, StyleSheet, Text, TVEventHandler, View } from 'react-native';
 import { absolute, api, unwrap, type Link, type MediaType, type Segment } from '../../../api/client';
 import { Focusable } from '../../../components/Focusable';
 import { Player } from '../../../components/Player';
@@ -86,6 +86,7 @@ function Watch() {
   const resumeAt = useRef<number | null>(null);
   const position = useRef(0);
   const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const scrubbing = useRef(false);
 
   // Resume where this profile stopped this movie/episode.
   useEffect(() => {
@@ -199,8 +200,13 @@ function Watch() {
   };
 
   // Keyboard, like Netflix on the web: space or K plays/pauses, arrows seek, F fullscreen, M mute.
-  const keys = useRef({ toggle, seek, time, duration, poke });
-  keys.current = { toggle, seek, time, duration, poke };
+  const epName = episodes.data?.find((e) => e.number === episode)?.name;
+  const backTo = `/title/${type}/${id}` as Href;
+  const current = list[Math.min(index, list.length - 1)];
+  const showChrome = chrome || menu || status !== 'playing' || !playing;
+
+  const keys = useRef({ toggle, seek, time, duration, poke, showChrome, skip, status });
+  keys.current = { toggle, seek, time, duration, poke, showChrome, skip, status };
   useEffect(() => {
     if (Platform.OS !== 'web') return;
     const onKey = (e: KeyboardEvent) => {
@@ -224,10 +230,37 @@ function Watch() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  const epName = episodes.data?.find((e) => e.number === episode)?.name;
-  const backTo = `/title/${type}/${id}` as Href;
-  const current = list[Math.min(index, list.length - 1)];
-  const showChrome = chrome || menu || status !== 'playing' || !playing;
+  // TV remote. Controls hidden: the full screen catcher below has the focus, center toggles, left and right seek, any
+  // key shows the controls with the progress bar focused. There left and right keep seeking, center toggles, down goes
+  // to the buttons. Android sends the release of each key (and repeated long* events while held).
+  useEffect(() => {
+    if (!Platform.isTV) return;
+    const sub = TVEventHandler.addListener((e) => {
+      const k = keys.current;
+      if (k.status !== 'playing' || e.eventKeyAction === 0) return;
+      const free = !k.showChrome || scrubbing.current;
+      const seekBy = (d: number) => k.seek(Math.min(k.duration, Math.max(0, k.time + d)));
+      const type = e.eventType;
+      if (type === 'playPause' || (type === 'select' && scrubbing.current)) k.toggle();
+      else if (type === 'rewind' || type === 'longLeft' || (type === 'left' && free)) seekBy(-SEEK_STEP);
+      else if (type === 'fastForward' || type === 'longRight' || (type === 'right' && free)) seekBy(SEEK_STEP);
+      k.poke();
+    });
+    return () => sub?.remove();
+  }, []);
+
+  // Back closes the controls first, then leaves the player.
+  const overlay = chrome || menu;
+  useEffect(() => {
+    if (!overlay) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      clearTimeout(hideTimer.current);
+      setMenu(false);
+      setChrome(false);
+      return true;
+    });
+    return () => sub.remove();
+  }, [overlay]);
 
   return (
     <View style={styles.watch} onPointerMove={poke}>
@@ -253,10 +286,12 @@ function Watch() {
       {/* Click or tap on the picture: shows the controls, then plays/pauses. Below every control. */}
       {status === 'playing' && (
         <Pressable
-          focusable={false}
+          // TV: keys only reach the app when something has the focus, this takes it while the controls are hidden
+          focusable={Platform.isTV && !showChrome}
+          hasTVPreferredFocus={Platform.isTV && !showChrome}
           style={StyleSheet.absoluteFill}
           onPress={() => {
-            if (showChrome) toggle();
+            if (showChrome || Platform.isTV) toggle();
             poke();
           }}
         />
@@ -294,6 +329,7 @@ function Watch() {
           onSeek={seek}
           onMute={() => setMuted(!muted)}
           onPoke={poke}
+          onScrubFocus={(f) => (scrubbing.current = f)}
           actions={
             <>
               {nextEpisode && <Button kind="grey" small icon={icons.next} label={t('watch.nextEpisode')} onPress={goNext} onFocus={poke} />}
