@@ -41,7 +41,10 @@ export function Sidebar({ content }: { content?: RefObject<{ requestTVFocus(): v
   const inRail = useRef(false);
   // TV: entering the rail lands on the current page's item, not on the one nearest to where the focus was.
   const [current, setCurrent] = useState<View | null>(null);
-  const open = !phone && (focused || hovered);
+  // Collapsed as soon as a link is pressed, without waiting for the page to take the focus (it may still be loading).
+  // Any focus or hover on the rail afterwards opens it again.
+  const [dismissed, setDismissed] = useState(false);
+  const open = !phone && !dismissed && (focused || hovered);
   const width = useRef(new Animated.Value(rail)).current;
   // Collapsed, the rail has no background, only its icons over the content; the dark backdrop comes with expanding.
   const backdrop = useRef(new Animated.Value(0)).current;
@@ -58,6 +61,7 @@ export function Sidebar({ content }: { content?: RefObject<{ requestTVFocus(): v
     onFocus: () => {
       clearTimeout(blurTimer.current);
       inRail.current = true;
+      setDismissed(false);
       setFocused(true);
     },
     onBlur: () => {
@@ -95,7 +99,10 @@ export function Sidebar({ content }: { content?: RefObject<{ requestTVFocus(): v
         href={href}
         onPress={() => {
           onPress?.();
-          if (href) leave();
+          if (href) {
+            setDismissed(true);
+            leave();
+          }
         }}
         {...focusProps} style={[styles.item, phone && styles.itemPhone]} accessibilityLabel={label}>
         {(active) => (
@@ -134,7 +141,10 @@ export function Sidebar({ content }: { content?: RefObject<{ requestTVFocus(): v
   return (
     <Animated.View
       style={[styles.rail, { width }]}
-      onPointerEnter={() => setHovered(true)}
+      onPointerEnter={() => {
+        setDismissed(false);
+        setHovered(true);
+      }}
       onPointerLeave={() => setHovered(false)}
     >
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: backdrop }]} pointerEvents="none">
