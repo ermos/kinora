@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { api, unwrap, useProfile } from '../../api/client';
 import { Focusable } from '../../components/Focusable';
-import { KEYBOARD_WIDTH, SearchKeyboard } from '../../components/SearchKeyboard';
+import { SearchKeyboard } from '../../components/SearchKeyboard';
 import { Button, Field, Icon, icons, PosterGrid, Spinner, styles as ui } from '../../components/ui';
 import { getItem, setItem } from '../../lib/storage';
 import { t } from '../../i18n';
@@ -12,8 +12,6 @@ import { colors, useLayout } from '../../theme';
 
 const HISTORY_MAX = 8;
 const SUGGESTIONS_MAX = 6;
-// The keyboard is small, the panel is wider so suggestions and history read without truncating.
-const PANEL_WIDTH = Math.max(KEYBOARD_WIDTH, 300);
 const RESULT_WIDTH = 130; // narrowest poster: the panel leaves the results less room than other grids
 
 /**
@@ -58,12 +56,14 @@ export default function Search() {
       .slice(0, SUGGESTIONS_MAX);
   }, [results.data, input]);
 
-  const resultsWidth = phone ? width - 2 * gutter : width - rail - 3 * gutter - PANEL_WIDTH;
+  // A share of the screen, so the keyboard and the results scale together.
+  const panelWidth = Math.round(Math.min(420, Math.max(260, (width - rail) * 0.28)));
+  const resultsWidth = phone ? width - 2 * gutter : width - rail - 3 * gutter - panelWidth;
   const trending = home.data?.[0]?.items ?? [];
 
   return (
     <ScrollView style={ui.page} contentContainerStyle={[styles.page, { padding: gutter }, phone && styles.pagePhone]} keyboardShouldPersistTaps="handled">
-      <View style={[styles.panel, !phone && { width: PANEL_WIDTH }]}>
+      <View style={[styles.panel, !phone && { width: panelWidth }]}>
         {Platform.isTV ? (
           <>
             <View style={styles.query}>
@@ -72,7 +72,7 @@ export default function Search() {
                 {input || t('browse.searchPlaceholder')}
               </Text>
             </View>
-            <SearchKeyboard onKey={(k) => type(input + k)} onDelete={() => type(input.slice(0, -1))} />
+            <SearchKeyboard width={panelWidth} onKey={(k) => type(input + k)} onDelete={() => type(input.slice(0, -1))} />
           </>
         ) : (
           <Field
@@ -128,7 +128,9 @@ function Picks({ title, icon, items, onPick, action }: { title: string; icon: st
   return (
     <View style={{ gap: 4 }}>
       <View style={styles.picksHead}>
-        <Text style={styles.picksTitle}>{title}</Text>
+        <Text style={styles.picksTitle} numberOfLines={1}>
+          {title}
+        </Text>
         {action}
       </View>
       {items.map((item) => (
@@ -178,8 +180,8 @@ const styles = StyleSheet.create({
   field: { fontSize: 20, backgroundColor: '#222', borderColor: '#333' },
   query: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 48, paddingHorizontal: 12, borderBottomWidth: 2, borderBottomColor: '#555' },
   queryText: { flex: 1, color: '#fff', fontSize: 20, fontWeight: '600' },
-  picksHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 32, marginBottom: 4 },
-  picksTitle: { color: colors.muted, fontSize: 15, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
+  picksHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, minHeight: 32, marginBottom: 4 },
+  picksTitle: { flexShrink: 1, color: colors.muted, fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
   pick: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 4 },
   pickActive: { backgroundColor: '#fff' },
   pickText: { flex: 1, color: '#ddd', fontSize: 17 },

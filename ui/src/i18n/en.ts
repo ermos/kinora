@@ -92,7 +92,7 @@ export const en = {
     show: 'Show',
   },
   search: {
-    recent: 'Recent searches',
+    recent: 'History',
     suggestions: 'Suggestions',
     trending: 'Trending',
     clear: 'Clear',
