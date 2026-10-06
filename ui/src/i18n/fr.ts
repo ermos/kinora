@@ -46,6 +46,16 @@ export const fr = {
     usePassword: 'Utiliser un mot de passe',
     useCode: 'Utiliser un code',
   },
+  update: {
+    title: 'Nouvelle version {version}',
+    current: 'Version installée : {version}',
+    install: 'Mettre à jour',
+    later: 'Plus tard',
+    skip: 'Ignorer cette version',
+    downloading: 'Téléchargement de la mise à jour…',
+    failed: "La mise à jour n'a pas pu être téléchargée.",
+    retry: 'Réessayer',
+  },
   link: {
     title: 'Connecter un appareil',
     hint: "Entre le code affiché sur ta TV : elle sera connectée à ton compte.",
