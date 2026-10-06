@@ -13,7 +13,10 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 5 * 60_000, retry: 1, refetchOnWindowFocus: false } },
 });
 
-authEvents.onUnauthorized = () => router.replace('/login');
+authEvents.onUnauthorized = () => {
+  queryClient.removeQueries({ queryKey: ['me'] }); // or /login, seeing a cached account, would send back home
+  router.replace('/login');
+};
 authEvents.onUnknownProfile = () => router.replace('/profiles');
 
 export default function RootLayout() {

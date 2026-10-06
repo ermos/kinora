@@ -59,21 +59,20 @@ export function AuthForm({
   );
 }
 
-/**
- * Backdrop, logo and card shared by the sign-in, setup and server screens. On TV the keyboard covers the bottom half of
- * the screen whatever the window mode: the card sits at the top, title on the left and fields on the right.
- */
+/** Backdrop, logo and card shared by the sign-in, setup and server screens. On TV, title on the left, fields on the right. */
 export function AuthShell({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
   if (Platform.isTV) {
     return (
       <View style={styles.tvPage}>
         <LinearGradient colors={['#3a0a0d', '#000']} locations={[0, 0.7]} style={StyleSheet.absoluteFill} />
-        <View style={styles.tvIntro}>
-          <Logo />
-          <Text style={styles.title}>{title}</Text>
-          {hint && <Text style={ui.muted}>{hint}</Text>}
+        <View style={styles.tvRow}>
+          <View style={styles.tvIntro}>
+            <Logo />
+            <Text style={styles.title}>{title}</Text>
+            {hint && <Text style={ui.muted}>{hint}</Text>}
+          </View>
+          <View style={styles.tvFields}>{children}</View>
         </View>
-        <View style={styles.tvFields}>{children}</View>
       </View>
     );
   }
@@ -97,7 +96,9 @@ const styles = StyleSheet.create({
   logo: { color: colors.red, fontWeight: '900', letterSpacing: -0.5, transform: [{ scaleY: 1.15 }] },
   card: { width: '100%', maxWidth: 450, alignSelf: 'center', marginTop: 48, padding: 40, backgroundColor: 'rgba(0,0,0,0.75)', borderRadius: 6, gap: 16 },
   title: { color: '#fff', fontSize: 32, fontWeight: '700', marginBottom: 8 },
-  tvPage: { flex: 1, flexDirection: 'row', gap: 64, paddingHorizontal: 64, paddingTop: 32, backgroundColor: '#000' },
+  // Centered: what is typed shows above the on-screen keyboard (TypingPreview), the fields can sit under it.
+  tvPage: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 64, backgroundColor: '#000' },
+  tvRow: { width: '100%', maxWidth: 1100, flexDirection: 'row', alignItems: 'center', gap: 64 },
   tvIntro: { flex: 1, gap: 16 },
   tvFields: { flex: 1, maxWidth: 480, gap: 12 },
 });
