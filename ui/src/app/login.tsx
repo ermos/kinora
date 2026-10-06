@@ -5,6 +5,7 @@ import { Platform, Text } from 'react-native';
 import { api, needsServer, serverOrigin, setCurrentProfile, unwrap, type User } from '../api/client';
 import { AuthForm, AuthShell } from '../components/AuthForm';
 import { DeviceLogin } from '../components/DeviceLogin';
+import { useMe } from '../lib/auth';
 import { Button, Spinner, styles as ui } from '../components/ui';
 import { t } from '../i18n';
 
@@ -23,7 +24,9 @@ export default function Login() {
     },
     [queryClient],
   );
+  const me = useMe();
   if (needsServer()) return <Redirect href="/server" />;
+  if (me.data) return <Redirect href="/" />; // already signed in
   if (instance.isPending) return <Spinner full />;
   if (instance.data?.setupNeeded) return <Redirect href="/setup" />;
   // TV and phone apps: the saved server may be gone or have moved.
