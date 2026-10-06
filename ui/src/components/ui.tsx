@@ -192,12 +192,15 @@ export function Hero({
   item,
   children,
   height,
+  imageHeight,
   bottomInset,
   overlay,
 }: {
   item: Pick<Item, 'title' | 'overview' | 'backdrop' | 'logo'>;
   children?: ReactNode;
   height?: number;
+  /** The backdrop's height when it should outgrow the hero (the whole screen on Browse, under the first rows). */
+  imageHeight?: number;
   /** Content aligned to the bottom, this far above it (what follows overlaps the hero), instead of centered. */
   bottomInset?: number;
   /** Absolutely positioned extras (carousel indicators). */
@@ -213,11 +216,14 @@ export function Hero({
     Animated.timing(fade, { toValue: 1, duration: 600, useNativeDriver: true }).start();
   }, [item.title, fade]);
   const logo = !logoFailed && img(item.logo, 'w500');
+  const boxHeight = height ?? Math.max(460, screenH * 0.8);
   return (
-    <View style={{ height: height ?? Math.max(460, screenH * 0.8), marginLeft: -rail }}>
-      <Image source={img(item.backdrop, 'w1280')} style={StyleSheet.absoluteFill} contentFit="cover" contentPosition="top" transition={700} />
-      <LinearGradient colors={['rgba(0,0,0,0.8)', 'transparent']} start={{ x: 0, y: 0.5 }} end={{ x: 0.75, y: 0.5 }} style={StyleSheet.absoluteFill} />
-      <LinearGradient colors={['transparent', colors.bg]} locations={[0.6, 1]} style={StyleSheet.absoluteFill} />
+    <View style={{ height: boxHeight, marginLeft: -rail }}>
+      <View style={[styles.heroImage, { height: imageHeight ?? boxHeight }]} pointerEvents="none">
+        <Image source={img(item.backdrop, 'w1280')} style={StyleSheet.absoluteFill} contentFit="cover" contentPosition="top" transition={700} />
+        <LinearGradient colors={['rgba(0,0,0,0.8)', 'transparent']} start={{ x: 0, y: 0.5 }} end={{ x: 0.75, y: 0.5 }} style={StyleSheet.absoluteFill} />
+        <LinearGradient colors={['transparent', colors.bg]} locations={[0.6, 1]} style={StyleSheet.absoluteFill} />
+      </View>
       <Animated.View
         style={[
           styles.heroContent,
@@ -480,6 +486,7 @@ export const styles = StyleSheet.create({
   chipTextSelected: { color: '#000' },
   input: { backgroundColor: 'rgba(22,22,22,0.7)', borderWidth: 1, borderColor: 'rgba(128,128,128,0.7)', borderRadius: 4, paddingVertical: 12, paddingHorizontal: 14, color: '#fff', fontSize: 16 },
   label: { color: colors.muted, fontSize: 13 },
+  heroImage: { position: 'absolute', top: 0, left: 0, right: 0 },
   heroContent: { flex: 1, justifyContent: 'center', gap: 16 },
   heroTitle: { color: '#fff', fontSize: 60, fontWeight: '900', lineHeight: 64, textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 6, textShadowOffset: { width: 2, height: 2 } },
   heroLogo: { width: 480, maxWidth: '100%', height: 170 },

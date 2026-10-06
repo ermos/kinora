@@ -15,7 +15,9 @@ export default function AppLayout() {
   return (
     <Gate>
       <View style={{ flex: 1, backgroundColor: colors.bg }}>
-        <Content ref={content} autoFocus style={{ flex: 1, paddingLeft: rail, paddingBottom: tabBar }}>
+        {/* A margin, not a padding: the guide must start right of the rail, or the focus search never finds it on the
+            right of a rail item and right does not leave the sidebar. */}
+        <Content ref={content} autoFocus style={{ flex: 1, marginLeft: rail, paddingBottom: tabBar }}>
           <Slot />
         </Content>
         <Sidebar content={content} />

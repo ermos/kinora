@@ -17,7 +17,7 @@ export function useLibrary() {
 
 /** Home, Shows and Movies: hero + "continue watching" + "my list" + TMDB rows. */
 export function Browse({ type }: { type?: MediaType }) {
-  const { gutter } = useLayout();
+  const { gutter, rail } = useLayout();
   const rows = useQuery({
     queryKey: ['home', type ?? ''],
     queryFn: () => unwrap(api.GET('/catalog/home', { params: { query: { type } } })),
@@ -38,7 +38,8 @@ export function Browse({ type }: { type?: MediaType }) {
   const mine = list.filter((i) => keep(i.type));
 
   return (
-    <ScrollView style={ui.page}>
+    // Starts under the sidebar (the layout pads it out) so the hero's backdrop reaches the screen's left edge.
+    <ScrollView style={[ui.page, { marginLeft: -rail }]} contentContainerStyle={{ paddingLeft: rail }}>
       {heroes.length > 0 && <HeroCarousel items={heroes} />}
       <View style={{ marginTop: -ROWS_OVERLAP, paddingBottom: 60 }}>
         {resume.length > 0 && (
@@ -73,7 +74,7 @@ const HERO_INTERVAL = 8000;
  * buttons has the focus, so a TV user never sees the title change under the remote.
  */
 function HeroCarousel({ items }: { items: Item[] }) {
-  const { gutter } = useLayout();
+  const { gutter, height: screenH } = useLayout();
   const [index, setIndex] = useState(0);
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
@@ -100,6 +101,8 @@ function HeroCarousel({ items }: { items: Item[] }) {
         item={item}
         // Bottom-aligned clear of the rows: centered, the buttons fell on the first row's title on a TV's short screen.
         bottomInset={ROWS_OVERLAP + 40}
+        // Netflix: the backdrop fills the screen, the first rows sit on its faded bottom.
+        imageHeight={screenH}
         overlay={
           items.length > 1 && (
             <View style={[styles.dots, { right: gutter, bottom: 110 }]}>

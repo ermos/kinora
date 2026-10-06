@@ -19,7 +19,6 @@ const MAIN: { href: Href; label: TKey; icon: string }[] = [
 
 const EXPANDED = 260;
 const ANIMATION = 120; // ms
-const IDLE_OPACITY = 0.4;
 
 /**
  * TV: up and down stay in the rail. It overlaps the content once expanded, and Android's focus search would otherwise
@@ -44,15 +43,15 @@ export function Sidebar({ content }: { content?: RefObject<{ requestTVFocus(): v
   const [current, setCurrent] = useState<View | null>(null);
   const open = !phone && (focused || hovered);
   const width = useRef(new Animated.Value(rail)).current;
-  // Collapsed, the rail fades out of the way of the content; it comes back as soon as it gets the focus or the mouse.
-  const opacity = useRef(new Animated.Value(IDLE_OPACITY)).current;
+  // Collapsed, the rail has no background, only its icons over the content; the dark backdrop comes with expanding.
+  const backdrop = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(width, { toValue: open ? EXPANDED : rail, duration: ANIMATION, useNativeDriver: false }),
-      Animated.timing(opacity, { toValue: open ? 1 : IDLE_OPACITY, duration: ANIMATION, useNativeDriver: false }),
+      Animated.timing(backdrop, { toValue: open ? 1 : 0, duration: ANIMATION, useNativeDriver: false }),
     ]).start();
-  }, [open, rail, width, opacity]);
+  }, [open, rail, width, backdrop]);
 
   // Focus moves item to item: a blur immediately followed by a focus must not close the rail.
   const focusProps = {
@@ -134,17 +133,13 @@ export function Sidebar({ content }: { content?: RefObject<{ requestTVFocus(): v
 
   return (
     <Animated.View
-      style={[styles.rail, { width, opacity }]}
+      style={[styles.rail, { width }]}
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
     >
-      <LinearGradient
-        colors={open ? ['#000', 'rgba(0,0,0,0.85)', 'transparent'] : ['rgba(0,0,0,0.85)', 'rgba(0,0,0,0.35)', 'transparent']}
-        locations={open ? [0, 0.75, 1] : [0, 0.7, 1]}
-        start={{ x: 0, y: 0.5 }}
-        end={{ x: 1, y: 0.5 }}
-        style={StyleSheet.absoluteFill}
-      />
+      <Animated.View style={[StyleSheet.absoluteFill, { opacity: backdrop }]} pointerEvents="none">
+        <LinearGradient colors={['#000', 'rgba(0,0,0,0.85)', 'transparent']} locations={[0, 0.75, 1]} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={StyleSheet.absoluteFill} />
+      </Animated.View>
       <Rail style={styles.items} trapFocusUp trapFocusDown trapFocusLeft {...(Platform.isTV && current ? { destinations: [current] } : {})}>
         {profileItem}
         <View style={styles.main}>{MAIN.map((m) => item(m.href, t(m.label), <Icon d={m.icon} />))}</View>
