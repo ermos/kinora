@@ -59,6 +59,9 @@ func (h *Handler) Routes() http.Handler {
 	public("POST /api/v1/setup", h.setup)
 	public("POST /api/v1/auth/login", h.login)
 	public("POST /api/v1/auth/logout", h.logout)
+	public("POST /api/v1/auth/device", h.deviceStart)
+	public("POST /api/v1/auth/device/poll", h.devicePoll)
+	user("POST /api/v1/auth/device/approve", h.deviceApprove)
 
 	user("GET /api/v1/me", h.me)
 	user("PUT /api/v1/me/password", h.changePassword)
@@ -169,12 +172,20 @@ func (h *Handler) requireProfile(next http.Handler) http.Handler {
 	})
 }
 
-func (h *Handler) startSession(w http.ResponseWriter, r *http.Request, userID int64) error {
+// randomToken is 32 random bytes, URL-safe: session and device tokens, stored hashed.
+func randomToken() (string, error) {
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(b), nil
+}
+
+func (h *Handler) startSession(w http.ResponseWriter, r *http.Request, userID int64) error {
+	token, err := randomToken()
+	if err != nil {
 		return err
 	}
-	token := base64.RawURLEncoding.EncodeToString(b)
 	expires := time.Now().Add(sessionTTL)
 	if err := h.store.CreateSession(r.Context(), hashToken(token), userID, expires); err != nil {
 		return err

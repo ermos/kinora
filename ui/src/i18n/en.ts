@@ -41,6 +41,18 @@ export const en = {
     createAccount: 'Create account',
     language: 'Language',
     languageHint: 'The language of the catalog, the interface and the sources searched.',
+
+    deviceHint: 'On your computer or phone, sign in at {url} and enter this code:',
+    deviceRotates: 'The code changes every 5 minutes.',
+    usePassword: 'Use a password',
+    useCode: 'Use a code',
+  },
+  link: {
+    title: 'Connect a device',
+    hint: 'Enter the code shown on your TV: it will be signed in to your account.',
+    code: 'Code',
+    connect: 'Connect',
+    done: 'Device connected. You can pick your profile on the TV.',
   },
   server: {
     title: 'Server address',
@@ -157,5 +169,7 @@ export const en = {
     link_dead: "This link doesn't work anymore, try another one.",
     invalid_progress: 'Invalid progress.',
     flaresolverr_unreachable: 'No FlareSolverr server answers at this URL.',
+    device_code_expired: 'This code expired, a new one is coming.',
+    device_code_invalid: 'Unknown or expired code: check the one on the TV.',
   } satisfies Record<ErrorCode, string>,
 };

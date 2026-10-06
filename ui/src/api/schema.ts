@@ -236,6 +236,147 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/device": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start signing in from another device
+         * @description The TV shows the code and polls /auth/device/poll with the token until a signed-in user approves
+         *     the code on /link, or it expires.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["api.deviceCode"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/device/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sign a device in with the code it shows */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Code shown on the device */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["api.deviceApproval"];
+                };
+            };
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unknown or expired code */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["api.apiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/device/poll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Poll a device sign-in
+         * @description Not approved yet: approved is false. Approved: the session cookie is set, like /auth/login.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Token from /auth/device */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["api.devicePoll"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["api.devicePollResult"];
+                    };
+                };
+                /** @description Expired: start over */
+                410: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["api.apiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/login": {
         parameters: {
             query?: never;
@@ -1258,12 +1399,31 @@ export interface components {
         };
         "api.apiError": {
             /** @enum {string} */
-            code: "invalid_json" | "unsupported_media_type" | "not_logged_in" | "session_expired" | "admin_only" | "missing_profile" | "unknown_profile" | "internal" | "not_found" | "invalid_credentials" | "already_set_up" | "username_required" | "password_length" | "unsupported_language" | "wrong_password" | "name_required" | "unknown_avatar" | "profile_limit" | "last_profile" | "username_taken" | "delete_self" | "invalid_id" | "invalid_request" | "episode_required" | "tmdb_unreachable" | "invalid_link" | "link_dead" | "invalid_progress" | "flaresolverr_unreachable";
+            code: "invalid_json" | "unsupported_media_type" | "not_logged_in" | "session_expired" | "admin_only" | "missing_profile" | "unknown_profile" | "internal" | "not_found" | "invalid_credentials" | "already_set_up" | "username_required" | "password_length" | "unsupported_language" | "wrong_password" | "name_required" | "unknown_avatar" | "profile_limit" | "last_profile" | "username_taken" | "delete_self" | "invalid_id" | "invalid_request" | "episode_required" | "tmdb_unreachable" | "invalid_link" | "link_dead" | "invalid_progress" | "flaresolverr_unreachable" | "device_code_expired" | "device_code_invalid";
             error: string;
         };
         "api.credentials": {
             password: string;
             username: string;
+        };
+        "api.deviceApproval": {
+            code: string;
+        };
+        "api.deviceCode": {
+            /** @description Code to enter on the other device, "ABCD-EFGH". */
+            code: string;
+            /** @description seconds */
+            expiresIn: number;
+            /** @description Token is the device's secret for polling, never shown. */
+            token: string;
+        };
+        "api.devicePoll": {
+            token: string;
+        };
+        "api.devicePollResult": {
+            /** @description Approved: the session cookie is set and User is the account. */
+            approved: boolean;
+            user?: components["schemas"]["store.User"];
         };
         "api.flareSolverrSettings": {
             /** @description URL of the FlareSolverr server, "" when disabled. */

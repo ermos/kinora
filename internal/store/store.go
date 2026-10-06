@@ -81,6 +81,10 @@ func (s *Store) UserByUsername(ctx context.Context, username string) (User, erro
 	return s.scanUser(s.db.QueryRowContext(ctx, "SELECT id, username, is_admin, password_hash FROM users WHERE lower(username) = lower($1)", username))
 }
 
+func (s *Store) UserByID(ctx context.Context, id int64) (User, error) {
+	return s.scanUser(s.db.QueryRowContext(ctx, "SELECT id, username, is_admin, password_hash FROM users WHERE id = $1", id))
+}
+
 func (s *Store) ListUsers(ctx context.Context) ([]User, error) {
 	rows, err := s.db.QueryContext(ctx, "SELECT id, username, is_admin FROM users ORDER BY id")
 	if err != nil {

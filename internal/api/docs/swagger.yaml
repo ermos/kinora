@@ -49,6 +49,8 @@ components:
           - link_dead
           - invalid_progress
           - flaresolverr_unreachable
+          - device_code_expired
+          - device_code_invalid
           type: string
         error:
           type: string
@@ -65,6 +67,46 @@ components:
       required:
       - password
       - username
+      type: object
+    api.deviceApproval:
+      properties:
+        code:
+          type: string
+      required:
+      - code
+      type: object
+    api.deviceCode:
+      properties:
+        code:
+          description: Code to enter on the other device, "ABCD-EFGH".
+          type: string
+        expiresIn:
+          description: seconds
+          type: integer
+        token:
+          description: Token is the device's secret for polling, never shown.
+          type: string
+      required:
+      - code
+      - expiresIn
+      - token
+      type: object
+    api.devicePoll:
+      properties:
+        token:
+          type: string
+      required:
+      - token
+      type: object
+    api.devicePollResult:
+      properties:
+        approved:
+          description: 'Approved: the session cookie is set and User is the account.'
+          type: boolean
+        user:
+          $ref: '#/components/schemas/store.User'
+      required:
+      - approved
       type: object
     api.flareSolverrSettings:
       properties:
@@ -606,6 +648,73 @@ paths:
       summary: Delete an account
       tags:
       - admin
+  /auth/device:
+    post:
+      description: |-
+        The TV shows the code and polls /auth/device/poll with the token until a signed-in user approves
+        the code on /link, or it expires.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api.deviceCode'
+          description: OK
+      summary: Start signing in from another device
+      tags:
+      - auth
+  /auth/device/approve:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/api.deviceApproval'
+              description: Code shown on the device
+              summary: body
+        description: Code shown on the device
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api.apiError'
+          description: Unknown or expired code
+      summary: Sign a device in with the code it shows
+      tags:
+      - auth
+  /auth/device/poll:
+    post:
+      description: 'Not approved yet: approved is false. Approved: the session cookie
+        is set, like /auth/login.'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/api.devicePoll'
+              description: Token from /auth/device
+              summary: body
+        description: Token from /auth/device
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api.devicePollResult'
+          description: OK
+        "410":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api.apiError'
+          description: 'Expired: start over'
+      summary: Poll a device sign-in
+      tags:
+      - auth
   /auth/login:
     post:
       requestBody:

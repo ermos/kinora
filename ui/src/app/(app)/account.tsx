@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState, type ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { api, setCurrentProfile, unwrap, type User } from '../../api/client';
 import { Page } from '../../components/Browse';
 import { Button, Chip, Field, Spinner, styles as ui } from '../../components/ui';
@@ -31,7 +31,10 @@ export default function Account() {
             <Text style={{ color: '#fff', fontWeight: '700' }}>{me.data.username}</Text>
             {me.data.isAdmin && t('account.admin')}
           </Text>
-          <Button kind="outline" small label={t('common.logout')} onPress={logout} />
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            {Platform.OS === 'web' && <Button kind="outline" small label={t('link.title')} href="/link" />}
+            <Button kind="outline" small label={t('common.logout')} onPress={logout} />
+          </View>
         </View>
         <PasswordForm />
         {me.data.isAdmin && (
