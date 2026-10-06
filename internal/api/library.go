@@ -127,6 +127,23 @@ func (h *Handler) RefreshShows(ctx context.Context) {
 	}
 }
 
+// @Summary  Every title the profile played, finished or not, most recent first
+// @Tags     library
+// @Security ProfileHeader
+// @Success  200  {array}  store.Watched
+// @Router   /library/watched [get]
+func (h *Handler) watched(w http.ResponseWriter, r *http.Request) {
+	ws, err := h.store.RecentlyWatched(r.Context(), currentProfile(r), "", 1000)
+	if err != nil {
+		internalError(w, err)
+		return
+	}
+	if ws == nil {
+		ws = []store.Watched{}
+	}
+	writeJSON(w, http.StatusOK, ws)
+}
+
 // @Summary  Watch progress of a title (every episode for a show), most recent first
 // @Tags     library
 // @Security ProfileHeader

@@ -262,9 +262,9 @@ func (s *Store) ContinueWatching(ctx context.Context, profileID int64) ([]Progre
 
 // Watched is a title the profile played, finished or not.
 type Watched struct {
-	Type  string
-	ID    int
-	Title string
+	Type  string `json:"type"`
+	ID    int    `json:"id"`
+	Title string `json:"title"`
 }
 
 // RecentlyWatched lists the titles the profile played (kind "" for both), most recent first, one per title.

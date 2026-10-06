@@ -86,6 +86,7 @@ func (h *Handler) Routes() http.Handler {
 	profile("PUT /api/v1/library/list", h.addToList)
 	profile("DELETE /api/v1/library/list/{type}/{id}", h.removeFromList)
 	profile("GET /api/v1/library/progress", h.continueWatching)
+	profile("GET /api/v1/library/watched", h.watched)
 	profile("GET /api/v1/library/progress/{type}/{id}", h.titleProgress)
 	profile("PUT /api/v1/library/progress", h.saveProgress)
 

@@ -91,6 +91,11 @@ export const en = {
     movie: 'Movie',
     show: 'Show',
   },
+  list: {
+    inProgress: 'In progress',
+    newEpisodes: 'New episodes',
+    toWatch: 'To watch',
+  },
   search: {
     recent: 'History',
     suggestions: 'Suggestions',
