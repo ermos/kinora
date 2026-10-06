@@ -56,6 +56,8 @@ export const en = {
     downloading: 'Downloading the update…',
     failed: 'The update could not be downloaded.',
     retry: 'Retry',
+    permission: 'The first time, Android blocks the install: allow kinora to install apps, then update again.',
+    allow: 'Allow',
   },
   link: {
     title: 'Connect a device',
