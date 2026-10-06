@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { router, Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { View } from 'react-native';
 import { api, authEvents, loadProfile, loadServer, needsServer } from '../api/client';
 import { TypingPreview } from '../components/TypingPreview';
 import { UpdatePrompt } from '../components/UpdatePrompt';
@@ -18,6 +19,7 @@ authEvents.onUnknownProfile = () => router.replace('/profiles');
 export default function RootLayout() {
   // Before the first screen: the server address and selected profile (async storage on native), the instance language.
   const [ready, setReady] = useState(false);
+  const [updating, setUpdating] = useState(false);
   useEffect(() => {
     // TV and phone apps first need the saved server address.
     const instance = loadServer().then(async () => {
@@ -31,12 +33,15 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       {ready ? (
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg }, animation: 'fade' }} />
+        // Hidden, not unmounted, while the update prompt is up: hidden views cannot take the TV focus from it.
+        <View style={{ flex: 1, display: updating ? 'none' : 'flex' }}>
+          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg }, animation: 'fade' }} />
+        </View>
       ) : (
         <Spinner full />
       )}
       <TypingPreview />
-      {ready && <UpdatePrompt />}
+      {ready && <UpdatePrompt onShow={setUpdating} />}
     </QueryClientProvider>
   );
 }
