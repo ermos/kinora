@@ -85,6 +85,7 @@ function Watch() {
   const player = useRef<PlayerHandle>(null);
   const resumeAt = useRef<number | null>(null);
   const position = useRef(0);
+  const leaving = useRef(false);
   const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const scrubbing = useRef(false);
 
@@ -159,6 +160,7 @@ function Watch() {
   };
 
   const saveProgress = (pos: number, duration: number) => {
+    if (leaving.current) return; // the player closing after "next episode" would undo the episode marked as watched
     position.current = pos;
     const d = details.data;
     if (!d) return;
@@ -176,6 +178,9 @@ function Watch() {
 
   const goNext = () => {
     if (!nextEpisode) return;
+    // Moving on counts the current episode as watched, wherever it was stopped (credits skipped...).
+    if (duration > 0) saveProgress(duration, duration);
+    leaving.current = true;
     const cur = list[index];
     const pref = cur ? `&src=${encodeURIComponent(cur.source)}&host=${encodeURIComponent(cur.hoster)}&lang=${encodeURIComponent(cur.lang)}` : '';
     router.replace(`/watch/tv/${id}?s=${nextEpisode.s}&e=${nextEpisode.e}${pref}` as Href);
@@ -273,7 +278,10 @@ function Watch() {
           startAt={resumeAt.current}
           muted={muted}
           audioTrack={audio?.current}
-          onReady={() => setStatus('playing')}
+          onReady={() => {
+            leaving.current = false;
+            setStatus('playing');
+          }}
           onError={next}
           onEnded={goNext}
           onProgress={saveProgress}
