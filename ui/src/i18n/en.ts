@@ -88,6 +88,8 @@ export const en = {
     myListEmpty: 'Add movies and shows with the "My List" button.',
     searchPlaceholder: 'Movies, shows...',
     noResults: 'No results for "{q}".',
+    movie: 'Movie',
+    show: 'Show',
   },
   search: {
     recent: 'Recent searches',

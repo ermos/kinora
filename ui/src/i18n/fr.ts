@@ -87,6 +87,8 @@ export const fr = {
     myListEmpty: 'Ajoute des films et des séries avec le bouton « Ma liste ».',
     searchPlaceholder: 'Films, séries...',
     noResults: 'Aucun résultat pour « {q} ».',
+    movie: 'Film',
+    show: 'Série',
   },
   search: {
     recent: 'Recherches récentes',
