@@ -6,6 +6,8 @@ import (
 	"embed"
 	"fmt"
 	"sort"
+	"strconv"
+	"strings"
 
 	_ "github.com/jackc/pgx/v5/stdlib" // registers the "pgx" driver
 )
@@ -30,7 +32,8 @@ func Open(ctx context.Context, url string) (*sql.DB, error) {
 	return db, nil
 }
 
-// ponytail: numbered files tracked in schema_migrations, add goose if we ever need down migrations.
+// ponytail: numbered files tracked in schema_migrations, add goose if we ever need down migrations. The version is
+// the file's number, not its position: branches adding migrations side by side cannot shift each other's.
 func migrate(ctx context.Context, db *sql.DB) error {
 	if _, err := db.ExecContext(ctx, "CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY)"); err != nil {
 		return err
@@ -40,8 +43,12 @@ func migrate(ctx context.Context, db *sql.DB) error {
 		return err
 	}
 	sort.Slice(files, func(i, j int) bool { return files[i].Name() < files[j].Name() })
-	for i, f := range files {
-		if err := apply(ctx, db, i+1, f.Name()); err != nil {
+	for _, f := range files {
+		version, err := strconv.Atoi(strings.SplitN(f.Name(), "_", 2)[0])
+		if err != nil {
+			return fmt.Errorf("migration %s: name must start with its number", f.Name())
+		}
+		if err := apply(ctx, db, version, f.Name()); err != nil {
 			return fmt.Errorf("migration %s: %w", f.Name(), err)
 		}
 	}

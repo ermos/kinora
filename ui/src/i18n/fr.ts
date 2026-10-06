@@ -41,6 +41,17 @@ export const fr = {
     createAccount: 'Créer le compte',
     language: 'Langue',
     languageHint: "La langue du catalogue, de l'interface et des sources interrogées.",
+    deviceHint: 'Sur ton ordinateur ou ton téléphone, connecte-toi à {url} et entre ce code :',
+    deviceRotates: 'Le code change toutes les 5 minutes.',
+    usePassword: 'Utiliser un mot de passe',
+    useCode: 'Utiliser un code',
+  },
+  link: {
+    title: 'Connecter un appareil',
+    hint: "Entre le code affiché sur ta TV : elle sera connectée à ton compte.",
+    code: 'Code',
+    connect: 'Connecter',
+    done: 'Appareil connecté. Tu peux choisir ton profil sur la TV.',
   },
   server: {
     title: 'Adresse du serveur',
@@ -157,5 +168,7 @@ export const fr = {
     link_dead: 'Ce lien ne fonctionne plus, essaie-en un autre.',
     invalid_progress: 'Progression invalide.',
     flaresolverr_unreachable: 'Aucun serveur FlareSolverr ne répond à cette adresse.',
+    device_code_expired: "Ce code a expiré, un nouveau va s'afficher.",
+    device_code_invalid: 'Code inconnu ou expiré : vérifie celui affiché sur la TV.',
   } satisfies Record<ErrorCode, string>,
 };
