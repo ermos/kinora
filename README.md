@@ -121,10 +121,28 @@ modifiable depuis l'écran de connexion.
 Construire l'APK :
 
 - **En local** (SDK Android et JDK 17, voir ci-dessous) : `cd ui && npm run tv:apk`. L'APK sort dans
-  `ui/android/app/build/outputs/apk/release/app-release.apk`, signé avec la clé de debug : il s'installe tel quel
-  (`adb install`, ou une clé USB sur la TV).
+  `ui/android/app/build/outputs/apk/release/app-release.apk` : il s'installe tel quel (`adb install`, une clé USB, ou
+  l'app Downloader sur la TV). Sans clé de release, il est signé avec la clé de debug.
 - **Dans le cloud, sans SDK** : `npx eas-cli@latest build -p android --profile tv` (compte Expo gratuit, `eas init`
   la première fois). Le lien de l'APK s'affiche à la fin.
+
+Mises à jour depuis l'app : au lancement, l'app Android lit la dernière release à l'URL donnée au build et, si elle
+est plus récente, propose de l'installer (nouveautés, « Plus tard », « Ignorer cette version »). Variables lues au
+build :
+
+- `APP_VERSION` : version de l'APK (`1.2.3`, un tag `v1.2.3` marche aussi), `versionCode` en découle. Chaque
+  release doit l'augmenter.
+- `EXPO_PUBLIC_UPDATE_URL` : JSON au format de l'API GitHub, par exemple
+  `https://api.github.com/repos/ermos/kinora/releases/latest` (`tag_name`, `body` pour les nouveautés, un asset `.apk`).
+  Sans elle, pas de vérification.
+- `KINORA_KEYSTORE`, `KINORA_KEYSTORE_PASSWORD`, `KINORA_KEY_ALIAS` : clé de release. Android n'installe une mise à
+  jour que signée avec la même clé que l'app en place : la garder précieusement, hors du dépôt. Une clé se crée avec
+  `keytool -genkeypair -keystore release.keystore -alias kinora -keyalg RSA -keysize 4096 -validity 10000`.
+
+```sh
+cd ui && set -a && . ../.env && set +a
+APP_VERSION=1.0.1 EXPO_PUBLIC_UPDATE_URL=https://api.github.com/repos/ermos/kinora/releases/latest npm run tv:apk
+```
 
 Tester sur un Mac :
 

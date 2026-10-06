@@ -47,6 +47,16 @@ export const en = {
     usePassword: 'Use a password',
     useCode: 'Use a code',
   },
+  update: {
+    title: 'Version {version} is available',
+    current: 'Installed version: {version}',
+    install: 'Update',
+    later: 'Later',
+    skip: 'Skip this version',
+    downloading: 'Downloading the update…',
+    failed: 'The update could not be downloaded.',
+    retry: 'Retry',
+  },
   link: {
     title: 'Connect a device',
     hint: 'Enter the code shown on your TV: it will be signed in to your account.',

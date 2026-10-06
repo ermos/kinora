@@ -3,6 +3,7 @@ import { router, Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { api, authEvents, loadProfile, loadServer, needsServer } from '../api/client';
 import { TypingPreview } from '../components/TypingPreview';
+import { UpdatePrompt } from '../components/UpdatePrompt';
 import { Spinner } from '../components/ui';
 import { setLanguage } from '../i18n';
 import { colors } from '../theme';
@@ -35,6 +36,7 @@ export default function RootLayout() {
         <Spinner full />
       )}
       <TypingPreview />
+      {ready && <UpdatePrompt />}
     </QueryClientProvider>
   );
 }
