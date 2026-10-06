@@ -33,6 +33,8 @@ export default function Login() {
       submit={async (username, password) => {
         const user = await unwrap(api.POST('/auth/login', { body: { username, password } }));
         setCurrentProfile(null);
+        // A session that expired lands here without a logout: drop what the previous account cached (its profiles...).
+        queryClient.clear();
         queryClient.setQueryData(['me'], user);
         router.replace('/profiles');
       }}

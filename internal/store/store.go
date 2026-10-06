@@ -240,14 +240,14 @@ func scanProgress(rows *sql.Rows) ([]Progress, error) {
 	return out, rows.Err()
 }
 
-// ContinueWatching returns, per title, the last thing watched if it is not finished.
+// ContinueWatching returns, per title, the last thing watched if it is not finished. DISTINCT ON keeps exactly one
+// row per title, even when two episodes were saved in the same second (the furthest one wins).
 // ponytail: a show whose last watched episode is finished drops out of the row, "next episode" suggestions come later.
 func (s *Store) ContinueWatching(ctx context.Context, profileID int64) ([]Progress, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT `+progressCols+` FROM progress p
-		WHERE profile_id = $1 AND position < duration * 0.95
-		AND updated_at = (SELECT MAX(updated_at) FROM progress q
-			WHERE q.profile_id = p.profile_id AND q.media_type = p.media_type AND q.tmdb_id = p.tmdb_id)
-		ORDER BY updated_at DESC LIMIT 20`, profileID)
+	rows, err := s.db.QueryContext(ctx, `SELECT `+progressCols+` FROM (
+			SELECT DISTINCT ON (media_type, tmdb_id) `+progressCols+`, updated_at FROM progress WHERE profile_id = $1
+			ORDER BY media_type, tmdb_id, updated_at DESC, season DESC, episode DESC
+		) p WHERE position < duration * 0.95 ORDER BY updated_at DESC LIMIT 20`, profileID)
 	if err != nil {
 		return nil, err
 	}

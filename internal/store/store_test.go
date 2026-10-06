@@ -67,18 +67,20 @@ func TestContinueWatching(t *testing.T) {
 	save(p.ID, Progress{Type: "tv", ID: 3, Season: 1, Episode: 1, Position: 99, Duration: 100}, 300) // finished episode...
 	save(p.ID, Progress{Type: "tv", ID: 3, Season: 1, Episode: 2, Position: 5, Duration: 100}, 400)  // ...then started the next
 	save(other.ID, Progress{Type: "movie", ID: 4, Position: 10, Duration: 100}, 500)                 // other profile
+	save(p.ID, Progress{Type: "tv", ID: 5, Season: 1, Episode: 1, Position: 5, Duration: 100}, 50)   // two episodes
+	save(p.ID, Progress{Type: "tv", ID: 5, Season: 1, Episode: 2, Position: 5, Duration: 100}, 50)   // saved in the same second
 
 	got, err := s.ContinueWatching(ctx, p.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got) != 2 || got[0].ID != 3 || got[0].Episode != 2 || got[1].ID != 1 {
+	if len(got) != 3 || got[0].ID != 3 || got[0].Episode != 2 || got[1].ID != 1 || got[2].ID != 5 || got[2].Episode != 2 {
 		t.Fatalf("ContinueWatching = %+v", got)
 	}
 
 	// Finished titles count too, one entry per title.
 	all, err := s.RecentlyWatched(ctx, p.ID, "", 10)
-	if err != nil || len(all) != 3 || all[0].ID != 3 || all[1].ID != 2 || all[2].ID != 1 {
+	if err != nil || len(all) != 4 || all[0].ID != 3 || all[1].ID != 2 || all[2].ID != 1 || all[3].ID != 5 {
 		t.Fatalf("RecentlyWatched = %+v, %v", all, err)
 	}
 	movies, _ := s.RecentlyWatched(ctx, p.ID, "movie", 1)
