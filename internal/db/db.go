@@ -1,35 +1,38 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"embed"
 	"fmt"
 	"sort"
 
-	_ "modernc.org/sqlite"
+	_ "github.com/jackc/pgx/v5/stdlib" // registers the "pgx" driver
 )
 
 //go:embed migrations/*.sql
 var migrations embed.FS
 
-// Open opens the SQLite database and applies pending migrations.
-func Open(path string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite", "file:"+path+"?_pragma=foreign_keys(1)&_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)")
+// Open connects to PostgreSQL (a postgres:// URL) and applies pending migrations.
+func Open(ctx context.Context, url string) (*sql.DB, error) {
+	db, err := sql.Open("pgx", url)
 	if err != nil {
 		return nil, err
 	}
-	db.SetMaxOpenConns(1) // ponytail: single writer avoids SQLITE_BUSY, plenty for a household
-	if err := migrate(db); err != nil {
+	if err := db.PingContext(ctx); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("connect to the database: %w", err)
+	}
+	if err := migrate(ctx, db); err != nil {
 		_ = db.Close()
 		return nil, err
 	}
 	return db, nil
 }
 
-// ponytail: migrations are numbered files tracked with PRAGMA user_version, add goose if we ever need down migrations.
-func migrate(db *sql.DB) error {
-	var version int
-	if err := db.QueryRow("PRAGMA user_version").Scan(&version); err != nil {
+// ponytail: numbered files tracked in schema_migrations, add goose if we ever need down migrations.
+func migrate(ctx context.Context, db *sql.DB) error {
+	if _, err := db.ExecContext(ctx, "CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY)"); err != nil {
 		return err
 	}
 	files, err := migrations.ReadDir("migrations")
@@ -38,28 +41,37 @@ func migrate(db *sql.DB) error {
 	}
 	sort.Slice(files, func(i, j int) bool { return files[i].Name() < files[j].Name() })
 	for i, f := range files {
-		if i < version {
-			continue
-		}
-		q, err := migrations.ReadFile("migrations/" + f.Name())
-		if err != nil {
-			return err
-		}
-		tx, err := db.Begin()
-		if err != nil {
-			return err
-		}
-		if _, err := tx.Exec(string(q)); err != nil {
-			_ = tx.Rollback()
+		if err := apply(ctx, db, i+1, f.Name()); err != nil {
 			return fmt.Errorf("migration %s: %w", f.Name(), err)
-		}
-		if _, err := tx.Exec(fmt.Sprintf("PRAGMA user_version = %d", i+1)); err != nil {
-			_ = tx.Rollback()
-			return err
-		}
-		if err := tx.Commit(); err != nil {
-			return err
 		}
 	}
 	return nil
+}
+
+// apply runs one migration in a transaction, unless already applied. The advisory lock keeps two instances
+// starting together from both running it.
+func apply(ctx context.Context, db *sql.DB, version int, name string) error {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	if _, err := tx.ExecContext(ctx, "SELECT pg_advisory_xact_lock(4210)"); err != nil {
+		return err
+	}
+	var done bool
+	if err := tx.QueryRowContext(ctx, "SELECT EXISTS (SELECT 1 FROM schema_migrations WHERE version = $1)", version).Scan(&done); err != nil || done {
+		return err
+	}
+	q, err := migrations.ReadFile("migrations/" + name)
+	if err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, string(q)); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, "INSERT INTO schema_migrations (version) VALUES ($1)", version); err != nil {
+		return err
+	}
+	return tx.Commit()
 }

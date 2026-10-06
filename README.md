@@ -25,21 +25,29 @@ sans Kodi : [vStream](https://github.com/Kodi-vStream/venom-xbmc-addons) pour le
   `internal/scraper/en/sites.json` de ce dépôt pour l'anglais (Scrubs garde ses domaines dans le code). Rien à
   configurer.
 
-Un seul binaire Go (UI Expo exportée pour le web et embarquée, SQLite pur Go), aucune dépendance système.
+Un seul binaire Go (UI Expo exportée pour le web et embarquée) et une base PostgreSQL.
 
 ## Démarrer
 
 ```sh
 cp .env.example .env   # renseigner TMDB_API_KEY (clé gratuite sur themoviedb.org)
-docker compose up -d   # http://localhost:8080
+docker compose up -d   # kinora + PostgreSQL, http://localhost:8080
 ```
 
+Les données vivent dans PostgreSQL (volume `postgres`) ; sauvegarde :
+`docker compose exec postgres pg_dump -U kinora kinora > kinora.sql`.
+
 Au premier lancement, la page `/setup` crée le compte administrateur.
+
+Une instance qui tournait sur SQLite (avant PostgreSQL) se migre une fois, base PostgreSQL vide :
+`docker compose run --rm -v ./data:/data kinora import-sqlite /data/kinora.db` (ou `kinora import-sqlite data/kinora.db`).
+Utilisateurs, sessions, profils, liste, progression et réglages sont copiés.
 
 En local sans Docker :
 
 ```sh
-make build-web && TMDB_API_KEY=... ./bin/kinora
+docker compose up -d postgres   # ou n'importe quel PostgreSQL, via DATABASE_URL
+make build-web && TMDB_API_KEY=... DATABASE_URL=postgres://kinora:kinora@localhost:5432/kinora?sslmode=disable ./bin/kinora
 # en dev, avec rechargement à chaud : `make dev` (Expo sur :8081) + `make run-dev`, puis http://localhost:8080
 ```
 
@@ -53,7 +61,7 @@ internal/scraper       moteur : hébergeurs (hosters.go), unpacker JS, synchro d
 internal/stream        proxy HLS/fichiers, signature HMAC
 internal/tmdb          client TMDB avec cache mémoire
 internal/api           API REST /api/v1 (annotations swaggo -> OpenAPI 3.1)
-internal/store, db     SQLite, migrations SQL embarquées
+internal/store, db     PostgreSQL (pgx), migrations SQL embarquées, import d'une base SQLite
 ui/                    Expo (React Native) : web et Android TV, tvOS ensuite
   src/app/             routes expo-router
   src/components/      Focusable, Sidebar, Player.web.tsx (hls.js), Player.tsx (expo-video)

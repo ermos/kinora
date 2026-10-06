@@ -11,7 +11,6 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"syscall"
 	"time"
 
@@ -39,18 +38,19 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(cfg.DataDir, 0o750); err != nil {
-		return err
-	}
-	conn, err := db.Open(filepath.Join(cfg.DataDir, "kinora.db"))
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	conn, err := db.Open(ctx, cfg.DatabaseURL)
 	if err != nil {
 		return err
 	}
 	defer func() { _ = conn.Close() }()
+	// kinora import-sqlite data/kinora.db: one-off copy of a database from the SQLite era.
+	if len(os.Args) == 3 && os.Args[1] == "import-sqlite" {
+		return db.ImportSQLite(ctx, conn, os.Args[2])
+	}
 	st := store.New(conn)
-
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
 
 	secret, err := signingKey(ctx, st)
 	if err != nil {
