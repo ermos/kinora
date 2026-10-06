@@ -898,6 +898,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/library/watched": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every title the profile played, finished or not, most recent first */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["store.Watched"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me": {
         parameters: {
             query?: never;
@@ -1529,6 +1565,11 @@ export interface components {
             id: number;
             isAdmin: boolean;
             username: string;
+        };
+        "store.Watched": {
+            id: number;
+            title: string;
+            type: string;
         };
         "tmdb.Details": {
             backdrop: string;

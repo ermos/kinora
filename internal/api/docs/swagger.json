@@ -501,6 +501,25 @@
                 ],
                 "type": "object"
             },
+            "store.Watched": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "type": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "title",
+                    "type"
+                ],
+                "type": "object"
+            },
             "tmdb.Details": {
                 "properties": {
                     "backdrop": {
@@ -1486,6 +1505,34 @@
                     }
                 ],
                 "summary": "Watch progress of a title (every episode for a show), most recent first",
+                "tags": [
+                    "library"
+                ]
+            }
+        },
+        "/library/watched": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/store.Watched"
+                                    },
+                                    "type": "array"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "security": [
+                    {
+                        "ProfileHeader": []
+                    }
+                ],
+                "summary": "Every title the profile played, finished or not, most recent first",
                 "tags": [
                     "library"
                 ]

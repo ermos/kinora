@@ -90,6 +90,11 @@ export const fr = {
     movie: 'Film',
     show: 'Série',
   },
+  list: {
+    inProgress: 'En cours',
+    newEpisodes: 'Nouveaux épisodes',
+    toWatch: 'À regarder',
+  },
   search: {
     recent: 'Historique',
     suggestions: 'Suggestions',
