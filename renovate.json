@@ -3,7 +3,6 @@
   "extends": ["config:recommended"],
   "minimumReleaseAge": "3 days",
   "internalChecksFilter": "strict",
-  "ignoreTests": true,
   "packageRules": [
     {
       "description": "Bundle minor and patch updates into one PR and merge it automatically",
