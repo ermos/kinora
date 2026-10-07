@@ -34,5 +34,27 @@ services:
     image: ghcr.io/flaresolverr/flaresolverr:latest
     restart: unless-stopped
 
+  # Optional: daily database dumps in ./backups (7 daily, 4 weekly, 6 monthly kept). Enable it with
+  # COMPOSE_PROFILES=backup in .env.
+  backup:
+    image: prodrigestivill/postgres-backup-local:17
+    profiles: [backup]
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: kinora
+      POSTGRES_USER: kinora
+      POSTGRES_PASSWORD: kinora
+      SCHEDULE: "@daily"
+      BACKUP_ON_START: "TRUE"
+      BACKUP_KEEP_DAYS: 7
+      BACKUP_KEEP_WEEKS: 4
+      BACKUP_KEEP_MONTHS: 6
+    volumes:
+      - ./backups:/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   postgres:

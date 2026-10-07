@@ -35,7 +35,7 @@ that your whole family already knows how to use.
 - **A private proxy**: streams go through your server with HMAC-signed links that expire after 12 hours. Not an open
   proxy.
 - **Low maintenance**: site domains sync automatically every 6 hours. Sites behind Cloudflare work through an optional
-  [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr).
+  [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr), and an optional service dumps the database every day.
 - **Light**: a single Go binary with the web app built in, next to PostgreSQL.
 - **French and English** sources and interface, picked per instance.
 

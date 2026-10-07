@@ -30,13 +30,14 @@ Then start kinora:
 docker compose up -d
 ```
 
-This pulls the image and starts three services ([see the file](pathname:///docker-compose.yml)):
+This pulls the image and starts the services ([see the file](pathname:///docker-compose.yml)):
 
 | Service | Role |
 |---|---|
 | `kinora` | the server and the web app, on port `8080` |
 | `postgres` | the database, stored in the `postgres` volume |
 | `flaresolverr` | optional, lets kinora reach sites behind Cloudflare (see [Configuration](./configuration.md#flaresolverr)) |
+| `backup` | optional, off by default: daily database dumps (see [Automatic backups](#automatic-backups)) |
 
 ### Image tags
 
@@ -78,12 +79,45 @@ Database migrations run on startup.
 
 All data (users, profiles, lists, progress, settings) lives in PostgreSQL.
 
-```bash
-# backup
-docker compose exec postgres pg_dump -U kinora kinora > kinora.sql
+### Automatic backups
 
-# restore into an empty database
-docker compose exec -T postgres psql -U kinora kinora < kinora.sql
+The compose file has an optional `backup` service. Turn it on in `.env`:
+
+```bash
+echo "COMPOSE_PROFILES=backup" >> .env
+docker compose up -d
+```
+
+It dumps the database when it starts, then every day at midnight, into a `backups` folder next to the compose file:
+
+```
+backups/
+  last/      every dump of the last 24 hours, and kinora-latest.sql.gz
+  daily/     7 days
+  weekly/    4 weeks
+  monthly/   6 months
+```
+
+Change the schedule and retention with `SCHEDULE` and `BACKUP_KEEP_*` in the compose file (see
+[postgres-backup-local](https://github.com/prodrigestivill/docker-postgres-backup-local#environment-variables)). Copy
+the `backups` folder to another disk or machine: a backup on the same disk won't survive that disk.
+
+### Manual backup
+
+```bash
+docker compose exec postgres pg_dump -U kinora kinora | gzip > kinora.sql.gz
+```
+
+### Restore
+
+Stop kinora, replace the database with the dump, then start it again:
+
+```bash
+docker compose stop kinora
+docker compose exec postgres dropdb -U kinora kinora
+docker compose exec postgres createdb -U kinora kinora
+gunzip -c backups/last/kinora-latest.sql.gz | docker compose exec -T postgres psql -q -U kinora kinora
+docker compose start kinora
 ```
 
 ## Migrate from SQLite
