@@ -39,7 +39,7 @@ func TestProxyServesAbyss(t *testing.T) {
 
 	p := NewProxy(NewSigner([]byte("k")), "/proxy")
 	b, _ := json.Marshal(f)
-	u, _ := p.URL(scraper.Stream{URL: "abyss:" + base64.RawURLEncoding.EncodeToString(b), Headers: map[string]string{"Referer": "https://site/"}})
+	u, _ := p.URL(scraper.Stream{URL: "abyss:" + base64.RawURLEncoding.EncodeToString(b), Headers: map[string]string{"Referer": "https://site/"}}, 0)
 
 	for _, rg := range [][2]int{{0, 199_999}, {65_530, 100_010}, {150_000, 199_999}} {
 		req := httptest.NewRequest(http.MethodGet, u, nil)

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -370,6 +371,43 @@ func (h *Handler) deleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.store.DeleteUser(r.Context(), id); err != nil {
+		internalError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+type userUpdate struct {
+	// MaxStreamMbps caps the throughput of each stream the account plays, in Mbit/s (0: unlimited).
+	MaxStreamMbps int `json:"maxStreamMbps" minimum:"0" maximum:"10000"`
+}
+
+// @Summary  Update an account. A new stream limit applies from the next title played.
+// @Tags     admin
+// @Param    id    path  int         true  "User ID"
+// @Param    body  body  userUpdate  true  "Settings"
+// @Success  204
+// @Failure  400  {object}  apiError
+// @Failure  404  {object}  apiError
+// @Router   /admin/users/{id} [patch]
+func (h *Handler) updateUser(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidID)
+		return
+	}
+	var req userUpdate
+	if !readJSON(w, r, &req) {
+		return
+	}
+	if req.MaxStreamMbps < 0 || req.MaxStreamMbps > 10000 {
+		writeError(w, http.StatusBadRequest, errInvalidRequest)
+		return
+	}
+	if err := h.store.SetStreamLimit(r.Context(), id, req.MaxStreamMbps); errors.Is(err, store.ErrNotFound) {
+		writeError(w, http.StatusNotFound, errNotFound)
+		return
+	} else if err != nil {
 		internalError(w, err)
 		return
 	}

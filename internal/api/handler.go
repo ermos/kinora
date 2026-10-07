@@ -92,6 +92,7 @@ func (h *Handler) Routes() http.Handler {
 
 	admin("GET /api/v1/admin/users", h.listUsers)
 	admin("POST /api/v1/admin/users", h.createUser)
+	admin("PATCH /api/v1/admin/users/{id}", h.updateUser)
 	admin("DELETE /api/v1/admin/users/{id}", h.deleteUser)
 	admin("PUT /api/v1/admin/instance", h.updateInstance)
 	admin("GET /api/v1/admin/flaresolverr", h.getFlareSolverr)

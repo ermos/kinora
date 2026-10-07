@@ -6,6 +6,7 @@ package stream
 import (
 	"bufio"
 	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
@@ -58,15 +59,19 @@ type target struct {
 	URL     string            `json:"u"`
 	Headers map[string]string `json:"h,omitempty"`
 	Expires int64             `json:"e"`
+	// Rate caps the stream in bytes per second (0: unlimited), shared by every request carrying the same Stream.
+	Rate   int64  `json:"r,omitempty"`
+	Stream string `json:"s,omitempty"`
 }
 
 // URLTTL bounds how long a proxied URL works, enough for a long movie with pauses.
 const URLTTL = 12 * time.Hour
 
 type Proxy struct {
-	signer *Signer
-	prefix string // public path of the proxy handler, e.g. /api/v1/proxy
-	client *http.Client
+	signer   *Signer
+	prefix   string // public path of the proxy handler, e.g. /api/v1/proxy
+	client   *http.Client
+	limiters limiters
 }
 
 func NewProxy(signer *Signer, prefix string) *Proxy {
@@ -76,9 +81,15 @@ func NewProxy(signer *Signer, prefix string) *Proxy {
 	return &Proxy{signer: signer, prefix: prefix, client: &http.Client{Transport: tr}}
 }
 
-// URL returns the proxied URL for a resolved stream.
-func (p *Proxy) URL(st scraper.Stream) (string, error) {
-	return p.sign(target{URL: st.URL, Headers: st.Headers, Expires: time.Now().Add(URLTTL).Unix()})
+// URL returns the proxied URL for a resolved stream, capped at maxMbps Mbit/s (0: unlimited).
+func (p *Proxy) URL(st scraper.Stream, maxMbps int) (string, error) {
+	t := target{URL: st.URL, Headers: st.Headers, Expires: time.Now().Add(URLTTL).Unix()}
+	if maxMbps > 0 {
+		id := make([]byte, 9)
+		_, _ = rand.Read(id)
+		t.Rate, t.Stream = int64(maxMbps)*1_000_000/8, base64.RawURLEncoding.EncodeToString(id)
+	}
+	return p.sign(t)
 }
 
 func (p *Proxy) sign(t target) (string, error) {
@@ -94,6 +105,9 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := p.signer.Verify(r.URL.Query().Get("t"), &t); err != nil || time.Now().Unix() > t.Expires {
 		http.Error(w, "invalid or expired link", http.StatusForbidden)
 		return
+	}
+	if t.Rate > 0 {
+		w = throttled{ResponseWriter: w, ctx: r.Context(), l: p.limiters.get(t.Stream, float64(t.Rate))}
 	}
 	if f, ok := scraper.ParseAbyss(t.URL); ok {
 		p.serveAbyss(w, r, f, t.Headers)
@@ -152,7 +166,7 @@ func (p *Proxy) rewrite(w http.ResponseWriter, resp *http.Response, t target) {
 		if err != nil {
 			return ref
 		}
-		out, err := p.sign(target{URL: u.String(), Headers: t.Headers, Expires: t.Expires})
+		out, err := p.sign(target{URL: u.String(), Headers: t.Headers, Expires: t.Expires, Rate: t.Rate, Stream: t.Stream})
 		if err != nil {
 			return ref
 		}

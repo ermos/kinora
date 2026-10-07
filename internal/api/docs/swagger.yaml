@@ -275,6 +275,17 @@ components:
       - password
       - username
       type: object
+    api.userUpdate:
+      properties:
+        maxStreamMbps:
+          description: 'MaxStreamMbps caps the throughput of each stream the account
+            plays, in Mbit/s (0: unlimited).'
+          maximum: 10000
+          minimum: 0
+          type: integer
+      required:
+      - maxStreamMbps
+      type: object
     store.ListItem:
       properties:
         id:
@@ -352,11 +363,16 @@ components:
           type: integer
         isAdmin:
           type: boolean
+        maxStreamMbps:
+          description: 'MaxStreamMbps caps the throughput of each stream the account
+            plays, in Mbit/s (0: unlimited).'
+          type: integer
         username:
           type: string
       required:
       - id
       - isAdmin
+      - maxStreamMbps
       - username
       type: object
     store.Watched:
@@ -666,6 +682,41 @@ paths:
                 $ref: '#/components/schemas/api.apiError'
           description: Conflict
       summary: Delete an account
+      tags:
+      - admin
+    patch:
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/api.userUpdate'
+              description: Settings
+              summary: body
+        description: Settings
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api.apiError'
+          description: Bad Request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api.apiError'
+          description: Not Found
+      summary: Update an account. A new stream limit applies from the next title played.
       tags:
       - admin
   /auth/device:

@@ -166,12 +166,14 @@ function Users({ me }: { me: User }) {
   return (
     <Panel title={t('account.accounts')}>
       <Text style={ui.muted}>{t('account.accountsHint')}</Text>
+      <Text style={ui.muted}>{t('account.streamLimitHint')}</Text>
       {users.data?.map((u) => (
         <View key={u.id} style={styles.line}>
           <Text style={[ui.text, { flex: 1 }]}>
             {u.username}
             {u.isAdmin && <Text style={ui.muted}>{t('account.adminBadge')}</Text>}
           </Text>
+          <StreamLimit user={u} save={(mbps) => run(() => unwrap(api.PATCH('/admin/users/{id}', { params: { path: { id: u.id } }, body: { maxStreamMbps: mbps } })), t('account.streamLimitSaved', { name: u.username })).then(refresh)} />
           {u.id !== me.id && (
             <Button
               kind="danger"
@@ -194,6 +196,21 @@ function Users({ me }: { me: User }) {
       </View>
       {view}
     </Panel>
+  );
+}
+
+// StreamLimit edits an account's cap in Mbit/s, saved when the field is left (empty: unlimited).
+function StreamLimit({ user, save }: { user: User; save: (mbps: number) => void }) {
+  const [value, setValue] = useState(user.maxStreamMbps ? String(user.maxStreamMbps) : '');
+  const commit = () => {
+    const mbps = Number(value.trim() || 0);
+    if (Number.isInteger(mbps) && mbps >= 0 && mbps !== user.maxStreamMbps) save(mbps);
+  };
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+      <Field style={{ width: 110, paddingVertical: 6 }} placeholder={t('account.unlimited')} value={value} onChangeText={setValue} onBlur={commit} onSubmitEditing={commit} keyboardType="number-pad" />
+      <Text style={ui.muted}>Mbit/s</Text>
+    </View>
   );
 }
 

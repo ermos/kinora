@@ -233,7 +233,51 @@ export interface paths {
         };
         options?: never;
         head?: never;
-        patch?: never;
+        /** Update an account. A new stream limit applies from the next title played. */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description User ID */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            /** @description Settings */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["api.userUpdate"];
+                };
+            };
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["api.apiError"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["api.apiError"];
+                    };
+                };
+            };
+        };
         trace?: never;
     };
     "/auth/device": {
@@ -1532,6 +1576,10 @@ export interface components {
             password: string;
             username: string;
         };
+        "api.userUpdate": {
+            /** @description MaxStreamMbps caps the throughput of each stream the account plays, in Mbit/s (0: unlimited). */
+            maxStreamMbps: number;
+        };
         "store.ListItem": {
             id: number;
             poster: string;
@@ -1564,6 +1612,8 @@ export interface components {
         "store.User": {
             id: number;
             isAdmin: boolean;
+            /** @description MaxStreamMbps caps the throughput of each stream the account plays, in Mbit/s (0: unlimited). */
+            maxStreamMbps: number;
             username: string;
         };
         "store.Watched": {

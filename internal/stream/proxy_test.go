@@ -47,7 +47,7 @@ func TestProxyRewritesPlaylist(t *testing.T) {
 		p.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, u, nil))
 		return rec
 	}
-	master, _ := p.URL(scraper.Stream{URL: upstream.URL + "/v/master.m3u8", Headers: map[string]string{"Referer": "https://site/"}})
+	master, _ := p.URL(scraper.Stream{URL: upstream.URL + "/v/master.m3u8", Headers: map[string]string{"Referer": "https://site/"}}, 0)
 	rec := get(master)
 	if rec.Code != http.StatusOK || gotReferer != "https://site/" {
 		t.Fatalf("status %d, referer %q", rec.Code, gotReferer)
@@ -72,7 +72,7 @@ func TestProxyRewritesPlaylist(t *testing.T) {
 		}
 	}
 
-	seg, _ := p.URL(scraper.Stream{URL: upstream.URL + "/v/hd/seg1.ts"})
+	seg, _ := p.URL(scraper.Stream{URL: upstream.URL + "/v/hd/seg1.ts"}, 0)
 	if rec := get(seg); rec.Body.String() != "SEGMENT" {
 		t.Fatalf("segment body %q", rec.Body.String())
 	}
@@ -80,8 +80,42 @@ func TestProxyRewritesPlaylist(t *testing.T) {
 	if rec := get(expired); rec.Code != http.StatusForbidden {
 		t.Fatalf("expired link should be 403, got %d", rec.Code)
 	}
-	broken, _ := p.URL(scraper.Stream{URL: upstream.URL + "/v/broken.m3u8"})
+	broken, _ := p.URL(scraper.Stream{URL: upstream.URL + "/v/broken.m3u8"}, 0)
 	if rec := get(broken); rec.Code != http.StatusBadGateway {
 		t.Fatalf("upstream error should be 502, got %d", rec.Code)
+	}
+}
+
+// A capped stream is paced across all its requests: two parallel ranges share the cap, an uncapped one is not slowed.
+func TestProxyCapsStream(t *testing.T) {
+	body := strings.Repeat("x", 50_000)
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.WriteString(w, body)
+	}))
+	defer upstream.Close()
+	p := NewProxy(NewSigner([]byte("k")), "/proxy")
+	fetch := func(u string) {
+		rec := httptest.NewRecorder()
+		p.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, u, nil))
+		if rec.Body.String() != body {
+			t.Errorf("body of %d bytes, want %d", rec.Body.Len(), len(body))
+		}
+	}
+
+	capped, _ := p.URL(scraper.Stream{URL: upstream.URL + "/v.mp4"}, 1) // 125 kB/s
+	start := time.Now()
+	done := make(chan struct{})
+	go func() { fetch(capped); close(done) }()
+	fetch(capped)
+	<-done
+	if d := time.Since(start); d < 600*time.Millisecond { // 100 kB at 125 kB/s, the last 17 kB slice leaves at 0.66 s
+		t.Errorf("two capped requests took %v, want about 0.66s", d)
+	}
+
+	free, _ := p.URL(scraper.Stream{URL: upstream.URL + "/v.mp4"}, 0)
+	start = time.Now()
+	fetch(free)
+	if d := time.Since(start); d > 200*time.Millisecond {
+		t.Errorf("uncapped request took %v", d)
 	}
 }
