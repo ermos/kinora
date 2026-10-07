@@ -47,6 +47,10 @@ type Progress struct {
 	Backdrop string  `json:"backdrop"`
 	Position float64 `json:"position"`
 	Duration float64 `json:"duration"`
+	// Source, Hoster and Lang of the link playing, so resuming starts on it ("" when unknown).
+	Source string `json:"source,omitempty" validate:"optional"`
+	Hoster string `json:"hoster,omitempty" validate:"optional"`
+	Lang   string `json:"lang,omitempty" validate:"optional"`
 	// Badge marks a show's next episode that aired since the profile caught up (duration 0, not started).
 	Badge string `json:"badge,omitempty" enums:"newEpisode,newSeason" validate:"optional"`
 	// UpdatedAt orders the "Continue watching" row.
@@ -296,11 +300,12 @@ func (s *Store) Rate(ctx context.Context, profileID int64, it RatedItem) error {
 // --- progress
 
 func (s *Store) SaveProgress(ctx context.Context, profileID int64, p Progress) error {
-	_, err := s.db.ExecContext(ctx, `INSERT INTO progress (profile_id, media_type, tmdb_id, season, episode, title, poster, backdrop, position, duration, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, extract(epoch FROM now())::bigint)
+	_, err := s.db.ExecContext(ctx, `INSERT INTO progress (profile_id, media_type, tmdb_id, season, episode, title, poster, backdrop, position, duration, source, hoster, lang, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, extract(epoch FROM now())::bigint)
 		ON CONFLICT (profile_id, media_type, tmdb_id, season, episode) DO UPDATE SET
-		position = excluded.position, duration = excluded.duration, updated_at = excluded.updated_at`,
-		profileID, p.Type, p.ID, p.Season, p.Episode, p.Title, p.Poster, p.Backdrop, p.Position, p.Duration)
+		position = excluded.position, duration = excluded.duration, source = excluded.source, hoster = excluded.hoster,
+		lang = excluded.lang, updated_at = excluded.updated_at`,
+		profileID, p.Type, p.ID, p.Season, p.Episode, p.Title, p.Poster, p.Backdrop, p.Position, p.Duration, p.Source, p.Hoster, p.Lang)
 	return err
 }
 
@@ -334,14 +339,14 @@ func (s *Store) Finished(ctx context.Context, profileID int64) ([]ListItem, erro
 		)) ORDER BY updated_at DESC`, profileID)
 }
 
-const progressCols = "media_type, tmdb_id, season, episode, title, poster, backdrop, position, duration, updated_at"
+const progressCols = "media_type, tmdb_id, season, episode, title, poster, backdrop, position, duration, source, hoster, lang, updated_at"
 
 func scanProgress(rows *sql.Rows) ([]Progress, error) {
 	defer rows.Close()
 	out := []Progress{}
 	for rows.Next() {
 		var p Progress
-		if err := rows.Scan(&p.Type, &p.ID, &p.Season, &p.Episode, &p.Title, &p.Poster, &p.Backdrop, &p.Position, &p.Duration, &p.UpdatedAt); err != nil {
+		if err := rows.Scan(&p.Type, &p.ID, &p.Season, &p.Episode, &p.Title, &p.Poster, &p.Backdrop, &p.Position, &p.Duration, &p.Source, &p.Hoster, &p.Lang, &p.UpdatedAt); err != nil {
 			return nil, err
 		}
 		out = append(out, p)
