@@ -37,3 +37,39 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  apk:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: ui
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+      - run: npm ci
+      # Without the KINORA_KEYSTORE_BASE64 secret the APK is signed with the debug key, and updates won't install over it.
+      - name: Release keystore
+        env:
+          KEYSTORE: ${{ secrets.KINORA_KEYSTORE_BASE64 }}
+        run: |
+          [ -z "$KEYSTORE" ] && exit 0
+          echo "$KEYSTORE" | base64 -d > "$RUNNER_TEMP/release.keystore"
+          echo "KINORA_KEYSTORE=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+      - run: npm run tv:apk
+        env:
+          APP_VERSION: ${{ github.ref_name }}
+          KINORA_KEYSTORE_PASSWORD: ${{ secrets.KINORA_KEYSTORE_PASSWORD }}
+          KINORA_KEY_ALIAS: ${{ secrets.KINORA_KEY_ALIAS }}
+      - run: gh release create "$GITHUB_REF_NAME" android/app/build/outputs/apk/release/app-release.apk --verify-tag --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}
