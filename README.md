@@ -27,6 +27,8 @@ sans Kodi : [vStream](https://github.com/Kodi-vStream/venom-xbmc-addons) pour le
 
 Un seul binaire Go (UI Expo exportée pour le web et embarquée) et une base PostgreSQL.
 
+Documentation (en anglais) : https://ermos.github.io/kinora/, sources dans `docs/`.
+
 ## Démarrer
 
 ```sh
