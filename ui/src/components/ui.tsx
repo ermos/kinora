@@ -45,6 +45,9 @@ export const icons = {
   edit: 'M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4',
   history: 'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2',
   backspace: 'M21 5H8l-6 7 6 7h13zM16 9l-5 6M11 9l5 6',
+  thumbUp: 'M7 10v11M7 10l4-8a3 3 0 0 1 3 3v4h5.5a2 2 0 0 1 2 2.3l-1.4 8a2 2 0 0 1-2 1.7H7M7 10H4a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h3',
+  thumbDown: 'M17 14V3M17 14l-4 8a3 3 0 0 1-3-3v-4H4.5a2 2 0 0 1-2-2.3l1.4-8a2 2 0 0 1 2-1.7H17M17 14h3a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1h-3',
+  more: 'M12 3a2 2 0 1 0 0 4 2 2 0 1 0 0-4Zm0 7a2 2 0 1 0 0 4 2 2 0 1 0 0-4Zm0 7a2 2 0 1 0 0 4 2 2 0 1 0 0-4Z',
 };
 
 export function Spinner({ full }: { full?: boolean }) {

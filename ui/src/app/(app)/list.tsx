@@ -14,6 +14,10 @@ import { useLayout } from '../../theme';
 export default function MyList() {
   const { list, progress } = useLibrary();
   const { gutter } = useLayout();
+  const family = useQuery({ queryKey: ['library', 'family'], queryFn: () => unwrap(api.GET('/library/family')) });
+  const ratings = useQuery({ queryKey: ['library', 'ratings'], queryFn: () => unwrap(api.GET('/library/ratings')) });
+  const finished = useQuery({ queryKey: ['library', 'finished'], queryFn: () => unwrap(api.GET('/library/finished')) });
+  const liked = (ratings.data ?? []).filter((r) => r.rating > 0);
   const watched = useQuery({ queryKey: ['library', 'watched'], queryFn: () => unwrap(api.GET('/library/watched')) });
   // "Continue watching" holds both: titles in progress, and next episodes that aired (they have a badge).
   const started = progress.filter((p) => !p.badge);
@@ -31,6 +35,24 @@ export default function MyList() {
       <View style={{ paddingHorizontal: gutter, gap: 12, marginTop: 12 }}>
         {(started.length > 0 || fresh.length > 0) && rest.length > 0 && <Text style={ui.h2}>{t('list.toWatch')}</Text>}
         {rest.length > 0 ? <PosterGrid items={rest} /> : !progress.length && <Text style={ui.muted}>{t('browse.myListEmpty')}</Text>}
+        {liked.length > 0 && (
+          <>
+            <Text style={[ui.h2, { marginTop: 24 }]}>{t('list.liked')}</Text>
+            <PosterGrid items={liked} />
+          </>
+        )}
+        {!!family.data?.length && (
+          <>
+            <Text style={[ui.h2, { marginTop: 24 }]}>{t('list.family')}</Text>
+            <PosterGrid items={family.data} />
+          </>
+        )}
+        {!!finished.data?.length && (
+          <>
+            <Text style={[ui.h2, { marginTop: 24 }]}>{t('list.finished')}</Text>
+            <PosterGrid items={finished.data} />
+          </>
+        )}
       </View>
     </ScrollView>
   );

@@ -86,6 +86,10 @@ func (h *Handler) Routes() http.Handler {
 	user("POST /api/v1/play", h.play)
 	public("GET /api/v1/proxy", h.proxy.ServeHTTP) // the signed, expiring URL is the credential
 
+	profile("GET /api/v1/library/family", h.familyList)
+	user("PUT /api/v1/library/family", h.addToFamilyList)
+	user("DELETE /api/v1/library/family/{type}/{id}", h.removeFromFamilyList)
+
 	profile("GET /api/v1/titles/{type}/{id}/segments", h.segments)
 	profile("GET /api/v1/catalog/foryou", h.forYou)
 	profile("GET /api/v1/library/list", h.myList)
@@ -93,6 +97,10 @@ func (h *Handler) Routes() http.Handler {
 	profile("DELETE /api/v1/library/list/{type}/{id}", h.removeFromList)
 	profile("GET /api/v1/library/progress", h.continueWatching)
 	profile("GET /api/v1/library/watched", h.watched)
+	profile("POST /api/v1/library/watched/{type}/{id}", h.markWatched)
+	profile("GET /api/v1/library/finished", h.finished)
+	profile("GET /api/v1/library/ratings", h.ratings)
+	profile("PUT /api/v1/library/ratings", h.rate)
 	profile("GET /api/v1/library/stats", h.stats)
 	profile("GET /api/v1/library/history", h.history)
 	profile("GET /api/v1/library/progress/{type}/{id}", h.titleProgress)

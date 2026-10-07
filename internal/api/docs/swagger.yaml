@@ -407,6 +407,29 @@ components:
       - title
       - type
       type: object
+    store.RatedItem:
+      properties:
+        id:
+          type: integer
+        poster:
+          type: string
+        rating:
+          enum:
+          - -1
+          - 0
+          - 1
+          type: integer
+        title:
+          type: string
+        type:
+          type: string
+      required:
+      - id
+      - poster
+      - rating
+      - title
+      - type
+      type: object
     store.User:
       properties:
         id:
@@ -1046,6 +1069,81 @@ paths:
       summary: 'Public instance information: setup state and language'
       tags:
       - auth
+  /library/family:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/store.ListItem'
+                type: array
+          description: OK
+      security:
+      - ProfileHeader: []
+      summary: '"Family list", shared by every profile of the account, without the
+        titles the profile gave a thumbs down'
+      tags:
+      - library
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/store.ListItem'
+              description: Title
+              summary: body
+        description: Title
+        required: true
+      responses:
+        "204":
+          description: No Content
+      security:
+      - SessionCookie: []
+      summary: Add a title to the "Family list"
+      tags:
+      - library
+  /library/family/{type}/{id}:
+    delete:
+      parameters:
+      - description: movie or tv
+        in: path
+        name: type
+        required: true
+        schema:
+          type: string
+      - description: TMDB ID
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      responses:
+        "204":
+          description: No Content
+      security:
+      - SessionCookie: []
+      summary: Remove a title from the "Family list"
+      tags:
+      - library
+  /library/finished:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/store.ListItem'
+                type: array
+          description: OK
+      security:
+      - ProfileHeader: []
+      summary: Movies watched to the end and shows watched up to their latest aired
+        episode, most recent first
+      tags:
+      - library
   /library/history:
     get:
       responses:
@@ -1186,6 +1284,40 @@ paths:
       summary: Watch progress of a title (every episode for a show), most recent first
       tags:
       - library
+  /library/ratings:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/store.RatedItem'
+                type: array
+          description: OK
+      security:
+      - ProfileHeader: []
+      summary: Thumbs up and down of the profile, most recent first
+      tags:
+      - library
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/store.RatedItem'
+              description: Title and rating
+              summary: body
+        description: Title and rating
+        required: true
+      responses:
+        "204":
+          description: No Content
+      security:
+      - ProfileHeader: []
+      summary: Thumbs up (1) or down (-1) on a title, 0 removes it
+      tags:
+      - library
   /library/stats:
     get:
       responses:
@@ -1216,6 +1348,31 @@ paths:
       security:
       - ProfileHeader: []
       summary: Every title the profile played, finished or not, most recent first
+      tags:
+      - library
+  /library/watched/{type}/{id}:
+    post:
+      description: A movie, or every episode of a show aired so far. Titles already
+        finished keep their date.
+      parameters:
+      - description: movie or tv
+        in: path
+        name: type
+        required: true
+        schema:
+          type: string
+      - description: TMDB ID
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      responses:
+        "204":
+          description: No Content
+      security:
+      - ProfileHeader: []
+      summary: Mark a title as entirely watched
       tags:
       - library
   /me:

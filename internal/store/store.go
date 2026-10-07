@@ -208,7 +208,40 @@ func (s *Store) affectOne(res sql.Result, err error) error {
 // --- my list
 
 func (s *Store) MyList(ctx context.Context, profileID int64) ([]ListItem, error) {
-	rows, err := s.db.QueryContext(ctx, "SELECT media_type, tmdb_id, title, poster FROM my_list WHERE profile_id = $1 ORDER BY added_at DESC", profileID)
+	return s.listItems(ctx, "SELECT media_type, tmdb_id, title, poster FROM my_list WHERE profile_id = $1 ORDER BY added_at DESC", profileID)
+}
+
+func (s *Store) AddToList(ctx context.Context, profileID int64, it ListItem) error {
+	_, err := s.db.ExecContext(ctx, `INSERT INTO my_list (profile_id, media_type, tmdb_id, title, poster) VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT DO NOTHING`, profileID, it.Type, it.ID, it.Title, it.Poster)
+	return err
+}
+
+func (s *Store) RemoveFromList(ctx context.Context, profileID int64, kind string, id int) error {
+	_, err := s.db.ExecContext(ctx, "DELETE FROM my_list WHERE profile_id = $1 AND media_type = $2 AND tmdb_id = $3", profileID, kind, id)
+	return err
+}
+
+// FamilyList is the list shared by every profile of the account, without the titles the profile gave a thumbs down.
+func (s *Store) FamilyList(ctx context.Context, userID, profileID int64) ([]ListItem, error) {
+	return s.listItems(ctx, `SELECT media_type, tmdb_id, title, poster FROM family_list f WHERE user_id = $1 AND NOT EXISTS (
+			SELECT 1 FROM ratings r WHERE r.profile_id = $2 AND r.media_type = f.media_type AND r.tmdb_id = f.tmdb_id AND r.rating < 0
+		) ORDER BY added_at DESC`, userID, profileID)
+}
+
+func (s *Store) AddToFamilyList(ctx context.Context, userID int64, it ListItem) error {
+	_, err := s.db.ExecContext(ctx, `INSERT INTO family_list (user_id, media_type, tmdb_id, title, poster) VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT DO NOTHING`, userID, it.Type, it.ID, it.Title, it.Poster)
+	return err
+}
+
+func (s *Store) RemoveFromFamilyList(ctx context.Context, userID int64, kind string, id int) error {
+	_, err := s.db.ExecContext(ctx, "DELETE FROM family_list WHERE user_id = $1 AND media_type = $2 AND tmdb_id = $3", userID, kind, id)
+	return err
+}
+
+func (s *Store) listItems(ctx context.Context, query string, args ...any) ([]ListItem, error) {
+	rows, err := s.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -224,14 +257,39 @@ func (s *Store) MyList(ctx context.Context, profileID int64) ([]ListItem, error)
 	return out, rows.Err()
 }
 
-func (s *Store) AddToList(ctx context.Context, profileID int64, it ListItem) error {
-	_, err := s.db.ExecContext(ctx, `INSERT INTO my_list (profile_id, media_type, tmdb_id, title, poster) VALUES ($1, $2, $3, $4, $5)
-		ON CONFLICT DO NOTHING`, profileID, it.Type, it.ID, it.Title, it.Poster)
-	return err
+// RatedItem is a title the profile gave a thumbs up (1) or down (-1).
+type RatedItem struct {
+	ListItem
+	Rating int `json:"rating" enums:"-1,0,1"`
 }
 
-func (s *Store) RemoveFromList(ctx context.Context, profileID int64, kind string, id int) error {
-	_, err := s.db.ExecContext(ctx, "DELETE FROM my_list WHERE profile_id = $1 AND media_type = $2 AND tmdb_id = $3", profileID, kind, id)
+// Ratings lists the thumbs of the profile, most recent first.
+func (s *Store) Ratings(ctx context.Context, profileID int64) ([]RatedItem, error) {
+	rows, err := s.db.QueryContext(ctx, "SELECT media_type, tmdb_id, title, poster, rating FROM ratings WHERE profile_id = $1 ORDER BY rated_at DESC", profileID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []RatedItem{}
+	for rows.Next() {
+		var it RatedItem
+		if err := rows.Scan(&it.Type, &it.ID, &it.Title, &it.Poster, &it.Rating); err != nil {
+			return nil, err
+		}
+		out = append(out, it)
+	}
+	return out, rows.Err()
+}
+
+// Rate saves a thumbs up or down, a rating of 0 removes it.
+func (s *Store) Rate(ctx context.Context, profileID int64, it RatedItem) error {
+	if it.Rating == 0 {
+		_, err := s.db.ExecContext(ctx, "DELETE FROM ratings WHERE profile_id = $1 AND media_type = $2 AND tmdb_id = $3", profileID, it.Type, it.ID)
+		return err
+	}
+	_, err := s.db.ExecContext(ctx, `INSERT INTO ratings (profile_id, media_type, tmdb_id, title, poster, rating) VALUES ($1, $2, $3, $4, $5, $6)
+		ON CONFLICT (profile_id, media_type, tmdb_id) DO UPDATE SET rating = excluded.rating, rated_at = excluded.rated_at`,
+		profileID, it.Type, it.ID, it.Title, it.Poster, it.Rating)
 	return err
 }
 
@@ -244,6 +302,36 @@ func (s *Store) SaveProgress(ctx context.Context, profileID int64, p Progress) e
 		position = excluded.position, duration = excluded.duration, updated_at = excluded.updated_at`,
 		profileID, p.Type, p.ID, p.Season, p.Episode, p.Title, p.Poster, p.Backdrop, p.Position, p.Duration)
 	return err
+}
+
+// MarkWatched saves movies or episodes as finished (position at the end). Those already finished keep their date,
+// so the yearly stats do not move them to this year.
+func (s *Store) MarkWatched(ctx context.Context, profileID int64, ps []Progress) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	for _, p := range ps {
+		if _, err := tx.ExecContext(ctx, `INSERT INTO progress (profile_id, media_type, tmdb_id, season, episode, title, poster, backdrop, position, duration)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9)
+			ON CONFLICT (profile_id, media_type, tmdb_id, season, episode) DO UPDATE SET
+			position = progress.duration, updated_at = excluded.updated_at
+			WHERE progress.position < progress.duration * 0.95`,
+			profileID, p.Type, p.ID, p.Season, p.Episode, p.Title, p.Poster, p.Backdrop, p.Duration); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+// Finished lists the movies the profile watched to the end and the shows whose latest aired episode it watched, most
+// recent first. A show leaves it when a new episode airs (RefreshShows updates its latest episode).
+func (s *Store) Finished(ctx context.Context, profileID int64) ([]ListItem, error) {
+	return s.listItems(ctx, `SELECT media_type, tmdb_id, title, poster FROM progress p
+		WHERE profile_id = $1 AND position >= duration * 0.95 AND (media_type = 'movie' OR EXISTS (
+			SELECT 1 FROM shows s WHERE s.tmdb_id = p.tmdb_id AND s.last_season = p.season AND s.last_episode = p.episode
+		)) ORDER BY updated_at DESC`, profileID)
 }
 
 const progressCols = "media_type, tmdb_id, season, episode, title, poster, backdrop, position, duration, updated_at"

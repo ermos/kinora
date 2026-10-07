@@ -36,7 +36,7 @@ func (h *Handler) addToList(w http.ResponseWriter, r *http.Request) {
 	if !readJSON(w, r, &it) {
 		return
 	}
-	if (it.Type != "movie" && it.Type != "tv") || it.ID <= 0 {
+	if !validItem(it) {
 		writeError(w, http.StatusBadRequest, errInvalidRequest)
 		return
 	}
@@ -62,6 +62,178 @@ func (h *Handler) removeFromList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.store.RemoveFromList(r.Context(), currentProfile(r), kind, id); err != nil {
+		internalError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func validItem(it store.ListItem) bool { return (it.Type == "movie" || it.Type == "tv") && it.ID > 0 }
+
+// @Summary  "Family list", shared by every profile of the account, without the titles the profile gave a thumbs down
+// @Tags     library
+// @Security ProfileHeader
+// @Success  200  {array}  store.ListItem
+// @Router   /library/family [get]
+func (h *Handler) familyList(w http.ResponseWriter, r *http.Request) {
+	items, err := h.store.FamilyList(r.Context(), currentUser(r).ID, currentProfile(r))
+	if err != nil {
+		internalError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, items)
+}
+
+// @Summary  Add a title to the "Family list"
+// @Tags     library
+// @Security SessionCookie
+// @Param    body  body  store.ListItem  true  "Title"
+// @Success  204
+// @Router   /library/family [put]
+func (h *Handler) addToFamilyList(w http.ResponseWriter, r *http.Request) {
+	var it store.ListItem
+	if !readJSON(w, r, &it) {
+		return
+	}
+	if !validItem(it) {
+		writeError(w, http.StatusBadRequest, errInvalidRequest)
+		return
+	}
+	if err := h.store.AddToFamilyList(r.Context(), currentUser(r).ID, it); err != nil {
+		internalError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// @Summary  Remove a title from the "Family list"
+// @Tags     library
+// @Security SessionCookie
+// @Param    type  path  string  true  "movie or tv"
+// @Param    id    path  int     true  "TMDB ID"
+// @Success  204
+// @Router   /library/family/{type}/{id} [delete]
+func (h *Handler) removeFromFamilyList(w http.ResponseWriter, r *http.Request) {
+	kind, ok := mediaType(r)
+	id, ok2 := pathInt(r, "id")
+	if !ok || !ok2 {
+		writeError(w, http.StatusBadRequest, errInvalidRequest)
+		return
+	}
+	if err := h.store.RemoveFromFamilyList(r.Context(), currentUser(r).ID, kind, id); err != nil {
+		internalError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// @Summary  Thumbs up and down of the profile, most recent first
+// @Tags     library
+// @Security ProfileHeader
+// @Success  200  {array}  store.RatedItem
+// @Router   /library/ratings [get]
+func (h *Handler) ratings(w http.ResponseWriter, r *http.Request) {
+	items, err := h.store.Ratings(r.Context(), currentProfile(r))
+	if err != nil {
+		internalError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, items)
+}
+
+// @Summary  Thumbs up (1) or down (-1) on a title, 0 removes it
+// @Tags     library
+// @Security ProfileHeader
+// @Param    body  body  store.RatedItem  true  "Title and rating"
+// @Success  204
+// @Router   /library/ratings [put]
+func (h *Handler) rate(w http.ResponseWriter, r *http.Request) {
+	var it store.RatedItem
+	if !readJSON(w, r, &it) {
+		return
+	}
+	if !validItem(it.ListItem) || it.Rating < -1 || it.Rating > 1 {
+		writeError(w, http.StatusBadRequest, errInvalidRequest)
+		return
+	}
+	if err := h.store.Rate(r.Context(), currentProfile(r), it); err != nil {
+		internalError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// @Summary  Movies watched to the end and shows watched up to their latest aired episode, most recent first
+// @Tags     library
+// @Security ProfileHeader
+// @Success  200  {array}  store.ListItem
+// @Router   /library/finished [get]
+func (h *Handler) finished(w http.ResponseWriter, r *http.Request) {
+	items, err := h.store.Finished(r.Context(), currentProfile(r))
+	if err != nil {
+		internalError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, items)
+}
+
+// fallbackRuntime stands for a runtime TMDB does not know, in minutes.
+// ponytail: a flat guess, skews the watch time stats a bit for those titles only.
+const fallbackRuntime = 40
+
+// @Summary      Mark a title as entirely watched
+// @Description  A movie, or every episode of a show aired so far. Titles already finished keep their date.
+// @Tags         library
+// @Security     ProfileHeader
+// @Param        type  path  string  true  "movie or tv"
+// @Param        id    path  int     true  "TMDB ID"
+// @Success      204
+// @Router       /library/watched/{type}/{id} [post]
+func (h *Handler) markWatched(w http.ResponseWriter, r *http.Request) {
+	kind, ok := mediaType(r)
+	id, ok2 := pathInt(r, "id")
+	if !ok || !ok2 {
+		writeError(w, http.StatusBadRequest, errInvalidRequest)
+		return
+	}
+	ctx := r.Context()
+	d, err := h.tmdb.Details(ctx, kind, id)
+	if err != nil {
+		internalError(w, err)
+		return
+	}
+	base := store.Progress{Type: kind, ID: id, Title: d.Title, Poster: d.Poster, Backdrop: d.Backdrop}
+	minutes := func(rt int) float64 { return float64(cmp.Or(rt, fallbackRuntime) * 60) }
+	var ps []store.Progress
+	if kind == "movie" {
+		base.Duration = minutes(d.Runtime)
+		ps = append(ps, base)
+	} else {
+		a, err := h.tmdb.Airing(ctx, id)
+		if err == nil {
+			err = h.store.SaveShow(ctx, id, a, time.Now()) // "finished" right away
+		}
+		if err != nil {
+			internalError(w, err)
+			return
+		}
+		for season := 1; season <= a.LastSeason; season++ {
+			eps, err := h.tmdb.Season(ctx, id, season)
+			if err != nil {
+				internalError(w, err)
+				return
+			}
+			for _, e := range eps {
+				if season == a.LastSeason && e.Number > a.LastEpisode {
+					break // not aired yet
+				}
+				p := base
+				p.Season, p.Episode, p.Duration = season, e.Number, minutes(e.Runtime)
+				ps = append(ps, p)
+			}
+		}
+	}
+	if err := h.store.MarkWatched(ctx, currentProfile(r), ps); err != nil {
 		internalError(w, err)
 		return
 	}

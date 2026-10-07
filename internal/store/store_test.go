@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/ermos/kinora/internal/db"
+	"github.com/ermos/kinora/internal/tmdb"
 )
 
 // testDB opens TEST_DATABASE_URL (skips without it) in a schema of its own, dropped after the test.
@@ -123,6 +124,89 @@ func TestWatchStats(t *testing.T) {
 	}
 	if h, _ := s.History(ctx, p.ID, 10); len(h) != 5 || h[4].ID != 4 || h[4].WatchedAt != y2024 {
 		t.Fatalf("History = %+v", h)
+	}
+}
+
+// Marking as watched finishes what is not, and leaves the date of what already is (watch time stats per year).
+func TestMarkWatched(t *testing.T) {
+	conn := testDB(t)
+	s, ctx := New(conn), context.Background()
+	u, _ := s.CreateUser(ctx, "a", "h", false)
+	p, _ := s.CreateProfile(ctx, u.ID, "a", "red", true)
+	ep := func(n int, pos float64) Progress {
+		return Progress{Type: "tv", ID: 1, Season: 1, Episode: n, Position: pos, Duration: 100}
+	}
+	_ = s.SaveProgress(ctx, p.ID, ep(1, 99)) // finished long ago
+	_ = s.SaveProgress(ctx, p.ID, ep(2, 10)) // started
+	if _, err := conn.Exec("UPDATE progress SET updated_at = 1"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.MarkWatched(ctx, p.ID, []Progress{ep(1, 0), ep(2, 0), ep(3, 0)}); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := s.TitleProgress(ctx, p.ID, "tv", 1)
+	at := map[int]Progress{}
+	for _, g := range got {
+		at[g.Episode] = g
+	}
+	if len(got) != 3 || at[1].UpdatedAt != 1 || at[1].Position != 99 || at[2].UpdatedAt == 1 || at[2].Position != 100 || at[3].Position != 100 {
+		t.Fatalf("TitleProgress = %+v", got)
+	}
+}
+
+// A thumbs down hides a family list title from that profile only.
+func TestFamilyListThumbsDown(t *testing.T) {
+	s, ctx := New(testDB(t)), context.Background()
+	u, _ := s.CreateUser(ctx, "a", "h", false)
+	toto, _ := s.CreateProfile(ctx, u.ID, "toto", "red", true)
+	other, _ := s.CreateProfile(ctx, u.ID, "other", "blue", true)
+	_ = s.AddToFamilyList(ctx, u.ID, ListItem{Type: "movie", ID: 1})
+	_ = s.AddToFamilyList(ctx, u.ID, ListItem{Type: "movie", ID: 2})
+	if err := s.Rate(ctx, toto.ID, RatedItem{ListItem: ListItem{Type: "movie", ID: 1}, Rating: -1}); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := s.FamilyList(ctx, u.ID, toto.ID); len(got) != 1 || got[0].ID != 2 {
+		t.Fatalf("toto = %+v", got)
+	}
+	if got, _ := s.FamilyList(ctx, u.ID, other.ID); len(got) != 2 {
+		t.Fatalf("other = %+v", got)
+	}
+	_ = s.Rate(ctx, toto.ID, RatedItem{ListItem: ListItem{Type: "movie", ID: 1}, Rating: 0})
+	if got, _ := s.FamilyList(ctx, u.ID, toto.ID); len(got) != 2 {
+		t.Fatalf("toto after removing the thumb = %+v", got)
+	}
+}
+
+// Finished: movies watched to the end, shows watched up to their latest aired episode, until a new one airs.
+func TestFinished(t *testing.T) {
+	s, ctx := New(testDB(t)), context.Background()
+	u, _ := s.CreateUser(ctx, "a", "h", false)
+	p, _ := s.CreateProfile(ctx, u.ID, "a", "red", true)
+	now := time.Now()
+	_ = s.SaveShow(ctx, 10, tmdb.Airing{Status: "Returning Series", LastSeason: 1, LastEpisode: 2}, now)
+	_ = s.MarkWatched(ctx, p.ID, []Progress{
+		{Type: "movie", ID: 1, Duration: 100},
+		{Type: "tv", ID: 10, Season: 1, Episode: 2, Duration: 100},
+	})
+	_ = s.SaveProgress(ctx, p.ID, Progress{Type: "movie", ID: 2, Position: 10, Duration: 100}) // started only
+	finished := func() map[int]bool {
+		t.Helper()
+		got, err := s.Finished(ctx, p.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		ids := map[int]bool{}
+		for _, g := range got {
+			ids[g.ID] = true
+		}
+		return ids
+	}
+	if ids := finished(); len(ids) != 2 || !ids[1] || !ids[10] {
+		t.Fatalf("Finished = %v", ids)
+	}
+	_ = s.SaveShow(ctx, 10, tmdb.Airing{Status: "Returning Series", LastSeason: 1, LastEpisode: 3}, now) // new episode
+	if ids := finished(); len(ids) != 1 || !ids[1] {
+		t.Fatalf("Finished after a new episode = %v", ids)
 	}
 }
 
