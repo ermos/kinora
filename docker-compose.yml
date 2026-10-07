@@ -31,7 +31,7 @@ services:
     image: ghcr.io/flaresolverr/flaresolverr:latest
     restart: unless-stopped
 
-  # Optional: daily database dumps in ./backups (7 daily, 4 weekly, 6 monthly kept). Enable it with
+  # Optional: daily database dumps in the backups volume (7 daily, 4 weekly, 6 monthly kept). Enable it with
   # COMPOSE_PROFILES=backup in .env.
   backup:
     image: prodrigestivill/postgres-backup-local:17
@@ -47,7 +47,7 @@ services:
       BACKUP_KEEP_WEEKS: 4
       BACKUP_KEEP_MONTHS: 6
     volumes:
-      - ./backups:/backups
+      - backups:/backups
     depends_on:
       postgres:
         condition: service_healthy
@@ -55,3 +55,4 @@ services:
 
 volumes:
   postgres:
+  backups:

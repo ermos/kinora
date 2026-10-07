@@ -88,10 +88,11 @@ echo "COMPOSE_PROFILES=backup" >> .env
 docker compose up -d
 ```
 
-It dumps the database when it starts, then every day at midnight, into a `backups` folder next to the compose file:
+It dumps the database when it starts, then every day at midnight, into the `backups` Docker volume. Nothing to create
+or set up:
 
 ```
-backups/
+/backups/
   last/      every dump of the last 24 hours, and kinora-latest.sql.gz
   daily/     7 days
   weekly/    4 weeks
@@ -99,8 +100,13 @@ backups/
 ```
 
 Change the schedule and retention with `SCHEDULE` and `BACKUP_KEEP_*` in the compose file (see
-[postgres-backup-local](https://github.com/prodrigestivill/docker-postgres-backup-local#environment-variables)). Copy
-the `backups` folder to another disk or machine: a backup on the same disk won't survive that disk.
+[postgres-backup-local](https://github.com/prodrigestivill/docker-postgres-backup-local#environment-variables)). List the dumps, or copy them out of the volume to keep them on another disk or machine (a backup on the same disk
+won't survive that disk):
+
+```bash
+docker compose exec backup ls -R /backups
+docker compose cp backup:/backups ./kinora-backups
+```
 
 ### Manual backup
 
@@ -110,15 +116,19 @@ docker compose exec postgres pg_dump -U kinora kinora | gzip > kinora.sql.gz
 
 ### Restore
 
-Stop kinora, replace the database with the dump, then start it again:
+Stop kinora, replace the database with the latest dump, then start it again:
 
 ```bash
 docker compose stop kinora
-docker compose exec postgres dropdb -U kinora kinora
-docker compose exec postgres createdb -U kinora kinora
-gunzip -c backups/last/kinora-latest.sql.gz | docker compose exec -T postgres psql -q -U kinora kinora
+docker compose exec backup sh -c 'export PGPASSWORD=$POSTGRES_PASSWORD
+  dropdb -h postgres -U kinora kinora && createdb -h postgres -U kinora kinora &&
+  gunzip -c /backups/last/kinora-latest.sql.gz | psql -q -h postgres -U kinora kinora'
 docker compose start kinora
 ```
+
+To restore an older dump, replace `last/kinora-latest.sql.gz` with its path, from `daily/`, `weekly/` or `monthly/`.
+To restore a manual dump: `gunzip -c kinora.sql.gz | docker compose exec -T postgres psql -q -U kinora kinora`, after
+the same `dropdb` and `createdb`.
 
 ## Migrate from SQLite
 
