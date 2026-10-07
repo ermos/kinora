@@ -20,6 +20,8 @@ var liveQueries = map[string][]Query{
 	"serie": {{Type: "tv", TMDBID: 1396, Title: "Breaking Bad", OriginalTitle: "Breaking Bad", Year: 2008, Season: 1, Episode: 2}},
 	// Recent show, for sites that dropped older catalogs.
 	"serie-recente": {{Type: "tv", TMDBID: 76479, Title: "The Boys", OriginalTitle: "The Boys", Year: 2019, Season: 2, Episode: 2}},
+	// Recent film, for sites whose older links point to dead hosters.
+	"film-recent": {{Type: "movie", TMDBID: 969681, Title: "Spider-Man : Brand New Day", OriginalTitle: "Spider-Man: Brand New Day", Year: 2026}},
 	// Anime as TMDB knows it: a show, absolute episodes split into seasons.
 	"anime":    {{Type: "tv", TMDBID: 209867, Title: "Frieren", OriginalTitle: "葬送のフリーレン", AltTitles: []string{"Sousou no Frieren"}, Year: 2023, Season: 1, Episode: 3}},
 	"anime-s2": {{Type: "tv", TMDBID: 209867, Title: "Frieren", OriginalTitle: "葬送のフリーレン", Year: 2023, Season: 2, Episode: 1}},
@@ -77,15 +79,16 @@ func TestLiveSources(t *testing.T) {
 
 // sourceKinds says what each source serves, so the live test only asks relevant questions.
 var sourceKinds = map[string]map[string]bool{
-	"movix":         {"film": true, "serie": true},
-	"purstream":     {"film": true, "serie": true},
-	"coflix":        {"film": true, "serie": true},
-	"wiflix":        {"film": true, "serie-recente": true},
-	"french_stream": {"film": true, "serie": true},
-	"cpasmieux":     {"film": true, "serie": true},
-	"kepliz_com":    {"film": true},
-	"animesama":     {"anime": true},
-	"frenchanimes":  {"anime-s2": true},
+	"movix":               {"film": true, "serie": true},
+	"purstream":           {"film": true, "serie": true},
+	"coflix":              {"film": true, "serie": true},
+	"wiflix":              {"film": true, "serie-recente": true},
+	"french_stream":       {"film": true, "serie": true},
+	"cpasmieux":           {"film": true, "serie": true},
+	"kepliz_com":          {"film": true},
+	"animesama":           {"anime": true},
+	"frenchanimes":        {"anime-s2": true},
+	"streaming_integrale": {"film": true, "film-recent": true, "serie": true},
 
 	"levidia_ch":         {"film": true, "serie": true},
 	"bstsrs_one":         {"serie": true},

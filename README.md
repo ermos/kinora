@@ -196,6 +196,7 @@ Chacune est vérifiée en conditions réelles par `make test-live`.
 | Kepliz | films | HLS direct |
 | Anime-Sama | animés | VOSTFR et VF |
 | French Anime | animés | VOSTFR et VF |
+| Streaming Integrale | films, séries, animés | hors vStream. Cloudflare : demande FlareSolverr. Lecteurs Lecteur3 et Abyss (strp2p répond « vidéo supprimée » partout) |
 
 Non portées : TV en direct et sport (pas un catalogue), téléchargement direct (extreme_down, wawacity... : demandent
 un débrideur), sources que vStream a lui-même désactivées ou retirées (souvent derrière un challenge Cloudflare),
@@ -220,7 +221,7 @@ Scrubs V2 est l'équivalent anglophone de vStream : un fork d'Exodus qui scrape 
 captcha Turnstile), Goojara (lecteur Wootly maison), et les clones sflix / bflix (lecteurs chiffrés).
 
 Hébergeurs : Lulustream, Vidzy, Uqload, Voe (et ses clones, détectés au contenu), Vidmoly, Veev, Filemoon, Mixdrop,
-Streamtape, Sendvid, Sibnet, la famille JW player (Filelions, Streamhide, Streamwish, Savefiles...) et tout lien
+Streamtape, Sendvid, Sibnet, Lecteur3, Abyss (MP4 découpé et en-tête chiffré, reconstitué par le proxy), la famille JW player (Filelions, Streamhide, Streamwish, Savefiles...) et tout lien
 d'embed inconnu qui utilise le même lecteur. Non gérés : Dood et hgcloud (challenge JavaScript), Netu/Waaw (captcha).
 
 ## Qualité et ordre des liens
