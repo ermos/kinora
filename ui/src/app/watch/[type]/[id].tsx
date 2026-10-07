@@ -223,7 +223,9 @@ function Watch() {
 
   // Keyboard, like Netflix on the web: space or K plays/pauses, arrows seek, F fullscreen, M mute.
   const epName = episodes.data?.find((e) => e.number === episode)?.name;
-  const backTo = `/title/${type}/${id}` as Href;
+  // Back to the page below (the title page, also under the player opened from "Continue watching"), or to the title
+  // page when the player was opened directly.
+  const back = () => (router.canGoBack() ? router.back() : router.replace(`/title/${type}/${id}` as Href));
   const current = list[Math.min(index, list.length - 1)];
   const showChrome = chrome || menu || status !== 'playing' || !playing;
 
@@ -336,7 +338,7 @@ function Watch() {
 
       {showChrome && (
         <View style={[styles.top, { paddingHorizontal: gutter }]} pointerEvents="box-none">
-          <Focusable href={backTo} accessibilityLabel={t('common.back')} onFocus={poke} style={(active) => [styles.iconBtn, active && styles.iconBtnActive]}>
+          <Focusable onPress={back} accessibilityLabel={t('common.back')} onFocus={poke} style={(active) => [styles.iconBtn, active && styles.iconBtnActive]}>
             <Icon d={icons.back} size={30} />
           </Focusable>
         </View>
@@ -404,7 +406,7 @@ function Watch() {
               <Text style={ui.text}>{status === 'none' ? t('watch.noSource') : t('watch.allFailed')}</Text>
               <View style={ui.heroActions}>
                 {status === 'failed' && <Button label={t('common.retry')} onPress={() => setIndex(0)} hasTVPreferredFocus />}
-                <Button kind="grey" label={t('common.back')} href={backTo} hasTVPreferredFocus={status === 'none'} />
+                <Button kind="grey" label={t('common.back')} onPress={back} hasTVPreferredFocus={status === 'none'} />
               </View>
             </>
           )}

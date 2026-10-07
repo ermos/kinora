@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { type Href } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState, type ReactNode, type Ref } from 'react';
 import { ActivityIndicator, Animated, FlatList, Platform, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps, type ViewStyle } from 'react-native';
@@ -347,6 +347,7 @@ export function Badge({ badge }: { badge?: string }) {
 /** Landscape card, Netflix style: grows and gets a white frame when focused. */
 export function Card({
   href,
+  via,
   title,
   image,
   progress,
@@ -354,6 +355,8 @@ export function Card({
   badge,
 }: {
   href: Href;
+  /** Page opened under href, so Back from href lands there (the title page under the player). */
+  via?: Href;
   title: string;
   image?: string;
   progress?: number;
@@ -361,7 +364,11 @@ export function Card({
   badge?: string;
 }) {
   return (
-    <Focusable href={href} style={(active) => [styles.card, active && styles.cardActive]}>
+    <Focusable
+      href={via ? undefined : href}
+      onPress={via ? () => (router.push(via), router.push(href)) : undefined}
+      style={(active) => [styles.card, active && styles.cardActive]}
+    >
       {image ? <Image source={image} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} recyclingKey={image} /> : null}
       <Badge badge={badge} />
       <LinearGradient colors={['transparent', 'rgba(0,0,0,0.85)']} locations={[0.45, 1]} style={StyleSheet.absoluteFill} />
@@ -432,6 +439,7 @@ export function progressCard(p: Progress) {
   return (
     <Card
       href={href as Href}
+      via={`/title/${p.type}/${p.id}` as Href}
       title={p.title}
       subtitle={p.type === 'tv' ? t('common.episodeShort', { season: p.season, episode: p.episode }) : undefined}
       image={img(p.backdrop || p.poster, 'w780')}
