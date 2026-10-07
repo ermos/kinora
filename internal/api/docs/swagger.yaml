@@ -1047,8 +1047,9 @@ paths:
   /library/progress:
     get:
       description: |-
-        Titles in progress, and the next episode of the shows the profile caught up with once it aired
-        (with a badge): first if it aired in the last month, last otherwise.
+        Titles in progress and the next episode of the shows whose last watched episode is finished, most
+        recent first. A next episode the profile caught up with (badge) goes first if it aired in the last
+        month, last otherwise.
       responses:
         "200":
           content:

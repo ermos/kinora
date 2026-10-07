@@ -899,8 +899,9 @@ export interface paths {
         };
         /**
          * "Continue watching" row of the profile
-         * @description Titles in progress, and the next episode of the shows the profile caught up with once it aired
-         *     (with a badge): first if it aired in the last month, last otherwise.
+         * @description Titles in progress and the next episode of the shows whose last watched episode is finished, most
+         *     recent first. A next episode the profile caught up with (badge) goes first if it aired in the last
+         *     month, last otherwise.
          */
         get: {
             parameters: {

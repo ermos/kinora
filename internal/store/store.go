@@ -49,6 +49,8 @@ type Progress struct {
 	Duration float64 `json:"duration"`
 	// Badge marks a show's next episode that aired since the profile caught up (duration 0, not started).
 	Badge string `json:"badge,omitempty" enums:"newEpisode,newSeason" validate:"optional"`
+	// UpdatedAt orders the "Continue watching" row.
+	UpdatedAt int64 `json:"-"`
 }
 
 func notFound(err error) error {
@@ -244,14 +246,14 @@ func (s *Store) SaveProgress(ctx context.Context, profileID int64, p Progress) e
 	return err
 }
 
-const progressCols = "media_type, tmdb_id, season, episode, title, poster, backdrop, position, duration"
+const progressCols = "media_type, tmdb_id, season, episode, title, poster, backdrop, position, duration, updated_at"
 
 func scanProgress(rows *sql.Rows) ([]Progress, error) {
 	defer rows.Close()
 	out := []Progress{}
 	for rows.Next() {
 		var p Progress
-		if err := rows.Scan(&p.Type, &p.ID, &p.Season, &p.Episode, &p.Title, &p.Poster, &p.Backdrop, &p.Position, &p.Duration); err != nil {
+		if err := rows.Scan(&p.Type, &p.ID, &p.Season, &p.Episode, &p.Title, &p.Poster, &p.Backdrop, &p.Position, &p.Duration, &p.UpdatedAt); err != nil {
 			return nil, err
 		}
 		out = append(out, p)
@@ -261,10 +263,9 @@ func scanProgress(rows *sql.Rows) ([]Progress, error) {
 
 // ContinueWatching returns, per title, the last thing watched if it is not finished. DISTINCT ON keeps exactly one
 // row per title, even when two episodes were saved in the same second (the furthest one wins).
-// ponytail: a show whose last watched episode is finished drops out of the row, "next episode" suggestions come later.
 func (s *Store) ContinueWatching(ctx context.Context, profileID int64) ([]Progress, error) {
 	rows, err := s.db.QueryContext(ctx, `SELECT `+progressCols+` FROM (
-			SELECT DISTINCT ON (media_type, tmdb_id) `+progressCols+`, updated_at FROM progress WHERE profile_id = $1
+			SELECT DISTINCT ON (media_type, tmdb_id) `+progressCols+` FROM progress WHERE profile_id = $1
 			ORDER BY media_type, tmdb_id, updated_at DESC, season DESC, episode DESC
 		) p WHERE position < duration * 0.95 ORDER BY updated_at DESC LIMIT 20`, profileID)
 	if err != nil {

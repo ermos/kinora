@@ -1,9 +1,11 @@
 package api
 
 import (
+	"cmp"
 	"context"
 	"log/slog"
 	"net/http"
+	"slices"
 	"time"
 
 	"github.com/ermos/kinora/internal/store"
@@ -67,8 +69,9 @@ func (h *Handler) removeFromList(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary      "Continue watching" row of the profile
-// @Description  Titles in progress, and the next episode of the shows the profile caught up with once it aired
-// @Description  (with a badge): first if it aired in the last month, last otherwise.
+// @Description  Titles in progress and the next episode of the shows whose last watched episode is finished, most
+// @Description  recent first. A next episode the profile caught up with (badge) goes first if it aired in the last
+// @Description  month, last otherwise.
 // @Tags         library
 // @Security     ProfileHeader
 // @Success      200  {array}  store.Progress
@@ -79,7 +82,7 @@ func (h *Handler) continueWatching(w http.ResponseWriter, r *http.Request) {
 		internalError(w, err)
 		return
 	}
-	news, err := h.store.NewEpisodes(r.Context(), currentProfile(r), time.Now())
+	news, err := h.store.NextEpisodes(r.Context(), currentProfile(r), time.Now())
 	if err != nil {
 		internalError(w, err)
 		return
@@ -95,12 +98,16 @@ func (h *Handler) continueWatching(w http.ResponseWriter, r *http.Request) {
 		if started[n.ID] { // rewatching an older episode: that one stays the card
 			continue
 		}
-		if n.Recent {
+		switch {
+		case n.Badge == "":
+			ps = append(ps, n.Progress)
+		case n.Recent:
 			recent = append(recent, n.Progress)
-		} else {
+		default:
 			old = append(old, n.Progress)
 		}
 	}
+	slices.SortStableFunc(ps, func(a, b store.Progress) int { return cmp.Compare(b.UpdatedAt, a.UpdatedAt) })
 	writeJSON(w, http.StatusOK, append(append(recent, ps...), old...))
 }
 

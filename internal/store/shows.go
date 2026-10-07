@@ -44,21 +44,21 @@ func (s *Store) SaveShow(ctx context.Context, id int, a tmdb.Airing, now time.Ti
 	return err
 }
 
-// NewEpisode is the next episode of a show the profile caught up with, aired since.
-type NewEpisode struct {
+// NextEpisode is the next episode of a show the profile caught up with, aired since.
+type NextEpisode struct {
 	Progress
 	// Recent: aired in the last month.
 	Recent bool
 }
 
-// NewEpisodes finds, for each show whose furthest watched episode is finished, the next one if it has aired and
-// belongs to the latest season: a new episode of the season being followed, or the premiere of a new one. A show
-// left in the middle of an older season is not news. Most recently aired first.
-func (s *Store) NewEpisodes(ctx context.Context, profileID int64, now time.Time) ([]NewEpisode, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT p.tmdb_id, p.season, p.episode, p.title, p.poster, p.backdrop,
+// NextEpisodes finds, for each show whose furthest watched episode is finished, the next one if it has aired. It
+// gets a badge when it belongs to the latest season: a new episode of the season being followed, or the premiere of
+// a new one. Without a badge it is just "up next" in an older season. Most recently aired first.
+func (s *Store) NextEpisodes(ctx context.Context, profileID int64, now time.Time) ([]NextEpisode, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT p.tmdb_id, p.season, p.episode, p.title, p.poster, p.backdrop, p.updated_at,
 			s.last_season, s.last_episode, COALESCE(s.episodes[p.season + 1], 0),
 			COALESCE(s.last_air_date >= $2::date - 30, false)
-		FROM (SELECT DISTINCT ON (tmdb_id) tmdb_id, season, episode, title, poster, backdrop, position, duration FROM progress
+		FROM (SELECT DISTINCT ON (tmdb_id) tmdb_id, season, episode, title, poster, backdrop, position, duration, updated_at FROM progress
 			WHERE profile_id = $1 AND media_type = 'tv' ORDER BY tmdb_id, season DESC, episode DESC) p
 		JOIN shows s ON s.tmdb_id = p.tmdb_id
 		WHERE p.position >= p.duration * 0.95
@@ -67,11 +67,11 @@ func (s *Store) NewEpisodes(ctx context.Context, profileID int64, now time.Time)
 		return nil, err
 	}
 	defer rows.Close()
-	out := []NewEpisode{}
+	out := []NextEpisode{}
 	for rows.Next() {
-		var n NewEpisode
+		var n NextEpisode
 		var lastSeason, lastEpisode, seasonEpisodes int
-		if err := rows.Scan(&n.ID, &n.Season, &n.Episode, &n.Title, &n.Poster, &n.Backdrop, &lastSeason, &lastEpisode, &seasonEpisodes, &n.Recent); err != nil {
+		if err := rows.Scan(&n.ID, &n.Season, &n.Episode, &n.Title, &n.Poster, &n.Backdrop, &n.UpdatedAt, &lastSeason, &lastEpisode, &seasonEpisodes, &n.Recent); err != nil {
 			return nil, err
 		}
 		n.Type = "tv"
@@ -80,12 +80,14 @@ func (s *Store) NewEpisodes(ctx context.Context, profileID int64, now time.Time)
 		} else {
 			n.Season, n.Episode = n.Season+1, 1
 		}
-		if n.Season != lastSeason || n.Episode > lastEpisode {
-			continue
+		if n.Season > lastSeason || n.Season == lastSeason && n.Episode > lastEpisode {
+			continue // not aired yet
 		}
-		n.Badge = "newEpisode"
-		if n.Episode == 1 {
-			n.Badge = "newSeason"
+		if n.Season == lastSeason {
+			n.Badge = "newEpisode"
+			if n.Episode == 1 {
+				n.Badge = "newSeason"
+			}
 		}
 		out = append(out, n)
 	}
