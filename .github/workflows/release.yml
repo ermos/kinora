@@ -5,6 +5,12 @@ name: Release
 on:
   push:
     branches: [main]
+  # Manual release, e.g. the first one: forces this bump even without feat or fix commits.
+  workflow_dispatch:
+    inputs:
+      bump:
+        type: choice
+        options: [patch, minor, major]
 
 concurrency: release
 
@@ -25,7 +31,7 @@ jobs:
         uses: mathieudutour/github-tag-action@v6.2
         with:
           github_token: ${{ github.token }}
-          default_bump: false
+          default_bump: ${{ inputs.bump || false }}
 
   image:
     needs: version
