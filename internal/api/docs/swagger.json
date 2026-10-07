@@ -530,8 +530,14 @@
                     "episode": {
                         "type": "integer"
                     },
+                    "hoster": {
+                        "type": "string"
+                    },
                     "id": {
                         "type": "integer"
+                    },
+                    "lang": {
+                        "type": "string"
                     },
                     "position": {
                         "type": "number"
@@ -541,6 +547,10 @@
                     },
                     "season": {
                         "type": "integer"
+                    },
+                    "source": {
+                        "description": "Source, Hoster and Lang of the link playing, so resuming starts on it (\"\" when unknown).",
+                        "type": "string"
                     },
                     "title": {
                         "type": "string"

@@ -63,19 +63,20 @@ func TestContinueWatching(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	save(p.ID, Progress{Type: "movie", ID: 1, Position: 10, Duration: 100}, 100)                     // in progress
-	save(p.ID, Progress{Type: "movie", ID: 2, Position: 99, Duration: 100}, 200)                     // finished
-	save(p.ID, Progress{Type: "tv", ID: 3, Season: 1, Episode: 1, Position: 99, Duration: 100}, 300) // finished episode...
-	save(p.ID, Progress{Type: "tv", ID: 3, Season: 1, Episode: 2, Position: 5, Duration: 100}, 400)  // ...then started the next
-	save(other.ID, Progress{Type: "movie", ID: 4, Position: 10, Duration: 100}, 500)                 // other profile
-	save(p.ID, Progress{Type: "tv", ID: 5, Season: 1, Episode: 1, Position: 5, Duration: 100}, 50)   // two episodes
-	save(p.ID, Progress{Type: "tv", ID: 5, Season: 1, Episode: 2, Position: 5, Duration: 100}, 50)   // saved in the same second
+	save(p.ID, Progress{Type: "movie", ID: 1, Position: 10, Duration: 100, Source: "src", Hoster: "h", Lang: "fr"}, 100) // in progress
+	save(p.ID, Progress{Type: "movie", ID: 2, Position: 99, Duration: 100}, 200)                                         // finished
+	save(p.ID, Progress{Type: "tv", ID: 3, Season: 1, Episode: 1, Position: 99, Duration: 100}, 300)                     // finished episode...
+	save(p.ID, Progress{Type: "tv", ID: 3, Season: 1, Episode: 2, Position: 5, Duration: 100}, 400)                      // ...then started the next
+	save(other.ID, Progress{Type: "movie", ID: 4, Position: 10, Duration: 100}, 500)                                     // other profile
+	save(p.ID, Progress{Type: "tv", ID: 5, Season: 1, Episode: 1, Position: 5, Duration: 100}, 50)                       // two episodes
+	save(p.ID, Progress{Type: "tv", ID: 5, Season: 1, Episode: 2, Position: 5, Duration: 100}, 50)                       // saved in the same second
 
 	got, err := s.ContinueWatching(ctx, p.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got) != 3 || got[0].ID != 3 || got[0].Episode != 2 || got[1].ID != 1 || got[2].ID != 5 || got[2].Episode != 2 {
+	if len(got) != 3 || got[0].ID != 3 || got[0].Episode != 2 || got[1].ID != 1 || got[2].ID != 5 || got[2].Episode != 2 ||
+		got[1].Source != "src" || got[1].Hoster != "h" || got[1].Lang != "fr" { // resuming starts on the same link
 		t.Fatalf("ContinueWatching = %+v", got)
 	}
 

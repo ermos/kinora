@@ -2084,10 +2084,14 @@ export interface components {
             badge?: "newEpisode" | "newSeason";
             duration: number;
             episode: number;
+            hoster?: string;
             id: number;
+            lang?: string;
             position: number;
             poster: string;
             season: number;
+            /** @description Source, Hoster and Lang of the link playing, so resuming starts on it ("" when unknown). */
+            source?: string;
             title: string;
             type: string;
         };

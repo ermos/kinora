@@ -63,13 +63,16 @@ function Watch() {
     queryFn: () => unwrap(api.GET('/library/progress/{type}/{id}', { params: { path: { type, id } } })),
   });
 
-  // Same site (then hoster, then language) as the previous episode first, the server order otherwise.
+  // Same site (then hoster, then language) as the previous episode, or as the one this episode was stopped on, first.
+  // The server order otherwise.
+  const saved = progress.data?.find((x) => x.season === season && x.episode === episode && x.position < x.duration * 0.95);
+  const [src, host, lang] = params.src ? [params.src, params.host, params.lang] : [saved?.source, saved?.hoster, saved?.lang];
   const list = useMemo(() => {
     const ls = links.data ?? [];
-    if (!params.src) return ls;
-    const score = (l: Link) => (l.source === params.src ? 4 : 0) + (l.hoster === params.host ? 2 : 0) + (l.lang === params.lang ? 1 : 0);
+    if (!src) return ls;
+    const score = (l: Link) => (l.source === src ? 4 : 0) + (l.hoster === host ? 2 : 0) + (l.lang === lang ? 1 : 0);
     return [...ls].sort((a, b) => score(b) - score(a));
-  }, [links.data, params.src, params.host, params.lang]);
+  }, [links.data, src, host, lang]);
 
   const [index, setIndex] = useState(0);
   const [status, setStatus] = useState<Status>('searching');
@@ -164,8 +167,22 @@ function Watch() {
     position.current = pos;
     const d = details.data;
     if (!d) return;
+    const link = list[index];
     api.PUT('/library/progress', {
-      body: { type, id, season, episode, title: d.title, poster: d.poster, backdrop: d.backdrop, position: pos, duration },
+      body: {
+        type,
+        id,
+        season,
+        episode,
+        title: d.title,
+        poster: d.poster,
+        backdrop: d.backdrop,
+        position: pos,
+        duration,
+        source: link?.source,
+        hoster: link?.hoster,
+        lang: link?.lang,
+      },
       keepalive: true,
     });
   };
@@ -206,7 +223,9 @@ function Watch() {
 
   // Keyboard, like Netflix on the web: space or K plays/pauses, arrows seek, F fullscreen, M mute.
   const epName = episodes.data?.find((e) => e.number === episode)?.name;
-  const backTo = `/title/${type}/${id}` as Href;
+  // Back to the page below (the title page, also under the player opened from "Continue watching"), or to the title
+  // page when the player was opened directly.
+  const back = () => (router.canGoBack() ? router.back() : router.replace(`/title/${type}/${id}` as Href));
   const current = list[Math.min(index, list.length - 1)];
   const showChrome = chrome || menu || status !== 'playing' || !playing;
 
@@ -319,7 +338,7 @@ function Watch() {
 
       {showChrome && (
         <View style={[styles.top, { paddingHorizontal: gutter }]} pointerEvents="box-none">
-          <Focusable href={backTo} accessibilityLabel={t('common.back')} onFocus={poke} style={(active) => [styles.iconBtn, active && styles.iconBtnActive]}>
+          <Focusable onPress={back} accessibilityLabel={t('common.back')} onFocus={poke} style={(active) => [styles.iconBtn, active && styles.iconBtnActive]}>
             <Icon d={icons.back} size={30} />
           </Focusable>
         </View>
@@ -387,7 +406,7 @@ function Watch() {
               <Text style={ui.text}>{status === 'none' ? t('watch.noSource') : t('watch.allFailed')}</Text>
               <View style={ui.heroActions}>
                 {status === 'failed' && <Button label={t('common.retry')} onPress={() => setIndex(0)} hasTVPreferredFocus />}
-                <Button kind="grey" label={t('common.back')} href={backTo} hasTVPreferredFocus={status === 'none'} />
+                <Button kind="grey" label={t('common.back')} onPress={back} hasTVPreferredFocus={status === 'none'} />
               </View>
             </>
           )}
