@@ -151,6 +151,34 @@ func (h *Handler) watched(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, ws)
 }
 
+// @Summary  Time spent watching per year, most recent first
+// @Tags     library
+// @Security ProfileHeader
+// @Success  200  {array}  store.YearStats
+// @Router   /library/stats [get]
+func (h *Handler) stats(w http.ResponseWriter, r *http.Request) {
+	years, err := h.store.WatchStats(r.Context(), currentProfile(r))
+	if err != nil {
+		internalError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, years)
+}
+
+// @Summary  Last movies and episodes the profile played, most recent first
+// @Tags     library
+// @Security ProfileHeader
+// @Success  200  {array}  store.HistoryEntry
+// @Router   /library/history [get]
+func (h *Handler) history(w http.ResponseWriter, r *http.Request) {
+	entries, err := h.store.History(r.Context(), currentProfile(r), 500)
+	if err != nil {
+		internalError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, entries)
+}
+
 // @Summary  Watch progress of a title (every episode for a show), most recent first
 // @Tags     library
 // @Security ProfileHeader

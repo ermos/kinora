@@ -89,6 +89,43 @@ func TestContinueWatching(t *testing.T) {
 	}
 }
 
+// Stats group by the year of the last playback, cap the time at the duration and pick the most watched show.
+func TestWatchStats(t *testing.T) {
+	conn := testDB(t)
+	s, ctx := New(conn), context.Background()
+	u, _ := s.CreateUser(ctx, "a", "h", false)
+	p, _ := s.CreateProfile(ctx, u.ID, "a", "red", true)
+	const y2024, y2025 = 1717200000, 1748736000 // June 1st, far from any time zone edge
+	for _, pr := range []struct {
+		Progress
+		at int64
+	}{
+		{Progress{Type: "movie", ID: 1, Position: 120, Duration: 100}, y2025}, // position past the duration
+		{Progress{Type: "tv", ID: 2, Title: "Small", Season: 1, Episode: 1, Position: 50, Duration: 100}, y2025},
+		{Progress{Type: "tv", ID: 3, Title: "Big", Season: 1, Episode: 1, Position: 100, Duration: 100}, y2025},
+		{Progress{Type: "tv", ID: 3, Title: "Big", Season: 1, Episode: 2, Position: 100, Duration: 100}, y2025},
+		{Progress{Type: "movie", ID: 4, Position: 30, Duration: 100}, y2024},
+	} {
+		if err := s.SaveProgress(ctx, p.ID, pr.Progress); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := conn.Exec("UPDATE progress SET updated_at = $1 WHERE tmdb_id = $2 AND episode = $3", pr.at, pr.ID, pr.Episode); err != nil {
+			t.Fatal(err)
+		}
+	}
+	got, err := s.WatchStats(ctx, p.ID)
+	want := []YearStats{
+		{Year: 2025, MovieSeconds: 100, ShowSeconds: 250, Movies: 1, Episodes: 3, TopShow: "Big"},
+		{Year: 2024, MovieSeconds: 30, Movies: 1},
+	}
+	if err != nil || fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Fatalf("WatchStats = %+v, %v", got, err)
+	}
+	if h, _ := s.History(ctx, p.ID, 10); len(h) != 5 || h[4].ID != 4 || h[4].WatchedAt != y2024 {
+		t.Fatalf("History = %+v", h)
+	}
+}
+
 // The stream limit must reach the session lookup the play handler reads it from.
 func TestStreamLimit(t *testing.T) {
 	s, ctx := New(testDB(t)), context.Background()
