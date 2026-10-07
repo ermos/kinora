@@ -109,6 +109,10 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if t.Rate > 0 {
 		w = throttled{ResponseWriter: w, ctx: r.Context(), l: p.limiters.get(t.Stream, float64(t.Rate))}
 	}
+	if f, ok := scraper.ParseAbyss(t.URL); ok {
+		p.serveAbyss(w, r, f, t.Headers)
+		return
+	}
 	req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, t.URL, nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
