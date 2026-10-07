@@ -87,10 +87,21 @@ function PlayButton({ type, details, last }: { type: MediaType; details: Details
   let href = `/watch/${type}/${details.id}`;
   let label = resumable ? t('common.resume') : t('common.play');
   if (type === 'tv') {
-    const s = last?.season ?? details.seasons[0]?.number ?? 1;
-    const e = last?.episode ?? 1;
+    let s = last?.season ?? details.seasons[0]?.number ?? 1;
+    let e = last?.episode ?? 1;
+    let verb = resumable ? t('common.resume') : t('common.rewatch');
+    // Last episode finished: the next one, if the show has it.
+    if (last && !resumable) {
+      const next =
+        e < (details.seasons.find((x) => x.number === s)?.episodes ?? 0)
+          ? { s, e: e + 1 }
+          : details.seasons.some((x) => x.number === s + 1)
+            ? { s: s + 1, e: 1 }
+            : null;
+      if (next) [s, e, verb] = [next.s, next.e, t('common.play')];
+    }
     href += `?s=${s}&e=${e}`;
-    if (last) label = `${resumable ? t('common.resume') : t('common.rewatch')} ${t('common.episodeShort', { season: s, episode: e })}`;
+    if (last) label = `${verb} ${t('common.episodeShort', { season: s, episode: e })}`;
   }
   return <Button icon={icons.play} label={label} href={href as Href} hasTVPreferredFocus />;
 }

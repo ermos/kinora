@@ -9,7 +9,7 @@ import (
 	"github.com/ermos/kinora/internal/tmdb"
 )
 
-func TestNewEpisodes(t *testing.T) {
+func TestNextEpisodes(t *testing.T) {
 	conn := testDB(t)
 	s, ctx := New(conn), context.Background()
 	now := time.Date(2026, 10, 6, 12, 0, 0, 0, time.UTC)
@@ -36,20 +36,21 @@ func TestNewEpisodes(t *testing.T) {
 	show(10, tmdb.Airing{Status: "Returning Series", LastSeason: 1, LastEpisode: 9, LastAirDate: day(-1), NextAirDate: day(6), Episodes: tenEach}, now)
 	watch(11, 1, 10, 99) // finished season 1, season 2 premiered 2 months ago
 	show(11, tmdb.Airing{Status: "Ended", LastSeason: 2, LastEpisode: 1, LastAirDate: day(-60), Episodes: tenEach}, now.AddDate(0, 0, -10))
-	watch(12, 1, 5, 99) // left in the middle of season 1: not news
+	watch(12, 1, 5, 99) // left in the middle of season 1: up next, no badge
 	show(12, tmdb.Airing{Status: "Returning Series", LastSeason: 2, LastEpisode: 3, LastAirDate: day(-2), NextAirDate: day(-1), Episodes: tenEach}, now.AddDate(0, 0, -1))
 	watch(13, 1, 3, 99) // up to date
 	show(13, tmdb.Airing{Status: "Returning Series", LastSeason: 1, LastEpisode: 3, LastAirDate: day(-3), Episodes: tenEach}, now.AddDate(0, 0, -10))
 	watch(14, 1, 2, 30) // still watching, never checked
 
-	got, err := s.NewEpisodes(ctx, p.ID, now)
+	got, err := s.NextEpisodes(ctx, p.ID, now)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got) != 2 ||
+	if len(got) != 3 ||
 		got[0].ID != 10 || got[0].Season != 1 || got[0].Episode != 9 || got[0].Badge != "newEpisode" || !got[0].Recent ||
-		got[1].ID != 11 || got[1].Season != 2 || got[1].Episode != 1 || got[1].Badge != "newSeason" || got[1].Recent {
-		t.Fatalf("NewEpisodes = %+v", got)
+		got[1].ID != 12 || got[1].Season != 1 || got[1].Episode != 6 || got[1].Badge != "" ||
+		got[2].ID != 11 || got[2].Season != 2 || got[2].Episode != 1 || got[2].Badge != "newSeason" || got[2].Recent {
+		t.Fatalf("NextEpisodes = %+v", got)
 	}
 
 	// 10 checked now, 11 ended and checked 10 days ago: not due. 12's next episode aired, 13 not checked for a week,
