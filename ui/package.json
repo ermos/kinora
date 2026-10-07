@@ -31,7 +31,7 @@
     "@react-native-tvos/config-tv": "^0.1.7",
     "@types/react": "~19.3.0",
     "openapi-typescript": "^7.13.0",
-    "typescript": "^5.9.3"
+    "typescript": "^7.0.0"
   },
   "scripts": {
     "start": "expo start",
