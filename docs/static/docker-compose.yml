@@ -1,10 +1,13 @@
+# kinora: https://kinora.stream/docs/installation
+# Put TMDB_API_KEY=your_key in a .env file next to this one, then: docker compose up -d
 services:
   kinora:
-    build: .
+    image: ghcr.io/ermos/kinora:latest
     ports:
       - "8080:8080"
     env_file: .env
     environment:
+      TMDB_API_KEY: ${TMDB_API_KEY:?set TMDB_API_KEY in .env (free key at https://www.themoviedb.org/settings/api)}
       DATABASE_URL: postgres://kinora:kinora@postgres:5432/kinora?sslmode=disable
     depends_on:
       postgres:
