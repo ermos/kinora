@@ -97,6 +97,9 @@ export const en = {
     inProgress: 'In progress',
     newEpisodes: 'New episodes',
     toWatch: 'To watch',
+    family: 'Family list',
+    liked: 'My likes',
+    finished: 'Finished',
   },
   search: {
     recent: 'History',
@@ -115,6 +118,12 @@ export const en = {
     genres: 'Genres: ',
     episodes: 'Episodes',
     similar: 'More like this',
+    more: 'More options',
+    like: 'I like this',
+    dislike: 'Not for me',
+    addFamily: 'Add to the family list',
+    removeFamily: 'Remove from the family list',
+    markWatched: 'Mark as fully watched',
   },
   badges: {
     new: 'New',

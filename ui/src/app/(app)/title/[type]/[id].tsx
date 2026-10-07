@@ -2,11 +2,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, type Href } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { BackHandler, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { api, img, unwrap, type Details, type MediaType, type Progress } from '../../../../api/client';
 import { useLibrary } from '../../../../components/Browse';
 import { Focusable } from '../../../../components/Focusable';
-import { Button, Chip, formatRuntime, Hero, Icon, icons, PosterGrid, ProgressBar, Spinner, styles as ui } from '../../../../components/ui';
+import { Button, Chip, formatRuntime, Hero, Icon, icons, PosterGrid, ProgressBar, Spinner, styles as ui, tvFocus } from '../../../../components/ui';
 import { colors, useLayout } from '../../../../theme';
 import { t } from '../../../../i18n';
 
@@ -47,6 +47,8 @@ export default function Title() {
         <View style={ui.heroActions}>
           <PlayButton type={type} details={d} last={last} />
           <ListButton type={type} details={d} />
+          <RateButtons type={type} details={d} />
+          <MoreButton type={type} details={d} />
         </View>
       </Hero>
 
@@ -116,6 +118,85 @@ function ListButton({ type, details }: { type: MediaType; details: Details }) {
     queryClient.invalidateQueries({ queryKey: ['library', 'list'] });
   };
   return <Button kind="grey" icon={inList ? icons.check : icons.plus} label={t('common.myList')} onPress={toggle} />;
+}
+
+function RoundButton({ icon, fill, label, onPress }: { icon: string; fill?: boolean; label: string; onPress: () => void }) {
+  return (
+    <Focusable accessibilityLabel={label} onPress={onPress} style={(active) => [styles.round, active && styles.roundActive, active && tvFocus]}>
+      <Icon d={icon} fill={fill} size={22} />
+    </Focusable>
+  );
+}
+
+/** Thumbs up and down, pressing the current one again removes it. */
+function RateButtons({ type, details }: { type: MediaType; details: Details }) {
+  const queryClient = useQueryClient();
+  const ratings = useQuery({ queryKey: ['library', 'ratings'], queryFn: () => unwrap(api.GET('/library/ratings')) });
+  const current = ratings.data?.find((r) => r.type === type && r.id === details.id)?.rating ?? 0;
+  const rate = async (rating: -1 | 1) => {
+    await api.PUT('/library/ratings', { body: { type, id: details.id, title: details.title, poster: details.poster, rating: current === rating ? 0 : rating } });
+    queryClient.invalidateQueries({ queryKey: ['library', 'ratings'] });
+    queryClient.invalidateQueries({ queryKey: ['library', 'family'] }); // a thumbs down hides it there
+  };
+  return (
+    <>
+      <RoundButton icon={icons.thumbUp} fill={current === 1} label={t('title.like')} onPress={() => rate(1)} />
+      <RoundButton icon={icons.thumbDown} fill={current === -1} label={t('title.dislike')} onPress={() => rate(-1)} />
+    </>
+  );
+}
+
+/** "⋮" next to "My list": family list and mark as watched. */
+function MoreButton({ type, details }: { type: MediaType; details: Details }) {
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const family = useQuery({ queryKey: ['library', 'family'], queryFn: () => unwrap(api.GET('/library/family')) });
+  const inFamily = family.data?.some((i) => i.type === type && i.id === details.id);
+  const path = { type, id: details.id };
+
+  // Back on the remote closes the menu instead of leaving the page.
+  useEffect(() => {
+    if (!open) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      setOpen(false);
+      return true;
+    });
+    return () => sub.remove();
+  }, [open]);
+
+  const toggleFamily = async () => {
+    if (inFamily) await api.DELETE('/library/family/{type}/{id}', { params: { path } });
+    else await api.PUT('/library/family', { body: { type, id: details.id, title: details.title, poster: details.poster } });
+    queryClient.invalidateQueries({ queryKey: ['library', 'family'] });
+    setOpen(false);
+  };
+  const markWatched = async () => {
+    setBusy(true);
+    await api.POST('/library/watched/{type}/{id}', { params: { path } });
+    setBusy(false);
+    setOpen(false);
+    queryClient.invalidateQueries({ queryKey: ['library'] }); // progress, history, stats
+    queryClient.invalidateQueries({ queryKey: ['foryou'] });
+  };
+
+  return (
+    <View style={{ zIndex: 10 }}>
+      <RoundButton icon={icons.more} fill label={t('title.more')} onPress={() => setOpen(!open)} />
+      {open && (
+        <View style={styles.menu}>
+          <Focusable hasTVPreferredFocus onPress={toggleFamily} style={(active) => [styles.menuItem, active && styles.menuItemActive]}>
+            <Icon d={inFamily ? icons.check : icons.plus} size={18} />
+            <Text style={ui.text}>{t(inFamily ? 'title.removeFamily' : 'title.addFamily')}</Text>
+          </Focusable>
+          <Focusable disabled={busy} onPress={markWatched} style={(active) => [styles.menuItem, active && styles.menuItemActive]}>
+            <Icon d={icons.check} size={18} />
+            <Text style={ui.text}>{busy ? '…' : t('title.markWatched')}</Text>
+          </Focusable>
+        </View>
+      )}
+    </View>
+  );
 }
 
 function Episodes({ details, progress }: { details: Details; progress: Progress[] }) {
@@ -188,6 +269,11 @@ const styles = StyleSheet.create({
   metaText: { color: '#ddd', fontSize: 16 },
   badgeText: { color: '#fff', fontSize: 13, fontWeight: '800', textTransform: 'uppercase', backgroundColor: colors.red, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 2 },
   info: { flexDirection: 'row', gap: 32 },
+  round: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(109,109,110,0.7)', alignSelf: 'center' },
+  roundActive: { backgroundColor: 'rgba(150,150,150,0.9)' },
+  menu: { position: 'absolute', top: 52, left: 0, minWidth: 260, paddingVertical: 6, backgroundColor: 'rgba(20,20,20,0.97)', borderWidth: 1, borderColor: '#404040', borderRadius: 6 },
+  menuItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 16 },
+  menuItemActive: { backgroundColor: colors.bg3 },
   fact: { color: '#fff', fontSize: 14 },
   episode: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 16, borderRadius: 4, borderBottomWidth: 1, borderBottomColor: '#404040' },
   episodeActive: { backgroundColor: '#333' },

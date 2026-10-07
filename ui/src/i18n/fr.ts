@@ -96,6 +96,9 @@ export const fr = {
     inProgress: 'En cours',
     newEpisodes: 'Nouveaux épisodes',
     toWatch: 'À regarder',
+    family: 'Liste familiale',
+    liked: "Mes j'aime",
+    finished: 'Terminés',
   },
   search: {
     recent: 'Historique',
@@ -114,6 +117,12 @@ export const fr = {
     genres: 'Genres : ',
     episodes: 'Épisodes',
     similar: 'Titres similaires',
+    more: "Plus d'options",
+    like: "J'aime",
+    dislike: "Je n'aime pas",
+    addFamily: 'Ajouter à la liste familiale',
+    removeFamily: 'Retirer de la liste familiale',
+    markWatched: 'Marquer comme vu entièrement',
   },
   badges: {
     new: 'Nouveau',
