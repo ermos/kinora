@@ -34,7 +34,7 @@ services:
   # Optional: daily database dumps in the backups volume (7 daily, 4 weekly, 6 monthly kept). Enable it with
   # COMPOSE_PROFILES=backup in .env.
   backup:
-    image: prodrigestivill/postgres-backup-local:17
+    image: prodrigestivill/postgres-backup-local:18
     profiles: [backup]
     environment:
       POSTGRES_HOST: postgres
