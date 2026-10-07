@@ -1,5 +1,5 @@
 # Both build stages run on the build platform: web assets are arch-independent and Go cross-compiles.
-FROM --platform=$BUILDPLATFORM node:22-alpine AS ui
+FROM --platform=$BUILDPLATFORM node:24-alpine AS ui
 WORKDIR /src/ui
 COPY ui/package.json ui/package-lock.json ui/.npmrc ./
 RUN npm ci
