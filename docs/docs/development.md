@@ -85,7 +85,7 @@ The site lives in `docs/` and uses [Docusaurus](https://docusaurus.io).
 ```bash
 cd docs
 npm ci
-npm start   # http://localhost:3000/kinora/
+npm start   # http://localhost:3000
 ```
 
 Pages are Markdown files in `docs/docs/`. The landing page is `docs/src/pages/index.tsx`.

@@ -323,7 +323,8 @@
   font-size: inherit;
 }
 .step a,
-.next a {
+.next a,
+.footer a {
   color: #fff;
   text-decoration: underline;
 }

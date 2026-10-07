@@ -42,6 +42,10 @@ Scrubs V2 is the English counterpart of vStream: an Exodus fork that scrapes fre
 | Bstsrs | TV shows | Needs FlareSolverr |
 | Project Free TV | movies, TV shows | Needs FlareSolverr |
 
+Not ported: live TV and sports (not a catalog), direct downloads (extreme_down, wawacity... need a debrid service),
+sources vStream disabled or removed itself, dead sites, and sites that ask for a Turnstile captcha on every link
+(cpasmal, dulourd, juststream, PrimeWire...), which FlareSolverr does not solve.
+
 ## Hosters
 
 Supported: Lulustream, Vidzy, Uqload, Voe (and its clones, detected by content), Vidmoly, Veev, Filemoon, Mixdrop,

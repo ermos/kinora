@@ -42,3 +42,7 @@ kinora does not host any content. It finds links on third-party websites. Check 
 stream.
 
 :::
+
+## License
+
+kinora is free and open source under the [GNU AGPL v3](https://github.com/ermos/kinora/blob/main/LICENSE).

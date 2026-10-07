@@ -86,7 +86,7 @@ export default function Home(): ReactNode {
             <h1 className={s.title}>Netflix, self&#8209;hosted.</h1>
             <p className={s.meta}>
               <span className={s.match}>100% yours</span>
-              <span>No subscription</span>
+              <span>Open source</span>
               <span className={s.badge}>4K</span>
               <span className={s.badge}>TV</span>
             </p>
@@ -142,7 +142,7 @@ export default function Home(): ReactNode {
         </section>
 
         <footer className={s.footer}>
-          <span>Made with Go, Expo and PostgreSQL.</span>
+          <span>Free and open source under the <a href={`${GITHUB}/blob/main/LICENSE`}>AGPL-3.0</a>. Made with Go, Expo and PostgreSQL.</span>
           <span>It does not host any content. Check what your local law allows before you stream.</span>
         </footer>
       </main>
