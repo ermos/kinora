@@ -165,6 +165,12 @@ export const fr = {
     flaresolverrHint: 'Serveur FlareSolverr pour interroger aussi les sites protégés par Cloudflare. Vide : ces sites sont ignorés.',
     flaresolverrOn: 'FlareSolverr activé : les sites protégés par Cloudflare sont interrogés.',
     flaresolverrOff: 'FlareSolverr désactivé.',
+    updates: "Mises à jour de l'app TV",
+    updatesHint: 'Les TV cherchent une nouvelle version une fois par jour. Vérifie maintenant pour la voir tout de suite.',
+    checkUpdates: 'Vérifier les mises à jour',
+    upToDate: 'À jour (version {version}).',
+    updateLatest: 'Dernière version : {version}. Les TV la proposent à leur prochain lancement.',
+    noRelease: 'Aucune version publiée pour le moment.',
     disable: 'Désactiver',
   },
   // One message per API error code: the build fails when the server adds a code not translated here.
@@ -200,5 +206,6 @@ export const fr = {
     flaresolverr_unreachable: 'Aucun serveur FlareSolverr ne répond à cette adresse.',
     device_code_expired: "Ce code a expiré, un nouveau va s'afficher.",
     device_code_invalid: 'Code inconnu ou expiré : vérifie celui affiché sur la TV.',
+    release_unreachable: 'Impossible de vérifier les mises à jour, réessaie plus tard.',
   } satisfies Record<ErrorCode, string>,
 };

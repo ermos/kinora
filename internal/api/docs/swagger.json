@@ -58,7 +58,8 @@
                             "invalid_progress",
                             "flaresolverr_unreachable",
                             "device_code_expired",
-                            "device_code_invalid"
+                            "device_code_invalid",
+                            "release_unreachable"
                         ],
                         "type": "string"
                     },
@@ -334,6 +335,26 @@
                     "avatar",
                     "name",
                     "skipSegments"
+                ],
+                "type": "object"
+            },
+            "api.release": {
+                "properties": {
+                    "apk": {
+                        "description": "APK download URL: absolute, or in development a signed, expiring path on this server (the native downloader\ndoes not send the session cookie).",
+                        "type": "string"
+                    },
+                    "notes": {
+                        "type": "string"
+                    },
+                    "version": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "apk",
+                    "notes",
+                    "version"
                 ],
                 "type": "object"
             },
@@ -858,6 +879,39 @@
                     }
                 },
                 "summary": "Change the instance language (catalog, UI and sources)",
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
+        "/admin/update/check": {
+            "post": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.release"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "204": {
+                        "description": "No release available"
+                    },
+                    "502": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.apiError"
+                                }
+                            }
+                        },
+                        "description": "Bad Gateway"
+                    }
+                },
+                "summary": "Check for a new TV app release now, skipping the cache",
                 "tags": [
                     "admin"
                 ]
@@ -2089,6 +2143,80 @@
                 "summary": "Opening and ending of a movie or episode, for the skip buttons (empty when unknown or turned off for the profile)",
                 "tags": [
                     "catalog"
+                ]
+            }
+        },
+        "/update": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.release"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "204": {
+                        "description": "No release available, or the release source is unreachable"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "summary": "Latest TV app release, for the in-app update prompt",
+                "tags": [
+                    "instance"
+                ]
+            }
+        },
+        "/update/apk": {
+            "get": {
+                "parameters": [
+                    {
+                        "description": "Signed token from /update",
+                        "in": "query",
+                        "name": "token",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/vnd.android.package-archive": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/vnd.android.package-archive": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "summary": "The locally built TV APK (development only), at the signed URL given by /update",
+                "tags": [
+                    "instance"
                 ]
             }
         }

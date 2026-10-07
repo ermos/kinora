@@ -126,22 +126,27 @@ Construire l'APK :
 - **Dans le cloud, sans SDK** : `npx eas-cli@latest build -p android --profile tv` (compte Expo gratuit, `eas init`
   la première fois). Le lien de l'APK s'affiche à la fin.
 
-Mises à jour depuis l'app : au lancement, l'app Android lit la dernière release à l'URL donnée au build et, si elle
-est plus récente, propose de l'installer (nouveautés, « Plus tard », « Ignorer cette version »). Variables lues au
-build :
+Mises à jour depuis l'app : au lancement, une fois connectée, l'app Android demande la dernière release au serveur
+(`GET /api/v1/update`, `{version, notes, apk}`) et, si elle est plus récente, propose de l'installer (nouveautés,
+« Plus tard », « Ignorer cette version »). Selon `APP_ENV` :
+
+- `production` (défaut) : la dernière release GitHub (`tag_name`, `body`, l'asset `.apk`), gardée un jour. Un admin
+  peut forcer la vérification depuis la page Compte (« Vérifier les mises à jour »).
+- `development` : l'APK construit en local (`npm run tv:apk`), version lue dans
+  `ui/android/app/build/outputs/apk/release/output-metadata.json`, servi par `GET /api/v1/update/apk` via un lien
+  signé valable une heure (route absente en production). Lancer le serveur depuis la racine du dépôt (`make run`).
+
+Variables lues au build de l'APK :
 
 - `APP_VERSION` : version de l'APK (`1.2.3`, un tag `v1.2.3` marche aussi), `versionCode` en découle. Chaque
   release doit l'augmenter.
-- `EXPO_PUBLIC_UPDATE_URL` : JSON au format de l'API GitHub, par exemple
-  `https://api.github.com/repos/ermos/kinora/releases/latest` (`tag_name`, `body` pour les nouveautés, un asset `.apk`).
-  Sans elle, pas de vérification.
 - `KINORA_KEYSTORE`, `KINORA_KEYSTORE_PASSWORD`, `KINORA_KEY_ALIAS` : clé de release. Android n'installe une mise à
   jour que signée avec la même clé que l'app en place : la garder précieusement, hors du dépôt. Une clé se crée avec
   `keytool -genkeypair -keystore release.keystore -alias kinora -keyalg RSA -keysize 4096 -validity 10000`.
 
 ```sh
 cd ui && set -a && . ../.env && set +a
-APP_VERSION=1.0.1 EXPO_PUBLIC_UPDATE_URL=https://api.github.com/repos/ermos/kinora/releases/latest npm run tv:apk
+APP_VERSION=1.0.1 npm run tv:apk
 ```
 
 Tester sur un Mac :

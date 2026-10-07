@@ -120,6 +120,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/update/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Check for a new TV app release now, skipping the cache */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["api.release"];
+                    };
+                };
+                /** @description No release available */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Gateway */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["api.apiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/users": {
         parameters: {
             query?: never;
@@ -1471,6 +1523,106 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Latest TV app release, for the in-app update prompt */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["api.release"];
+                    };
+                };
+                /** @description No release available, or the release source is unreachable */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["api.apiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/update/apk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The locally built TV APK (development only), at the signed URL given by /update */
+        get: {
+            parameters: {
+                query: {
+                    /** @description Signed token from /update */
+                    token: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/vnd.android.package-archive": string;
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/vnd.android.package-archive": components["schemas"]["api.apiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1483,7 +1635,7 @@ export interface components {
         };
         "api.apiError": {
             /** @enum {string} */
-            code: "invalid_json" | "unsupported_media_type" | "not_logged_in" | "session_expired" | "admin_only" | "missing_profile" | "unknown_profile" | "internal" | "not_found" | "invalid_credentials" | "already_set_up" | "username_required" | "password_length" | "unsupported_language" | "wrong_password" | "name_required" | "unknown_avatar" | "profile_limit" | "last_profile" | "username_taken" | "delete_self" | "invalid_id" | "invalid_request" | "episode_required" | "tmdb_unreachable" | "invalid_link" | "link_dead" | "invalid_progress" | "flaresolverr_unreachable" | "device_code_expired" | "device_code_invalid";
+            code: "invalid_json" | "unsupported_media_type" | "not_logged_in" | "session_expired" | "admin_only" | "missing_profile" | "unknown_profile" | "internal" | "not_found" | "invalid_credentials" | "already_set_up" | "username_required" | "password_length" | "unsupported_language" | "wrong_password" | "name_required" | "unknown_avatar" | "profile_limit" | "last_profile" | "username_taken" | "delete_self" | "invalid_id" | "invalid_request" | "episode_required" | "tmdb_unreachable" | "invalid_link" | "link_dead" | "invalid_progress" | "flaresolverr_unreachable" | "device_code_expired" | "device_code_invalid" | "release_unreachable";
             error: string;
         };
         "api.credentials": {
@@ -1563,6 +1715,15 @@ export interface components {
             name: string;
             /** @description SkipSegments shows the "skip intro" and "skip credits" buttons. */
             skipSegments: boolean;
+        };
+        "api.release": {
+            /**
+             * @description APK download URL: absolute, or in development a signed, expiring path on this server (the native downloader
+             *     does not send the session cookie).
+             */
+            apk: string;
+            notes: string;
+            version: string;
         };
         "api.row": {
             items: components["schemas"]["tmdb.Item"][];
