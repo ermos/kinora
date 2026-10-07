@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"path"
 	"regexp"
 	"strconv"
 	"strings"
@@ -467,6 +468,7 @@ func init() {
 	Hosters = append(Hosters,
 		Hoster{Name: "Sendvid", Match: []string{"sendvid"}, Resolve: sendvid},
 		Hoster{Name: "Sibnet", Match: []string{"sibnet"}, Resolve: sibnet},
+		Hoster{Name: "Lecteur3", Match: []string{"lecteur-3"}, Resolve: lecteur3},
 	)
 }
 
@@ -494,4 +496,21 @@ func sibnet(ctx context.Context, c *Client, u string) (Stream, error) {
 		return Stream{}, ErrNotFound
 	}
 	return Stream{URL: AbsURL(main, src), Headers: map[string]string{"Referer": u}}, nil
+}
+
+// lecteur3 asks the player's API for the stream, as its page does: POST /api/stream {"filecode": <last path segment>}.
+func lecteur3(ctx context.Context, c *Client, u string) (Stream, error) {
+	code := path.Base(strings.SplitN(u, "?", 2)[0])
+	body, _ := json.Marshal(map[string]string{"filecode": code, "device": "web"})
+	res, _, err := c.do(ctx, http.MethodPost, Origin(u)+"/api/stream", string(body), map[string]string{"Content-Type": "application/json", "Referer": u})
+	if err != nil {
+		return Stream{}, err
+	}
+	var out struct {
+		URL string `json:"streaming_url"`
+	}
+	if json.Unmarshal([]byte(res), &out) != nil || out.URL == "" {
+		return Stream{}, fmt.Errorf("lecteur3: %w", ErrNotFound)
+	}
+	return Stream{URL: out.URL, Headers: map[string]string{"Referer": Origin(u) + "/"}}, nil
 }

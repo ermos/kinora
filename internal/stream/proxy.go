@@ -95,6 +95,10 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid or expired link", http.StatusForbidden)
 		return
 	}
+	if f, ok := scraper.ParseAbyss(t.URL); ok {
+		p.serveAbyss(w, r, f, t.Headers)
+		return
+	}
 	req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, t.URL, nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
