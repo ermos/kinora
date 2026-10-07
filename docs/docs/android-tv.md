@@ -81,6 +81,10 @@ cd ui && set -a && . ../.env && set +a
 APP_VERSION=1.0.1 npm run tv:apk
 ```
 
+On each release, the Release workflow builds the APK and attaches it to the GitHub release. It signs it with the
+repository secrets `KINORA_KEYSTORE_BASE64` (`base64 -i release.keystore`), `KINORA_KEYSTORE_PASSWORD` and
+`KINORA_KEY_ALIAS`, or with the debug key when they are missing.
+
 ## Test on an emulator
 
 On a Mac:

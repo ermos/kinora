@@ -42,10 +42,11 @@ Then open [http://localhost:8080](http://localhost:8080).
 
 ## Release
 
-Push a `vX.Y.Z` tag: the `Release` workflow builds the `ghcr.io/ermos/kinora` image for `amd64` and `arm64` and tags it
-`X.Y.Z`, `X.Y`, `X` and `latest`. Then build the Android TV APK with `APP_VERSION=X.Y.Z` (see
-[Android TV](./android-tv.md#release-builds)) and attach `app-release.apk` to the GitHub release: installed apps offer
-the update from there.
+Releases are automatic, from the [conventional commits](https://www.conventionalcommits.org) merged on `main`: `feat`
+bumps the minor version, `fix` and `perf` the patch, a breaking change (`feat!:` or a `BREAKING CHANGE` footer) the
+major. Other types (`chore`, `docs`, `ci`...) don't release. The `Release` workflow then tags `vX.Y.Z`, builds the
+`ghcr.io/ermos/kinora` image for `amd64` and `arm64` (tagged `X.Y.Z`, `X.Y`, `X` and `latest`), builds the Android TV
+APK and attaches it to the GitHub release: installed apps offer the update from there.
 
 ## The UI is built for TV
 
