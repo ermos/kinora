@@ -15,13 +15,13 @@ services:
     restart: unless-stopped
 
   postgres:
-    image: postgres:17-alpine
+    image: postgres:18-alpine
     environment:
       POSTGRES_USER: kinora
       POSTGRES_PASSWORD: kinora
       POSTGRES_DB: kinora
     volumes:
-      - postgres:/var/lib/postgresql/data
+      - postgres:/var/lib/postgresql
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "kinora"]
       interval: 5s
@@ -37,7 +37,7 @@ services:
   # Optional: daily database dumps in the backups volume (7 daily, 4 weekly, 6 monthly kept). Enable it with
   # COMPOSE_PROFILES=backup in .env.
   backup:
-    image: prodrigestivill/postgres-backup-local:17
+    image: prodrigestivill/postgres-backup-local:18
     profiles: [backup]
     environment:
       POSTGRES_HOST: postgres
