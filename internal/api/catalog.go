@@ -468,7 +468,7 @@ func (h *Handler) play(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadGateway, errLinkDead)
 		return
 	}
-	u, err := h.proxy.URL(st)
+	u, err := h.proxy.URL(st, currentUser(r).MaxStreamMbps)
 	if err != nil {
 		internalError(w, err)
 		return

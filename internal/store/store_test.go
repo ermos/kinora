@@ -88,3 +88,19 @@ func TestContinueWatching(t *testing.T) {
 		t.Fatalf("RecentlyWatched(movie, 1) = %+v", movies)
 	}
 }
+
+// The stream limit must reach the session lookup the play handler reads it from.
+func TestStreamLimit(t *testing.T) {
+	s, ctx := New(testDB(t)), context.Background()
+	u, _ := s.CreateUser(ctx, "a", "h", false)
+	_ = s.CreateSession(ctx, "tok", u.ID, time.Now().Add(time.Hour))
+	if err := s.SetStreamLimit(ctx, u.ID, 20); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := s.UserBySession(ctx, "tok"); err != nil || got.MaxStreamMbps != 20 {
+		t.Fatalf("UserBySession = %+v, %v", got, err)
+	}
+	if err := s.SetStreamLimit(ctx, u.ID+1, 20); err != ErrNotFound {
+		t.Fatalf("unknown user: %v", err)
+	}
+}

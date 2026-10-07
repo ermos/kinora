@@ -18,6 +18,8 @@ type User struct {
 	Username     string `json:"username"`
 	IsAdmin      bool   `json:"isAdmin"`
 	PasswordHash string `json:"-"`
+	// MaxStreamMbps caps the throughput of each stream the account plays, in Mbit/s (0: unlimited).
+	MaxStreamMbps int `json:"maxStreamMbps"`
 }
 
 type Profile struct {
@@ -75,20 +77,20 @@ func (s *Store) CreateUser(ctx context.Context, username, hash string, admin boo
 
 func (s *Store) scanUser(row *sql.Row) (User, error) {
 	var u User
-	err := row.Scan(&u.ID, &u.Username, &u.IsAdmin, &u.PasswordHash)
+	err := row.Scan(&u.ID, &u.Username, &u.IsAdmin, &u.PasswordHash, &u.MaxStreamMbps)
 	return u, notFound(err)
 }
 
 func (s *Store) UserByUsername(ctx context.Context, username string) (User, error) {
-	return s.scanUser(s.db.QueryRowContext(ctx, "SELECT id, username, is_admin, password_hash FROM users WHERE lower(username) = lower($1)", username))
+	return s.scanUser(s.db.QueryRowContext(ctx, "SELECT id, username, is_admin, password_hash, max_stream_mbps FROM users WHERE lower(username) = lower($1)", username))
 }
 
 func (s *Store) UserByID(ctx context.Context, id int64) (User, error) {
-	return s.scanUser(s.db.QueryRowContext(ctx, "SELECT id, username, is_admin, password_hash FROM users WHERE id = $1", id))
+	return s.scanUser(s.db.QueryRowContext(ctx, "SELECT id, username, is_admin, password_hash, max_stream_mbps FROM users WHERE id = $1", id))
 }
 
 func (s *Store) ListUsers(ctx context.Context) ([]User, error) {
-	rows, err := s.db.QueryContext(ctx, "SELECT id, username, is_admin FROM users ORDER BY id")
+	rows, err := s.db.QueryContext(ctx, "SELECT id, username, is_admin, max_stream_mbps FROM users ORDER BY id")
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +98,7 @@ func (s *Store) ListUsers(ctx context.Context) ([]User, error) {
 	out := []User{}
 	for rows.Next() {
 		var u User
-		if err := rows.Scan(&u.ID, &u.Username, &u.IsAdmin); err != nil {
+		if err := rows.Scan(&u.ID, &u.Username, &u.IsAdmin, &u.MaxStreamMbps); err != nil {
 			return nil, err
 		}
 		out = append(out, u)
@@ -107,6 +109,17 @@ func (s *Store) ListUsers(ctx context.Context) ([]User, error) {
 func (s *Store) DeleteUser(ctx context.Context, id int64) error {
 	_, err := s.db.ExecContext(ctx, "DELETE FROM users WHERE id = $1", id)
 	return err
+}
+
+func (s *Store) SetStreamLimit(ctx context.Context, id int64, mbps int) error {
+	res, err := s.db.ExecContext(ctx, "UPDATE users SET max_stream_mbps = $1 WHERE id = $2", mbps, id)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
 }
 
 func (s *Store) SetPassword(ctx context.Context, id int64, hash string) error {
@@ -123,7 +136,7 @@ func (s *Store) CreateSession(ctx context.Context, tokenHash string, userID int6
 }
 
 func (s *Store) UserBySession(ctx context.Context, tokenHash string) (User, error) {
-	return s.scanUser(s.db.QueryRowContext(ctx, `SELECT u.id, u.username, u.is_admin, u.password_hash
+	return s.scanUser(s.db.QueryRowContext(ctx, `SELECT u.id, u.username, u.is_admin, u.password_hash, u.max_stream_mbps
 		FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = $1 AND s.expires_at > extract(epoch FROM now())::bigint`, tokenHash))
 }
 
