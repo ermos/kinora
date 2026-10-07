@@ -38,6 +38,7 @@ const (
 	errFlareSolverr        errCode = "flaresolverr_unreachable"
 	errDeviceCodeExpired   errCode = "device_code_expired"
 	errDeviceCodeInvalid   errCode = "device_code_invalid"
+	errReleaseUnreachable  errCode = "release_unreachable"
 )
 
 var errMessages = map[errCode]string{
@@ -72,11 +73,12 @@ var errMessages = map[errCode]string{
 	errFlareSolverr:        "no FlareSolverr server answers at this URL",
 	errDeviceCodeExpired:   "this code expired, ask for a new one",
 	errDeviceCodeInvalid:   "unknown or expired code",
+	errReleaseUnreachable:  "the release source is unreachable, try again later",
 }
 
 // apiError is the body of every error response.
 type apiError struct {
-	Code  string `json:"code" enums:"invalid_json,unsupported_media_type,not_logged_in,session_expired,admin_only,missing_profile,unknown_profile,internal,not_found,invalid_credentials,already_set_up,username_required,password_length,unsupported_language,wrong_password,name_required,unknown_avatar,profile_limit,last_profile,username_taken,delete_self,invalid_id,invalid_request,episode_required,tmdb_unreachable,invalid_link,link_dead,invalid_progress,flaresolverr_unreachable,device_code_expired,device_code_invalid"`
+	Code  string `json:"code" enums:"invalid_json,unsupported_media_type,not_logged_in,session_expired,admin_only,missing_profile,unknown_profile,internal,not_found,invalid_credentials,already_set_up,username_required,password_length,unsupported_language,wrong_password,name_required,unknown_avatar,profile_limit,last_profile,username_taken,delete_self,invalid_id,invalid_request,episode_required,tmdb_unreachable,invalid_link,link_dead,invalid_progress,flaresolverr_unreachable,device_code_expired,device_code_invalid,release_unreachable"`
 	Error string `json:"error"`
 }
 

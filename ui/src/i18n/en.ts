@@ -166,6 +166,12 @@ export const en = {
     flaresolverrHint: 'FlareSolverr server, to also search the sites protected by Cloudflare. Empty: those sites are skipped.',
     flaresolverrOn: 'FlareSolverr enabled: sites protected by Cloudflare are searched.',
     flaresolverrOff: 'FlareSolverr disabled.',
+    updates: 'TV app updates',
+    updatesHint: 'TVs look for a new version once a day. Check now to see it right away.',
+    checkUpdates: 'Check for updates',
+    upToDate: 'Up to date (version {version}).',
+    updateLatest: 'Latest version: {version}. TVs offer it on their next launch.',
+    noRelease: 'No release published yet.',
     disable: 'Disable',
   },
   // One message per API error code: the build fails when the server adds a code not translated here.
@@ -201,5 +207,6 @@ export const en = {
     flaresolverr_unreachable: 'No FlareSolverr server answers at this URL.',
     device_code_expired: 'This code expired, a new one is coming.',
     device_code_invalid: 'Unknown or expired code: check the one on the TV.',
+    release_unreachable: 'Could not check for updates, try again later.',
   } satisfies Record<ErrorCode, string>,
 };

@@ -3,40 +3,27 @@ import { File, Paths } from 'expo-file-system';
 import { ActivityAction, startActivityAsync } from 'expo-intent-launcher';
 import { useEffect, useState } from 'react';
 import { BackHandler, Platform, ScrollView, StyleSheet, Text, TVFocusGuideView, View } from 'react-native';
+import { absolute, api, useProfile } from '../api/client';
 import { getItem, setItem } from '../lib/storage';
+import { newer } from '../lib/version';
 import { t } from '../i18n';
 import { colors } from '../theme';
 import { Button, Spinner, styles as ui } from './ui';
 
-/**
- * Where the latest release is described, set at build time. Same shape as GitHub's "latest release" API
- * (https://api.github.com/repos/<owner>/<repo>/releases/latest): tag_name, body (the notes), assets[] with the APK.
- */
-const UPDATE_URL = process.env.EXPO_PUBLIC_UPDATE_URL;
 const SKIPPED = 'update.skipped';
 const GRANT_READ_URI_PERMISSION = 1;
 const PACKAGE = 'com.ermos.kinora';
 
-type Release = { version: string; notes: string; apk: string };
+export type Release = { version: string; notes: string; apk: string };
 
-/** "1.2.10" > "1.2.9": numeric parts compared in order. */
-export function newer(a: string, b: string) {
-  const pa = a.split('.').map(Number);
-  const pb = b.split('.').map(Number);
-  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-    const d = (pa[i] || 0) - (pb[i] || 0);
-    if (d) return d > 0;
-  }
-  return false;
-}
+let show: (r: Release) => void = () => {};
+/** Opens the prompt for a release, even a skipped one: the admin asked for it (account page). */
+export const offerUpdate = (r: Release) => show(r);
 
+/** The server picks the release: GitHub's latest, or the local build in development (APK served by the server). */
 async function latestRelease(): Promise<Release | null> {
-  if (!UPDATE_URL) return null;
-  const res = await fetch(UPDATE_URL, { headers: { Accept: 'application/vnd.github+json' } });
-  if (!res.ok) return null;
-  const r = (await res.json()) as { tag_name?: string; body?: string; assets?: { name?: string; browser_download_url?: string }[] };
-  const apk = r.assets?.find((a) => a.name?.endsWith('.apk'))?.browser_download_url;
-  return r.tag_name && apk ? { version: r.tag_name.replace(/^v/, ''), notes: r.body ?? '', apk } : null;
+  const { data, response } = await api.GET('/update');
+  return response.status === 200 && data ? data : null;
 }
 
 /**
@@ -45,8 +32,12 @@ async function latestRelease(): Promise<Release | null> {
  */
 export function UpdatePrompt({ onShow }: { onShow?: (shown: boolean) => void }) {
   const current = Constants.expoConfig?.version ?? '0';
+  const signedIn = !!useProfile(); // /update needs a session: checked once a profile is picked
   const [release, setRelease] = useState<Release | null>(null);
   const [phase, setPhase] = useState<'ask' | 'downloading' | 'failed'>('ask');
+  useEffect(() => {
+    show = setRelease;
+  }, []);
   useEffect(() => onShow?.(!!release), [release, onShow]);
   // Asked once the app behind is hidden: hiding it moves the focus, the button would lose it right away.
   const [focusReady, setFocusReady] = useState(false);
@@ -67,12 +58,12 @@ export function UpdatePrompt({ onShow }: { onShow?: (shown: boolean) => void }) 
   }, [release]);
 
   useEffect(() => {
-    if (Platform.OS !== 'android') return;
+    if (Platform.OS !== 'android' || !signedIn) return;
     (async () => {
       const r = await latestRelease();
       if (r && newer(r.version, current) && (await getItem(SKIPPED)) !== r.version) setRelease(r);
     })().catch(() => {}); // no network, no release: try again next launch
-  }, [current]);
+  }, [current, signedIn]);
 
   if (!release) return null;
 
@@ -81,7 +72,7 @@ export function UpdatePrompt({ onShow }: { onShow?: (shown: boolean) => void }) 
     try {
       const file = new File(Paths.cache, 'kinora-update.apk');
       if (file.exists) file.delete();
-      const apk = await File.downloadFileAsync(release.apk, file);
+      const apk = await File.downloadFileAsync(absolute(release.apk), file);
       setPhase('ask');
       await startActivityAsync('android.intent.action.VIEW', { data: apk.contentUri, flags: GRANT_READ_URI_PERMISSION, type: 'application/vnd.android.package-archive' });
     } catch {

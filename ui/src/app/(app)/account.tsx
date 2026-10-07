@@ -2,10 +2,13 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState, type ReactNode } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
+import Constants from 'expo-constants';
 import { api, setCurrentProfile, unwrap, type User } from '../../api/client';
 import { Page } from '../../components/Browse';
+import { offerUpdate } from '../../components/UpdatePrompt';
 import { Button, Chip, Field, Spinner, styles as ui } from '../../components/ui';
 import { useMe } from '../../lib/auth';
+import { newer } from '../../lib/version';
 import { colors } from '../../theme';
 import { setLanguage, t, useLanguage, type LangCode } from '../../i18n';
 
@@ -41,6 +44,7 @@ export default function Account() {
           <>
             <InstanceLanguage />
             <FlareSolverr />
+            <Updates />
             <Users me={me.data} />
           </>
         )}
@@ -63,10 +67,11 @@ function Panel({ title, action, children }: { title: string; action?: ReactNode;
 
 function useAction() {
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
-  const run = async (fn: () => Promise<unknown>, ok?: string) => {
+  const run = async <T,>(fn: () => Promise<T>, ok?: string | ((r: T) => string | undefined)) => {
     try {
-      await fn();
-      setMsg(ok ? { ok: true, text: ok } : null);
+      const r = await fn();
+      const text = typeof ok === 'function' ? ok(r) : ok;
+      setMsg(text ? { ok: true, text } : null);
       return true;
     } catch (err) {
       setMsg({ ok: false, text: err instanceof Error ? err.message : String(err) });
@@ -142,6 +147,37 @@ function FlareSolverr() {
         <Field style={styles.input} placeholder="http://flaresolverr:8191" value={value} onChangeText={setUrl} autoCapitalize="none" autoCorrect={false} />
         <Button small label={t('common.save')} onPress={() => save(value.trim())} />
         {!!current.data?.url && <Button kind="outline" small label={t('account.disable')} onPress={() => save('')} />}
+      </View>
+      {view}
+    </Panel>
+  );
+}
+
+function Updates() {
+  const { run, view } = useAction();
+  const [busy, setBusy] = useState(false);
+  const current = Constants.expoConfig?.version ?? '0';
+
+  const check = async () => {
+    setBusy(true);
+    await run(
+      () => unwrap(api.POST('/admin/update/check')),
+      (r) => {
+        if (!r) return t('account.noRelease');
+        // Web: nothing to install here, the TVs offer it on their next launch.
+        if (Platform.OS === 'web') return t('account.updateLatest', { version: r.version });
+        if (!newer(r.version, current)) return t('account.upToDate', { version: current });
+        offerUpdate(r);
+      },
+    );
+    setBusy(false);
+  };
+
+  return (
+    <Panel title={t('account.updates')}>
+      <Text style={ui.muted}>{t('account.updatesHint')}</Text>
+      <View style={styles.form}>
+        <Button small label={busy ? '…' : t('account.checkUpdates')} onPress={check} disabled={busy} />
       </View>
       {view}
     </Panel>

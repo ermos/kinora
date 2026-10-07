@@ -37,10 +37,11 @@ type Handler struct {
 	linkCache linkCache
 	lang      atomic.Pointer[scraper.Language] // instance language, chosen at setup
 	aniskip   *aniskip.Client
+	releases  *releases
 }
 
-func New(st *store.Store, tm *tmdb.Client, signer *stream.Signer, lang scraper.Language) *Handler {
-	h := &Handler{store: st, tmdb: tm, signer: signer, proxy: stream.NewProxy(signer, "/api/v1/proxy"), aniskip: aniskip.New()}
+func New(st *store.Store, tm *tmdb.Client, signer *stream.Signer, lang scraper.Language, dev bool) *Handler {
+	h := &Handler{store: st, tmdb: tm, signer: signer, proxy: stream.NewProxy(signer, "/api/v1/proxy"), aniskip: aniskip.New(), releases: newReleases(dev)}
 	h.lang.Store(&lang)
 	return h
 }
@@ -62,6 +63,11 @@ func (h *Handler) Routes() http.Handler {
 	public("POST /api/v1/auth/device", h.deviceStart)
 	public("POST /api/v1/auth/device/poll", h.devicePoll)
 	user("POST /api/v1/auth/device/approve", h.deviceApprove)
+
+	user("GET /api/v1/update", h.latestRelease)
+	if h.releases.dev {
+		public("GET /api/v1/update/apk", h.localAPK) // the signed, expiring URL from /update is the credential
+	}
 
 	user("GET /api/v1/me", h.me)
 	user("PUT /api/v1/me/password", h.changePassword)
@@ -97,6 +103,7 @@ func (h *Handler) Routes() http.Handler {
 	admin("PUT /api/v1/admin/instance", h.updateInstance)
 	admin("GET /api/v1/admin/flaresolverr", h.getFlareSolverr)
 	admin("PUT /api/v1/admin/flaresolverr", h.updateFlareSolverr)
+	admin("POST /api/v1/admin/update/check", h.checkRelease)
 
 	return csrf(mux)
 }

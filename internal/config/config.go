@@ -12,6 +12,8 @@ type Config struct {
 	TMDBKey     string
 	// UIDevURL proxies the UI to an Expo dev server (make dev) instead of serving the embedded export.
 	UIDevURL string
+	// Dev (APP_ENV=development) serves the locally built TV APK as the latest release instead of GitHub's.
+	Dev bool
 }
 
 func Load() (Config, error) {
@@ -20,6 +22,7 @@ func Load() (Config, error) {
 		DatabaseURL: os.Getenv("DATABASE_URL"),
 		TMDBKey:     os.Getenv("TMDB_API_KEY"),
 		UIDevURL:    os.Getenv("UI_DEV_URL"),
+		Dev:         os.Getenv("APP_ENV") == "development",
 	}
 	if c.DatabaseURL == "" {
 		return c, errors.New("DATABASE_URL is required (postgres://user:password@host:5432/kinora)")
