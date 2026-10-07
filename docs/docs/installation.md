@@ -3,7 +3,9 @@ sidebar_position: 2
 title: Installation
 ---
 
-kinora ships as a single Go binary (the web app is built in) next to a PostgreSQL database. Docker Compose runs both.
+kinora ships as a Docker image, `ghcr.io/ermos/kinora`, published for `amd64` and `arm64` (Raspberry Pi 4 and 5,
+Apple Silicon, ARM NAS). It is a single Go binary with the web app built in, and it runs next to a PostgreSQL database.
+Docker Compose starts both.
 
 ## Requirements
 
@@ -14,16 +16,12 @@ kinora ships as a single Go binary (the web app is built in) next to a PostgreSQ
 
 ## Install with Docker Compose
 
+Download the compose file into a new folder and put your TMDB key in a `.env` file next to it:
+
 ```bash
-git clone https://github.com/ermos/kinora
-cd kinora
-cp .env.example .env
-```
-
-Open `.env` and set your key:
-
-```ini
-TMDB_API_KEY=your_tmdb_key
+mkdir kinora && cd kinora
+curl -fsSLO https://kinora.stream/docker-compose.yml
+echo "TMDB_API_KEY=your_tmdb_key" > .env
 ```
 
 Then start kinora:
@@ -32,13 +30,20 @@ Then start kinora:
 docker compose up -d
 ```
 
-This builds the image and starts three services:
+This pulls the image and starts three services ([see the file](pathname:///docker-compose.yml)):
 
 | Service | Role |
 |---|---|
 | `kinora` | the server and the web app, on port `8080` |
 | `postgres` | the database, stored in the `postgres` volume |
 | `flaresolverr` | optional, lets kinora reach sites behind Cloudflare (see [Configuration](./configuration.md#flaresolverr)) |
+
+### Image tags
+
+| Tag | Description |
+|---|---|
+| `latest` | the latest release |
+| `1`, `1.2`, `1.2.3` | pin a major, minor or exact version |
 
 ## First launch
 
@@ -51,11 +56,20 @@ visit redirects to `/setup`, where you:
 
 Other accounts are created by the admin from the Account page. There is no public sign-up.
 
+## Get the apps
+
+The web app is built into the server: open kinora in any browser, on a computer, a tablet or a phone.
+
+| Client | Where to get it |
+|---|---|
+| Web (computer, phone, tablet) | built in, at `http://<your-server>:8080` |
+| Android TV and Google TV | `app-release.apk` in the [latest release](https://github.com/ermos/kinora/releases/latest), see [Android TV](./android-tv.md) |
+
 ## Update
 
 ```bash
-git pull
-docker compose up -d --build
+docker compose pull
+docker compose up -d
 ```
 
 Database migrations run on startup.
@@ -83,9 +97,18 @@ docker compose run --rm -v ./data:/data kinora import-sqlite /data/kinora.db
 
 Users, sessions, profiles, lists, progress and settings are copied.
 
-## Run without Docker
+## Build from source
 
-You need Go (see `go.mod` for the version), Node.js 22 and any PostgreSQL.
+The `docker-compose.yml` of the repository builds the image from the sources instead of pulling it:
+
+```bash
+git clone https://github.com/ermos/kinora
+cd kinora
+cp .env.example .env   # set TMDB_API_KEY
+docker compose up -d --build
+```
+
+To run without Docker, you need Go (see `go.mod` for the version), Node.js 22 and any PostgreSQL.
 
 ```bash
 docker compose up -d postgres   # or your own PostgreSQL, through DATABASE_URL

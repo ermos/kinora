@@ -4,7 +4,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
   title: 'kinora',
-  tagline: 'Netflix, self-hosted.',
+  tagline: 'Every movie. Every show. Your server.',
   favicon: 'img/favicon.png',
   url: 'https://kinora.stream',
   baseUrl: '/',

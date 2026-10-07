@@ -2,9 +2,9 @@
 
 <img src="ui/assets/tv-banner.png" alt="kinora" width="420">
 
-### Netflix, self-hosted.
+### Every movie. Every show. Your server.
 
-Your own streaming service, on your own server. Browse like on Netflix, press play, and kinora searches every source
+Your own streaming service, on your own server. Browse a catalog of every movie and show, press play, and kinora searches every source
 it knows to start the best stream it finds. In your browser, on your phone and on your Android TV.
 
 [![CI](https://github.com/ermos/kinora/actions/workflows/ci.yml/badge.svg)](https://github.com/ermos/kinora/actions/workflows/ci.yml)
@@ -41,18 +41,24 @@ that your whole family already knows how to use.
 
 ## Quick start
 
-You need Docker and a free [TMDB API key](https://www.themoviedb.org/settings/api).
+You need Docker and a free [TMDB API key](https://www.themoviedb.org/settings/api). The image,
+`ghcr.io/ermos/kinora`, is published for `amd64` and `arm64`.
 
 ```sh
-git clone https://github.com/ermos/kinora
-cd kinora
-cp .env.example .env   # set TMDB_API_KEY
+mkdir kinora && cd kinora
+curl -fsSLO https://kinora.stream/docker-compose.yml
+echo "TMDB_API_KEY=your_tmdb_key" > .env
 docker compose up -d
 ```
 
 Open [http://localhost:8080](http://localhost:8080) and create the admin account.
 
-Updates, backups, reverse proxy, running without Docker: see the
+| Client | Where to get it |
+|---|---|
+| Web (computer, phone, tablet) | built into the server |
+| Android TV and Google TV | `app-release.apk` in the [latest release](https://github.com/ermos/kinora/releases/latest) |
+
+Updates, backups, reverse proxy, building from source: see the
 [installation guide](https://kinora.stream/docs/installation).
 
 ## Android TV
@@ -81,7 +87,8 @@ Go (single binary, `//go:embed` web app), PostgreSQL, Expo / React Native (web a
 Issues and pull requests are welcome. Sites change all the time, so the most useful contributions are fixes for
 broken sources and hosters: `make test-live` checks every one of them against the real sites. The
 [development guide](https://kinora.stream/docs/development) explains how to run kinora locally and how to port a
-source.
+source. The `docker-compose.yml` of this repository builds the image from the sources
+(`cp .env.example .env && docker compose up -d --build`).
 
 Commits follow [Conventional Commits](https://www.conventionalcommits.org).
 

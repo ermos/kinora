@@ -45,7 +45,7 @@ function Rail() {
 }
 
 const features = [
-  { tile: 'Feels like Netflix', title: 'The interface you already know', body: 'Rows, a big hero, profiles and "Continue watching". Movies, TV shows and anime from the TMDB catalog.', color: '#e50914' },
+  { tile: 'Feels familiar', title: 'The interface you already know', body: 'Rows, a big hero, profiles and "Continue watching". Movies, TV shows and anime from the TMDB catalog.', color: '#e50914' },
   { tile: 'All at once', title: 'Every source in parallel', body: 'Press play and kinora queries every active source, measures each stream, and starts the best one. Dead links fall back on their own.', color: '#2f80ed' },
   { tile: 'Remote first', title: 'Built for the couch', body: 'Web, phone and a native Android TV app. Everything works with a remote, a keyboard or a mouse.', color: '#27ae60' },
   { tile: 'Skip intro', title: 'Skip intro and credits', body: 'Community timestamps from AniSkip on anime, with a "Next episode" button. Off per profile if you prefer.', color: '#9b51e0' },
@@ -55,17 +55,33 @@ const features = [
 ];
 
 const steps: { title: string; code: string; body: ReactNode }[] = [
-  { title: 'Get the code', code: 'git clone https://github.com/ermos/kinora\ncd kinora', body: 'Docker and Docker Compose are the only requirements.' },
+  {
+    title: 'Get the compose file',
+    code: 'mkdir kinora && cd kinora\ncurl -fsSLO https://kinora.stream/docker-compose.yml',
+    body: 'Docker is all you need. The kinora image runs on amd64 and arm64, a Raspberry Pi included.',
+  },
   {
     title: 'Add your TMDB key',
-    code: 'cp .env.example .env\n# TMDB_API_KEY=your_key',
+    code: 'echo "TMDB_API_KEY=your_key" > .env',
     body: (
       <>
         Free on <a href="https://www.themoviedb.org/settings/api">themoviedb.org</a>. It powers the catalog and the artwork.
       </>
     ),
   },
-  { title: 'Press play', code: 'docker compose up -d', body: 'Open localhost:8080 and create the admin account. That\'s it.' },
+  { title: 'Press play', code: 'docker compose up -d', body: 'Open port 8080 in your browser and create the admin account. That\'s it.' },
+];
+
+const RELEASES = `${GITHUB}/releases/latest`;
+
+const clients = [
+  { title: 'In your browser', body: 'Built into the server. Computers, tablets and phones, nothing to install.', d: 'M3 4h18v12H3zM8 20h8M12 16v4' },
+  {
+    title: 'On Android TV',
+    body: 'A native app for Android TV and Google TV, made for the remote. Download the APK from the latest release, it then updates itself from your server.',
+    d: 'M2 5h20v13H2zM7 22h10',
+    link: { href: RELEASES, label: 'Download the APK' },
+  },
 ];
 
 export default function Home(): ReactNode {
@@ -73,7 +89,7 @@ export default function Home(): ReactNode {
   return (
     <div className={s.page} id="top">
       <Head>
-        <title>kinora: Netflix, self-hosted</title>
+        <title>kinora: every movie, every show, your server</title>
         <meta name="description" content="kinora is a self-hosted streaming server with a Netflix-style interface for the web and Android TV. One binary, one database, every source in parallel." />
         <meta name="theme-color" content="#141414" />
       </Head>
@@ -83,7 +99,7 @@ export default function Home(): ReactNode {
           <div className={s.backdrop} aria-hidden="true">K</div>
           <div className={s.heroContent}>
             <p className={s.wordmark}>KINORA</p>
-            <h1 className={s.title}>Netflix, self&#8209;hosted.</h1>
+            <h1 className={s.title}>Every movie. Every show. Your server.</h1>
             <p className={s.meta}>
               <span className={s.match}>100% yours</span>
               <span>Open source</span>
@@ -91,7 +107,7 @@ export default function Home(): ReactNode {
               <span className={s.badge}>TV</span>
             </p>
             <p className={s.overview}>
-              Your own streaming service, on your own server. Browse like on Netflix, press play, and kinora searches every
+              Your own streaming service, on your own server. Browse a catalog of every movie and show, press play, and kinora searches every
               source it knows to start the best stream it finds. In your browser, on your phone and on your Android TV.
             </p>
             <div className={s.actions}>
@@ -137,8 +153,27 @@ export default function Home(): ReactNode {
             ))}
           </ol>
           <p className={s.next}>
-            Android TV app, FlareSolverr, backups and every setting: <Link to={install}>read the installation guide</Link>.
+            FlareSolverr, backups, reverse proxy and every setting: <Link to={install}>read the installation guide</Link>.
           </p>
+        </section>
+
+        <section className={s.row} aria-labelledby="clients">
+          <h2 id="clients" className={s.rowTitle}>Watch on every screen</h2>
+          <div className={s.clients}>
+            {clients.map((c) => (
+              <article key={c.title} className={s.stepCard}>
+                <Icon d={c.d} />
+                <h3>{c.title}</h3>
+                <p>{c.body}</p>
+                {c.link && (
+                  <Link className={s.download} to={c.link.href}>
+                    <Icon d={icons.install} />
+                    {c.link.label}
+                  </Link>
+                )}
+              </article>
+            ))}
+          </div>
         </section>
 
         <footer className={s.footer}>

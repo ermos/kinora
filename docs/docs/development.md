@@ -40,6 +40,13 @@ Then open [http://localhost:8080](http://localhost:8080).
 | `make openapi` | regenerates the spec from the Go annotations, then the TypeScript client |
 | `make openapi-check` | fails if the committed spec is stale (run in CI) |
 
+## Release
+
+Push a `vX.Y.Z` tag: the `Release` workflow builds the `ghcr.io/ermos/kinora` image for `amd64` and `arm64` and tags it
+`X.Y.Z`, `X.Y`, `X` and `latest`. Then build the Android TV APK with `APP_VERSION=X.Y.Z` (see
+[Android TV](./android-tv.md#release-builds)) and attach `app-release.apk` to the GitHub release: installed apps offer
+the update from there.
+
 ## The UI is built for TV
 
 - **Focus first**: every interactive element goes through `Focusable`, which handles focus (remote, keyboard) and
