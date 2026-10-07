@@ -141,6 +141,17 @@ export const en = {
     unmute: 'Unmute',
     fullscreen: 'Full screen',
   },
+  history: {
+    title: 'History',
+    empty: 'Nothing watched on this profile yet.',
+    hours: '{n}h',
+    watchTime: 'Watch time',
+    see: 'See history',
+    movies: '{n} movies',
+    episodes: '{n} episodes',
+    topShow: 'Show of the year',
+    more: 'Show more',
+  },
   account: {
     title: 'Account',
     signedInAs: 'Signed in as ',

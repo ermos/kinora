@@ -140,6 +140,17 @@ export const fr = {
     unmute: 'Remettre le son',
     fullscreen: 'Plein écran',
   },
+  history: {
+    title: 'Historique',
+    empty: 'Rien de regardé sur ce profil pour le moment.',
+    hours: '{n} h',
+    watchTime: 'Temps de visionnage',
+    see: "Voir l'historique",
+    movies: '{n} films',
+    episodes: '{n} épisodes',
+    topShow: "Série de l'année",
+    more: 'Voir plus',
+  },
   account: {
     title: 'Compte',
     signedInAs: 'Connecté en tant que ',

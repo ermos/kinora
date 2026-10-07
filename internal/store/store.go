@@ -305,6 +305,85 @@ func (s *Store) RecentlyWatched(ctx context.Context, profileID int64, kind strin
 	return out, rows.Err()
 }
 
+// HistoryEntry is a movie or an episode the profile played.
+type HistoryEntry struct {
+	Type    string `json:"type"`
+	ID      int    `json:"id"`
+	Season  int    `json:"season"`
+	Episode int    `json:"episode"`
+	Title   string `json:"title"`
+	Poster  string `json:"poster"`
+	// Position and Duration in seconds.
+	Position float64 `json:"position"`
+	Duration float64 `json:"duration"`
+	// WatchedAt is the Unix time of the last playback.
+	WatchedAt int64 `json:"watchedAt"`
+}
+
+// History lists the movies and episodes the profile played, most recent first.
+func (s *Store) History(ctx context.Context, profileID int64, limit int) ([]HistoryEntry, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT media_type, tmdb_id, season, episode, title, poster, position, duration, updated_at
+		FROM progress WHERE profile_id = $1 ORDER BY updated_at DESC LIMIT $2`, profileID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []HistoryEntry{}
+	for rows.Next() {
+		var h HistoryEntry
+		if err := rows.Scan(&h.Type, &h.ID, &h.Season, &h.Episode, &h.Title, &h.Poster, &h.Position, &h.Duration, &h.WatchedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, h)
+	}
+	return out, rows.Err()
+}
+
+// YearStats sums up what the profile watched in a year.
+type YearStats struct {
+	Year int `json:"year"`
+	// MovieSeconds and ShowSeconds are the time spent watching, in seconds.
+	MovieSeconds float64 `json:"movieSeconds"`
+	ShowSeconds  float64 `json:"showSeconds"`
+	Movies       int     `json:"movies"`
+	Episodes     int     `json:"episodes"`
+	// TopShow is the show the profile spent the most time on, "" without any.
+	TopShow string `json:"topShow"`
+}
+
+// WatchStats returns the profile's stats per year, most recent first. A title counts in the year it was last played.
+func (s *Store) WatchStats(ctx context.Context, profileID int64) ([]YearStats, error) {
+	// ponytail: progress keeps one row per title/episode, so a rewatch counts once. A play log table if that matters.
+	rows, err := s.db.QueryContext(ctx, `WITH p AS (
+			SELECT extract(year FROM to_timestamp(updated_at))::int AS y, media_type, tmdb_id, title, least(position, duration) AS t
+			FROM progress WHERE profile_id = $1
+		), top AS (
+			SELECT DISTINCT ON (y) y, title FROM (
+				SELECT y, tmdb_id, max(title) AS title, sum(t) AS t FROM p WHERE media_type = 'tv' GROUP BY y, tmdb_id
+			) s ORDER BY y, t DESC
+		)
+		SELECT p.y,
+			coalesce(sum(t) FILTER (WHERE media_type = 'movie'), 0),
+			coalesce(sum(t) FILTER (WHERE media_type = 'tv'), 0),
+			count(*) FILTER (WHERE media_type = 'movie'),
+			count(*) FILTER (WHERE media_type = 'tv'),
+			coalesce(min(top.title), '')
+		FROM p LEFT JOIN top ON top.y = p.y GROUP BY p.y ORDER BY p.y DESC`, profileID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []YearStats{}
+	for rows.Next() {
+		var y YearStats
+		if err := rows.Scan(&y.Year, &y.MovieSeconds, &y.ShowSeconds, &y.Movies, &y.Episodes, &y.TopShow); err != nil {
+			return nil, err
+		}
+		out = append(out, y)
+	}
+	return out, rows.Err()
+}
+
 func (s *Store) TitleProgress(ctx context.Context, profileID int64, kind string, id int) ([]Progress, error) {
 	rows, err := s.db.QueryContext(ctx, `SELECT `+progressCols+` FROM progress
 		WHERE profile_id = $1 AND media_type = $2 AND tmdb_id = $3 ORDER BY updated_at DESC`, profileID, kind, id)

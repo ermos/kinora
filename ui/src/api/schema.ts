@@ -792,6 +792,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/library/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Last movies and episodes the profile played, most recent first */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["store.HistoryEntry"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/library/list": {
         parameters: {
             query?: never;
@@ -983,6 +1019,42 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["store.Progress"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/library/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Time spent watching per year, most recent first */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["store.YearStats"][];
                     };
                 };
             };
@@ -1742,6 +1814,19 @@ export interface components {
             /** @description MaxStreamMbps caps the throughput of each stream the account plays, in Mbit/s (0: unlimited). */
             maxStreamMbps: number;
         };
+        "store.HistoryEntry": {
+            duration: number;
+            episode: number;
+            id: number;
+            /** @description Position and Duration in seconds. */
+            position: number;
+            poster: string;
+            season: number;
+            title: string;
+            type: string;
+            /** @description WatchedAt is the Unix time of the last playback. */
+            watchedAt: number;
+        };
         "store.ListItem": {
             id: number;
             poster: string;
@@ -1782,6 +1867,16 @@ export interface components {
             id: number;
             title: string;
             type: string;
+        };
+        "store.YearStats": {
+            episodes: number;
+            /** @description MovieSeconds and ShowSeconds are the time spent watching, in seconds. */
+            movieSeconds: number;
+            movies: number;
+            showSeconds: number;
+            /** @description TopShow is the show the profile spent the most time on, "" without any. */
+            topShow: string;
+            year: number;
         };
         "tmdb.Details": {
             backdrop: string;

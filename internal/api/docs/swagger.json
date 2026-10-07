@@ -419,6 +419,51 @@
                 ],
                 "type": "object"
             },
+            "store.HistoryEntry": {
+                "properties": {
+                    "duration": {
+                        "type": "number"
+                    },
+                    "episode": {
+                        "type": "integer"
+                    },
+                    "id": {
+                        "type": "integer"
+                    },
+                    "position": {
+                        "description": "Position and Duration in seconds.",
+                        "type": "number"
+                    },
+                    "poster": {
+                        "type": "string"
+                    },
+                    "season": {
+                        "type": "integer"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "type": {
+                        "type": "string"
+                    },
+                    "watchedAt": {
+                        "description": "WatchedAt is the Unix time of the last playback.",
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "duration",
+                    "episode",
+                    "id",
+                    "position",
+                    "poster",
+                    "season",
+                    "title",
+                    "type",
+                    "watchedAt"
+                ],
+                "type": "object"
+            },
             "store.ListItem": {
                 "properties": {
                     "id": {
@@ -557,6 +602,39 @@
                     "id",
                     "title",
                     "type"
+                ],
+                "type": "object"
+            },
+            "store.YearStats": {
+                "properties": {
+                    "episodes": {
+                        "type": "integer"
+                    },
+                    "movieSeconds": {
+                        "description": "MovieSeconds and ShowSeconds are the time spent watching, in seconds.",
+                        "type": "number"
+                    },
+                    "movies": {
+                        "type": "integer"
+                    },
+                    "showSeconds": {
+                        "type": "number"
+                    },
+                    "topShow": {
+                        "description": "TopShow is the show the profile spent the most time on, \"\" without any.",
+                        "type": "string"
+                    },
+                    "year": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "episodes",
+                    "movieSeconds",
+                    "movies",
+                    "showSeconds",
+                    "topShow",
+                    "year"
                 ],
                 "type": "object"
             },
@@ -1437,6 +1515,34 @@
                 ]
             }
         },
+        "/library/history": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/store.HistoryEntry"
+                                    },
+                                    "type": "array"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "security": [
+                    {
+                        "ProfileHeader": []
+                    }
+                ],
+                "summary": "Last movies and episodes the profile played, most recent first",
+                "tags": [
+                    "library"
+                ]
+            }
+        },
         "/library/list": {
             "get": {
                 "responses": {
@@ -1633,6 +1739,34 @@
                     }
                 ],
                 "summary": "Watch progress of a title (every episode for a show), most recent first",
+                "tags": [
+                    "library"
+                ]
+            }
+        },
+        "/library/stats": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/store.YearStats"
+                                    },
+                                    "type": "array"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "security": [
+                    {
+                        "ProfileHeader": []
+                    }
+                ],
+                "summary": "Time spent watching per year, most recent first",
                 "tags": [
                     "library"
                 ]

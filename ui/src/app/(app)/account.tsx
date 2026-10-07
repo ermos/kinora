@@ -6,6 +6,7 @@ import Constants from 'expo-constants';
 import { api, setCurrentProfile, unwrap, type User } from '../../api/client';
 import { Page } from '../../components/Browse';
 import { offerUpdate } from '../../components/UpdatePrompt';
+import { WatchStats } from '../../components/WatchHistory';
 import { Button, Chip, Field, Spinner, styles as ui } from '../../components/ui';
 import { useMe } from '../../lib/auth';
 import { newer } from '../../lib/version';
@@ -39,6 +40,7 @@ export default function Account() {
             <Button kind="outline" small label={t('common.logout')} onPress={logout} />
           </View>
         </View>
+        <WatchTime />
         <PasswordForm />
         {me.data.isAdmin && (
           <>
@@ -80,6 +82,26 @@ function useAction() {
   };
   const view = msg && <Text style={msg.ok ? ui.success : ui.error}>{msg.text}</Text>;
   return { run, view };
+}
+
+function WatchTime() {
+  const stats = useQuery({ queryKey: ['library', 'stats'], queryFn: () => unwrap(api.GET('/library/stats')) });
+  const [year, setYear] = useState<number | null>(null);
+  const years = stats.data ?? [];
+  const current = years.find((y) => y.year === year) ?? years[0];
+  return (
+    <Panel
+      title={t('history.watchTime')}
+      action={
+        <View style={styles.form}>
+          {years.length > 1 && years.map((y) => <Chip key={y.year} label={String(y.year)} selected={y.year === current?.year} onPress={() => setYear(y.year)} />)}
+          <Button kind="outline" small label={t('history.see')} href="/history" />
+        </View>
+      }
+    >
+      {current ? <WatchStats stats={current} /> : <Text style={ui.muted}>{t('history.empty')}</Text>}
+    </Panel>
+  );
 }
 
 function PasswordForm() {
