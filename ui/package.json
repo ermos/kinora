@@ -19,17 +19,17 @@
     "expo-video": "~57.0.5",
     "hls.js": "^1.7.3",
     "openapi-fetch": "^0.17.0",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
     "react-native": "npm:react-native-tvos@^0.86.3-0",
-    "react-native-safe-area-context": "~5.7.0",
-    "react-native-screens": "~4.26.0",
-    "react-native-svg": "15.15.4",
+    "react-native-safe-area-context": "~5.10.0",
+    "react-native-screens": "~4.28.0",
+    "react-native-svg": "15.15.5",
     "react-native-web": "^0.21.2"
   },
   "devDependencies": {
     "@react-native-tvos/config-tv": "^0.1.7",
-    "@types/react": "~19.2.2",
+    "@types/react": "~19.3.0",
     "openapi-typescript": "^7.13.0",
     "typescript": "^5.9.3"
   },
