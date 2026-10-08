@@ -416,14 +416,18 @@ func (h *Handler) links(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	found, ok := h.linkCache.Get(linkCacheKey(q))
+	key := linkCacheKey(q)
+	found, ok := h.linkCache.Get(key)
 	if !ok {
-		found = scraper.FindLinks(r.Context(), func(id string) string {
-			return h.store.SourceURL(r.Context(), id)
-		}, q, h.language())
-		if r.Context().Err() == nil {
-			h.linkCache.Set(linkCacheKey(q), found)
-		}
+		// Two players opening the same title share one search. It outlives the request that started it (FindLinks
+		// bounds it), so the others still get its result.
+		v, _, _ := h.linkSearches.Do(key, func() (any, error) {
+			ctx := context.WithoutCancel(r.Context())
+			found := scraper.FindLinks(ctx, func(id string) string { return h.store.SourceURL(ctx, id) }, q, h.language())
+			h.linkCache.Set(key, found)
+			return found, nil
+		})
+		found = v.([]scraper.Link)
 	}
 	out := make([]link, 0, len(found))
 	exp := time.Now().Add(linkTokenTTL).Unix()
