@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -254,5 +255,16 @@ func TestSetPasswordLogsOut(t *testing.T) {
 	}
 	if got, _ := s.UserByID(ctx, u.ID); got.PasswordHash != "new" {
 		t.Fatalf("hash = %q", got.PasswordHash)
+	}
+}
+
+func TestCreateUserConflict(t *testing.T) {
+	conn := testDB(t)
+	s, ctx := New(conn), context.Background()
+	if _, err := s.CreateUser(ctx, "Alice", "h", false); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.CreateUser(ctx, "alice", "h", false); !errors.Is(err, ErrConflict) {
+		t.Fatalf("err = %v, want ErrConflict", err)
 	}
 }
