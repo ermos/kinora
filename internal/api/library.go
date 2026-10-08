@@ -68,6 +68,20 @@ func (h *Handler) removeFromList(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// validProgress: a movie has no season nor episode (0), an episode of a show has both, from 1.
+func validProgress(p store.Progress) bool {
+	if p.ID <= 0 || p.Duration <= 0 || p.Position < 0 {
+		return false
+	}
+	switch p.Type {
+	case "movie":
+		return p.Season == 0 && p.Episode == 0
+	case "tv":
+		return p.Season >= 1 && p.Episode >= 1
+	}
+	return false
+}
+
 func validItem(it store.ListItem) bool { return (it.Type == "movie" || it.Type == "tv") && it.ID > 0 }
 
 // @Summary  "Family list", shared by every profile of the account, without the titles the profile gave a thumbs down
@@ -384,7 +398,7 @@ func (h *Handler) saveProgress(w http.ResponseWriter, r *http.Request) {
 	if !readJSON(w, r, &p) {
 		return
 	}
-	if (p.Type != "movie" && p.Type != "tv") || p.ID <= 0 || p.Duration <= 0 || p.Position < 0 {
+	if !validProgress(p) {
 		writeError(w, http.StatusBadRequest, errInvalidProgress)
 		return
 	}
