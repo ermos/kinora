@@ -94,7 +94,7 @@ func run() error {
 	mux.Handle("/api/", h.Routes())
 	mux.Handle("/", uiHandler(cfg.UIDevURL))
 
-	srv := &http.Server{Addr: cfg.Addr, Handler: mux, ReadHeaderTimeout: 10 * time.Second}
+	srv := &http.Server{Addr: cfg.Addr, Handler: securityHeaders(mux, cfg.UIDevURL == ""), ReadHeaderTimeout: 10 * time.Second}
 	go func() {
 		<-ctx.Done()
 		shutdown, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -106,6 +106,31 @@ func run() error {
 		return err
 	}
 	return nil
+}
+
+// csp allows only the app's own scripts, TMDB images and the proxied streams (hls.js plays them from blob:
+// URLs, in a blob: worker). React Native Web injects its styles inline.
+const csp = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; " +
+	"img-src 'self' data: blob: https://image.tmdb.org; media-src 'self' blob:; worker-src 'self' blob:; " +
+	"font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+
+// securityHeaders sets the browser protections on every response. The CSP is left out with the Expo dev
+// server, which needs eval and its own websocket.
+func securityHeaders(next http.Handler, withCSP bool) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h := w.Header()
+		h.Set("X-Content-Type-Options", "nosniff")
+		h.Set("X-Frame-Options", "DENY")
+		h.Set("Referrer-Policy", "no-referrer")
+		h.Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+		if withCSP {
+			h.Set("Content-Security-Policy", csp)
+		}
+		if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
+			h.Set("Strict-Transport-Security", "max-age=31536000")
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // uiHandler serves the embedded web app, or proxies to the Expo dev server (hot reload, same origin as the API).

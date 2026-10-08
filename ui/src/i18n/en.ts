@@ -229,5 +229,6 @@ export const en = {
     device_code_expired: 'This code expired, a new one is coming.',
     device_code_invalid: 'Unknown or expired code: check the one on the TV.',
     release_unreachable: 'Could not check for updates, try again later.',
+    too_many_attempts: 'Too many failed attempts, try again in a few minutes.',
   } satisfies Record<ErrorCode, string>,
 };

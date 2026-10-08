@@ -228,5 +228,6 @@ export const fr = {
     device_code_expired: "Ce code a expiré, un nouveau va s'afficher.",
     device_code_invalid: 'Code inconnu ou expiré : vérifie celui affiché sur la TV.',
     release_unreachable: 'Impossible de vérifier les mises à jour, réessaie plus tard.',
+    too_many_attempts: 'Trop de tentatives échouées, réessaie dans quelques minutes.',
   } satisfies Record<ErrorCode, string>,
 };

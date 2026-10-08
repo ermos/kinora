@@ -59,7 +59,8 @@
                             "flaresolverr_unreachable",
                             "device_code_expired",
                             "device_code_invalid",
-                            "release_unreachable"
+                            "release_unreachable",
+                            "too_many_attempts"
                         ],
                         "type": "string"
                     },
@@ -1326,6 +1327,16 @@
                             }
                         },
                         "description": "Unauthorized"
+                    },
+                    "429": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.apiError"
+                                }
+                            }
+                        },
+                        "description": "Too many failed attempts from this IP: retry after Retry-After seconds"
                     }
                 },
                 "summary": "Log in",
