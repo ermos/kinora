@@ -12,6 +12,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/ermos/kinora/internal/safehttp"
 )
 
 const UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
@@ -26,9 +28,13 @@ type Client struct {
 	Solver string
 }
 
+// transport only reaches public addresses: the URLs scraped come from third-party pages. Tests swap it to reach
+// their local servers.
+var transport http.RoundTripper = safehttp.Transport()
+
 func NewClient() *Client {
 	jar, _ := cookiejar.New(nil)
-	return &Client{jar: jar, http: &http.Client{Jar: jar, Timeout: 20 * time.Second}}
+	return &Client{jar: jar, http: &http.Client{Jar: jar, Timeout: 20 * time.Second, Transport: transport}}
 }
 
 // Get fetches a page and returns its body and the final URL after redirects.

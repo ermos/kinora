@@ -41,7 +41,7 @@ func TestProxyRewritesPlaylist(t *testing.T) {
 	}))
 	defer upstream.Close()
 
-	p := NewProxy(NewSigner([]byte("k")), "/proxy")
+	p := newTestProxy()
 	get := func(u string) *httptest.ResponseRecorder {
 		rec := httptest.NewRecorder()
 		p.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, u, nil))
@@ -93,7 +93,7 @@ func TestProxyCapsStream(t *testing.T) {
 		_, _ = io.WriteString(w, body)
 	}))
 	defer upstream.Close()
-	p := NewProxy(NewSigner([]byte("k")), "/proxy")
+	p := newTestProxy()
 	fetch := func(u string) {
 		rec := httptest.NewRecorder()
 		p.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, u, nil))
@@ -117,5 +117,29 @@ func TestProxyCapsStream(t *testing.T) {
 	fetch(free)
 	if d := time.Since(start); d > 200*time.Millisecond {
 		t.Errorf("uncapped request took %v", d)
+	}
+}
+
+// newTestProxy reaches the loopback httptest servers the production transport refuses.
+func newTestProxy() *Proxy {
+	p := NewProxy(NewSigner([]byte("k")), "/proxy")
+	p.client = &http.Client{}
+	return p
+}
+
+// Upstream URLs must be http(s) on a public address, whatever the playlist says.
+func TestProxyRefusesPrivateUpstream(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.WriteString(w, "internal")
+	}))
+	defer upstream.Close()
+	p := NewProxy(NewSigner([]byte("k")), "/proxy")
+	for _, u := range []string{upstream.URL + "/admin", "file:///etc/passwd"} {
+		tok, _ := p.URL(scraper.Stream{URL: u}, 0)
+		rec := httptest.NewRecorder()
+		p.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, tok, nil))
+		if rec.Code == http.StatusOK || strings.Contains(rec.Body.String(), "internal") {
+			t.Errorf("%s: status %d, body %q", u, rec.Code, rec.Body.String())
+		}
 	}
 }
