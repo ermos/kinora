@@ -8,9 +8,9 @@ the remote: everything is reachable with the arrows, OK and Back.
 
 ## Install the app
 
-1. Get the APK: download `app-release.apk` from the
+1. Get the APK: download `kinora-android-tv.apk` from the
    [latest GitHub release](https://github.com/ermos/kinora/releases/latest), or [build it yourself](#build-the-apk).
-2. Copy it to the TV and install it: with `adb install app-release.apk`, a USB stick, or the **Downloader** app on the
+2. Copy it to the TV and install it: with `adb install kinora-android-tv.apk`, a USB stick, or the **Downloader** app on the
    TV. You may have to allow installs from unknown sources.
 3. On first launch, enter your server address, as seen from the TV: `http://192.168.1.10:8080`. It is saved on the
    device and can be changed from the sign-in screen.

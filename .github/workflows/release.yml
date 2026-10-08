@@ -96,6 +96,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
+      - uses: gradle/actions/setup-gradle@v5
       - run: npm ci
       # Without the KINORA_KEYSTORE_BASE64 secret the APK is signed with the debug key, and updates won't install over it.
       - name: Release keystore
@@ -107,10 +108,14 @@ jobs:
           echo "KINORA_KEYSTORE=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
       - run: npm run tv:apk
         env:
+          # TVs are ARM: skipping the x86 emulator ABIs halves the native build and the APK.
+          ORG_GRADLE_PROJECT_reactNativeArchitectures: armeabi-v7a,arm64-v8a
           APP_VERSION: ${{ needs.version.outputs.version }}
           KINORA_KEYSTORE_PASSWORD: ${{ secrets.KINORA_KEYSTORE_PASSWORD }}
           KINORA_KEY_ALIAS: ${{ secrets.KINORA_KEY_ALIAS }}
-      - run: gh release create "$TAG" android/app/build/outputs/apk/release/app-release.apk --verify-tag --generate-notes
+      - run: |
+          mv android/app/build/outputs/apk/release/app-release.apk kinora-android-tv.apk
+          gh release create "$TAG" kinora-android-tv.apk --verify-tag --generate-notes
         env:
           TAG: ${{ needs.version.outputs.tag }}
           GH_TOKEN: ${{ github.token }}

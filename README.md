@@ -56,7 +56,7 @@ Open [http://localhost:8080](http://localhost:8080) and create the admin account
 | Client | Where to get it |
 |---|---|
 | Web (computer, phone, tablet) | built into the server |
-| Android TV and Google TV | `app-release.apk` in the [latest release](https://github.com/ermos/kinora/releases/latest) |
+| Android TV and Google TV | `kinora-android-tv.apk` in the [latest release](https://github.com/ermos/kinora/releases/latest) |
 
 Updates, backups, reverse proxy, building from source: see the
 [installation guide](https://kinora.stream/docs/installation).
