@@ -331,9 +331,6 @@ func (h *Handler) watched(w http.ResponseWriter, r *http.Request) {
 		internalError(w, err)
 		return
 	}
-	if ws == nil {
-		ws = []store.Watched{}
-	}
 	writeJSON(w, http.StatusOK, ws)
 }
 

@@ -111,20 +111,9 @@ func (s *Store) UserByID(ctx context.Context, id int64) (User, error) {
 }
 
 func (s *Store) ListUsers(ctx context.Context) ([]User, error) {
-	rows, err := s.db.QueryContext(ctx, "SELECT id, username, is_admin, max_stream_mbps FROM users ORDER BY id")
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	out := []User{}
-	for rows.Next() {
-		var u User
-		if err := rows.Scan(&u.ID, &u.Username, &u.IsAdmin, &u.MaxStreamMbps); err != nil {
-			return nil, err
-		}
-		out = append(out, u)
-	}
-	return out, rows.Err()
+	return queryAll(ctx, s.db, func(rows *sql.Rows, u *User) error {
+		return rows.Scan(&u.ID, &u.Username, &u.IsAdmin, &u.MaxStreamMbps)
+	}, "SELECT id, username, is_admin, max_stream_mbps FROM users ORDER BY id")
 }
 
 func (s *Store) DeleteUser(ctx context.Context, id int64) error {
@@ -181,20 +170,9 @@ func (s *Store) DeleteSession(ctx context.Context, tokenHash string) error {
 // --- profiles
 
 func (s *Store) ListProfiles(ctx context.Context, userID int64) ([]Profile, error) {
-	rows, err := s.db.QueryContext(ctx, "SELECT id, name, avatar, skip_segments FROM profiles WHERE user_id = $1 ORDER BY id", userID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	out := []Profile{}
-	for rows.Next() {
-		var p Profile
-		if err := rows.Scan(&p.ID, &p.Name, &p.Avatar, &p.SkipSegments); err != nil {
-			return nil, err
-		}
-		out = append(out, p)
-	}
-	return out, rows.Err()
+	return queryAll(ctx, s.db, func(rows *sql.Rows, p *Profile) error {
+		return rows.Scan(&p.ID, &p.Name, &p.Avatar, &p.SkipSegments)
+	}, "SELECT id, name, avatar, skip_segments FROM profiles WHERE user_id = $1 ORDER BY id", userID)
 }
 
 func (s *Store) CreateProfile(ctx context.Context, userID int64, name, avatar string, skipSegments bool) (Profile, error) {
@@ -224,6 +202,24 @@ func (s *Store) ProfileOwner(ctx context.Context, id int64) (int64, error) {
 	var uid int64
 	err := s.db.QueryRowContext(ctx, "SELECT user_id FROM profiles WHERE id = $1", id).Scan(&uid)
 	return uid, notFound(err)
+}
+
+// queryAll runs a query and scans every row with scan. No row gives an empty slice, never nil: JSON [], not null.
+func queryAll[T any](ctx context.Context, db *sql.DB, scan func(*sql.Rows, *T) error, query string, args ...any) ([]T, error) {
+	rows, err := db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []T{}
+	for rows.Next() {
+		var v T
+		if err := scan(rows, &v); err != nil {
+			return nil, err
+		}
+		out = append(out, v)
+	}
+	return out, rows.Err()
 }
 
 func (s *Store) affectOne(res sql.Result, err error) error {
@@ -272,20 +268,9 @@ func (s *Store) RemoveFromFamilyList(ctx context.Context, userID int64, kind str
 }
 
 func (s *Store) listItems(ctx context.Context, query string, args ...any) ([]ListItem, error) {
-	rows, err := s.db.QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	out := []ListItem{}
-	for rows.Next() {
-		var it ListItem
-		if err := rows.Scan(&it.Type, &it.ID, &it.Title, &it.Poster); err != nil {
-			return nil, err
-		}
-		out = append(out, it)
-	}
-	return out, rows.Err()
+	return queryAll(ctx, s.db, func(rows *sql.Rows, it *ListItem) error {
+		return rows.Scan(&it.Type, &it.ID, &it.Title, &it.Poster)
+	}, query, args...)
 }
 
 // RatedItem is a title the profile gave a thumbs up (1) or down (-1).
@@ -296,20 +281,9 @@ type RatedItem struct {
 
 // Ratings lists the thumbs of the profile, most recent first.
 func (s *Store) Ratings(ctx context.Context, profileID int64) ([]RatedItem, error) {
-	rows, err := s.db.QueryContext(ctx, "SELECT media_type, tmdb_id, title, poster, rating FROM ratings WHERE profile_id = $1 ORDER BY rated_at DESC", profileID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	out := []RatedItem{}
-	for rows.Next() {
-		var it RatedItem
-		if err := rows.Scan(&it.Type, &it.ID, &it.Title, &it.Poster, &it.Rating); err != nil {
-			return nil, err
-		}
-		out = append(out, it)
-	}
-	return out, rows.Err()
+	return queryAll(ctx, s.db, func(rows *sql.Rows, it *RatedItem) error {
+		return rows.Scan(&it.Type, &it.ID, &it.Title, &it.Poster, &it.Rating)
+	}, "SELECT media_type, tmdb_id, title, poster, rating FROM ratings WHERE profile_id = $1 ORDER BY rated_at DESC", profileID)
 }
 
 // Rate saves a thumbs up or down, a rating of 0 removes it.
@@ -368,30 +342,17 @@ func (s *Store) Finished(ctx context.Context, profileID int64) ([]ListItem, erro
 
 const progressCols = "media_type, tmdb_id, season, episode, title, poster, backdrop, position, duration, source, hoster, lang, updated_at"
 
-func scanProgress(rows *sql.Rows) ([]Progress, error) {
-	defer rows.Close()
-	out := []Progress{}
-	for rows.Next() {
-		var p Progress
-		if err := rows.Scan(&p.Type, &p.ID, &p.Season, &p.Episode, &p.Title, &p.Poster, &p.Backdrop, &p.Position, &p.Duration, &p.Source, &p.Hoster, &p.Lang, &p.UpdatedAt); err != nil {
-			return nil, err
-		}
-		out = append(out, p)
-	}
-	return out, rows.Err()
+func scanProgress(rows *sql.Rows, p *Progress) error {
+	return rows.Scan(&p.Type, &p.ID, &p.Season, &p.Episode, &p.Title, &p.Poster, &p.Backdrop, &p.Position, &p.Duration, &p.Source, &p.Hoster, &p.Lang, &p.UpdatedAt)
 }
 
 // ContinueWatching returns, per title, the last thing watched if it is not finished. DISTINCT ON keeps exactly one
 // row per title, even when two episodes were saved in the same second (the furthest one wins).
 func (s *Store) ContinueWatching(ctx context.Context, profileID int64) ([]Progress, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT `+progressCols+` FROM (
+	return queryAll(ctx, s.db, scanProgress, `SELECT `+progressCols+` FROM (
 			SELECT DISTINCT ON (media_type, tmdb_id) `+progressCols+` FROM progress WHERE profile_id = $1
 			ORDER BY media_type, tmdb_id, updated_at DESC, season DESC, episode DESC
 		) p WHERE position < duration * 0.95 ORDER BY updated_at DESC LIMIT 20`, profileID)
-	if err != nil {
-		return nil, err
-	}
-	return scanProgress(rows)
 }
 
 // Watched is a title the profile played, finished or not.
@@ -404,25 +365,13 @@ type Watched struct {
 // RecentlyWatched lists the titles the profile played (kind "" for both), most recent first, one per title.
 func (s *Store) RecentlyWatched(ctx context.Context, profileID int64, kind string, limit int) ([]Watched, error) {
 	// DISTINCT ON keeps the latest row of each title, the outer query orders titles by it.
-	rows, err := s.db.QueryContext(ctx, `SELECT media_type, tmdb_id, title, updated_at FROM (
+	return queryAll(ctx, s.db, func(rows *sql.Rows, w *Watched) error {
+		return rows.Scan(&w.Type, &w.ID, &w.Title)
+	}, `SELECT media_type, tmdb_id, title FROM (
 			SELECT DISTINCT ON (media_type, tmdb_id) media_type, tmdb_id, title, updated_at FROM progress
 			WHERE profile_id = $1 AND ($2 = '' OR media_type = $2)
 			ORDER BY media_type, tmdb_id, updated_at DESC
 		) t ORDER BY updated_at DESC LIMIT $3`, profileID, kind, limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var out []Watched
-	for rows.Next() {
-		var w Watched
-		var last int64
-		if err := rows.Scan(&w.Type, &w.ID, &w.Title, &last); err != nil {
-			return nil, err
-		}
-		out = append(out, w)
-	}
-	return out, rows.Err()
 }
 
 // HistoryEntry is a movie or an episode the profile played.
@@ -442,21 +391,10 @@ type HistoryEntry struct {
 
 // History lists the movies and episodes the profile played, most recent first.
 func (s *Store) History(ctx context.Context, profileID int64, limit int) ([]HistoryEntry, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT media_type, tmdb_id, season, episode, title, poster, position, duration, updated_at
+	return queryAll(ctx, s.db, func(rows *sql.Rows, h *HistoryEntry) error {
+		return rows.Scan(&h.Type, &h.ID, &h.Season, &h.Episode, &h.Title, &h.Poster, &h.Position, &h.Duration, &h.WatchedAt)
+	}, `SELECT media_type, tmdb_id, season, episode, title, poster, position, duration, updated_at
 		FROM progress WHERE profile_id = $1 ORDER BY updated_at DESC LIMIT $2`, profileID, limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	out := []HistoryEntry{}
-	for rows.Next() {
-		var h HistoryEntry
-		if err := rows.Scan(&h.Type, &h.ID, &h.Season, &h.Episode, &h.Title, &h.Poster, &h.Position, &h.Duration, &h.WatchedAt); err != nil {
-			return nil, err
-		}
-		out = append(out, h)
-	}
-	return out, rows.Err()
 }
 
 // YearStats sums up what the profile watched in a year.
@@ -474,7 +412,9 @@ type YearStats struct {
 // WatchStats returns the profile's stats per year, most recent first. A title counts in the year it was last played.
 func (s *Store) WatchStats(ctx context.Context, profileID int64) ([]YearStats, error) {
 	// ponytail: progress keeps one row per title/episode, so a rewatch counts once. A play log table if that matters.
-	rows, err := s.db.QueryContext(ctx, `WITH p AS (
+	return queryAll(ctx, s.db, func(rows *sql.Rows, y *YearStats) error {
+		return rows.Scan(&y.Year, &y.MovieSeconds, &y.ShowSeconds, &y.Movies, &y.Episodes, &y.TopShow)
+	}, `WITH p AS (
 			SELECT extract(year FROM to_timestamp(updated_at))::int AS y, media_type, tmdb_id, title, least(position, duration) AS t
 			FROM progress WHERE profile_id = $1
 		), top AS (
@@ -489,28 +429,11 @@ func (s *Store) WatchStats(ctx context.Context, profileID int64) ([]YearStats, e
 			count(*) FILTER (WHERE media_type = 'tv'),
 			coalesce(min(top.title), '')
 		FROM p LEFT JOIN top ON top.y = p.y GROUP BY p.y ORDER BY p.y DESC`, profileID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	out := []YearStats{}
-	for rows.Next() {
-		var y YearStats
-		if err := rows.Scan(&y.Year, &y.MovieSeconds, &y.ShowSeconds, &y.Movies, &y.Episodes, &y.TopShow); err != nil {
-			return nil, err
-		}
-		out = append(out, y)
-	}
-	return out, rows.Err()
 }
 
 func (s *Store) TitleProgress(ctx context.Context, profileID int64, kind string, id int) ([]Progress, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT `+progressCols+` FROM progress
+	return queryAll(ctx, s.db, scanProgress, `SELECT `+progressCols+` FROM progress
 		WHERE profile_id = $1 AND media_type = $2 AND tmdb_id = $3 ORDER BY updated_at DESC`, profileID, kind, id)
-	if err != nil {
-		return nil, err
-	}
-	return scanProgress(rows)
 }
 
 // --- sources

@@ -22,7 +22,7 @@ func Handler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		p := strings.TrimPrefix(r.URL.Path, "/")
 		if p != "" {
-			if _, err := fs.Stat(sub, p); err == nil {
+			if fi, err := fs.Stat(sub, p); err == nil && !fi.IsDir() { // no directory listings
 				if strings.HasPrefix(p, "_expo/static/") { // content-hashed by expo export
 					w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
 				}

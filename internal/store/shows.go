@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/ermos/kinora/internal/tmdb"
@@ -10,24 +11,12 @@ import (
 // ShowsToCheck lists the watched shows whose airing state is due for a refresh: never checked, an announced episode
 // has aired, or not checked for a week (a month for ended shows, they rarely come back).
 func (s *Store) ShowsToCheck(ctx context.Context, now time.Time) ([]int, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT DISTINCT p.tmdb_id FROM progress p LEFT JOIN shows s ON s.tmdb_id = p.tmdb_id
+	return queryAll(ctx, s.db, func(rows *sql.Rows, id *int) error { return rows.Scan(id) },
+		`SELECT DISTINCT p.tmdb_id FROM progress p LEFT JOIN shows s ON s.tmdb_id = p.tmdb_id
 		WHERE p.media_type = 'tv' AND (s.tmdb_id IS NULL
 			OR (s.next_air_date <= $2::date AND s.checked_at < $1 - 6 * 3600)
 			OR s.checked_at < $1 - CASE WHEN s.status IN ('Ended', 'Canceled') THEN 30 ELSE 7 END * 86400)`,
 		now.Unix(), now.Format(time.DateOnly))
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var ids []int
-	for rows.Next() {
-		var id int
-		if err := rows.Scan(&id); err != nil {
-			return nil, err
-		}
-		ids = append(ids, id)
-	}
-	return ids, rows.Err()
 }
 
 func (s *Store) SaveShow(ctx context.Context, id int, a tmdb.Airing, now time.Time) error {
