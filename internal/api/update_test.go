@@ -67,8 +67,8 @@ func TestLocalAPKNeedsAValidToken(t *testing.T) {
 		t.Fatal(err)
 	}
 	h := &Handler{signer: stream.NewSigner([]byte("k")), releases: rs}
-	valid, _ := h.signer.Sign(apkToken{Exp: time.Now().Add(time.Minute).Unix()})
-	expired, _ := h.signer.Sign(apkToken{Exp: time.Now().Add(-time.Minute).Unix()})
+	valid, _ := h.signer.Sign(apkTokenKind, apkToken{Exp: time.Now().Add(time.Minute).Unix()})
+	expired, _ := h.signer.Sign(apkTokenKind, apkToken{Exp: time.Now().Add(-time.Minute).Unix()})
 	for tok, want := range map[string]int{valid: http.StatusOK, expired: http.StatusUnauthorized, valid + "x": http.StatusUnauthorized, "": http.StatusUnauthorized} {
 		w := httptest.NewRecorder()
 		h.localAPK(w, httptest.NewRequest(http.MethodGet, "/api/v1/update/apk?token="+url.QueryEscape(tok), nil))

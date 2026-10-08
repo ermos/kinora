@@ -426,8 +426,9 @@ func (h *Handler) links(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	out := make([]link, 0, len(found))
+	exp := time.Now().Add(linkTokenTTL).Unix()
 	for _, l := range found {
-		tok, err := h.signer.Sign(l)
+		tok, err := h.signer.Sign(linkTokenKind, linkToken{Link: l, Exp: exp})
 		if err != nil {
 			internalError(w, err)
 			return
@@ -435,6 +436,18 @@ func (h *Handler) links(w http.ResponseWriter, r *http.Request) {
 		out = append(out, link{Token: tok, Source: l.Source, Hoster: l.Hoster, Lang: l.Lang, Quality: l.Quality, Dead: l.Dead})
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+const (
+	linkTokenKind = "link"
+	// linkTokenTTL bounds how long a link from /links can be played: long enough for a page left open.
+	linkTokenTTL = 6 * time.Hour
+)
+
+// linkToken is what a link token carries: the link and when it stops being playable.
+type linkToken struct {
+	scraper.Link
+	Exp int64 `json:"exp"`
 }
 
 type playRequest struct {
@@ -457,11 +470,12 @@ func (h *Handler) play(w http.ResponseWriter, r *http.Request) {
 	if !readJSON(w, r, &req) {
 		return
 	}
-	var l scraper.Link
-	if err := h.signer.Verify(req.Token, &l); err != nil {
+	var lt linkToken
+	if err := h.signer.Verify(linkTokenKind, req.Token, &lt); err != nil || time.Now().Unix() > lt.Exp {
 		writeError(w, http.StatusBadRequest, errInvalidLink)
 		return
 	}
+	l := lt.Link
 	st, err := scraper.Resolve(r.Context(), l)
 	if err != nil {
 		slog.Warn("resolve failed", "hoster", l.Hoster, "url", l.URL, "err", err)

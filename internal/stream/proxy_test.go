@@ -13,14 +13,17 @@ import (
 
 func TestSignerRejectsTampering(t *testing.T) {
 	s := NewSigner([]byte("k"))
-	tok, _ := s.Sign(target{URL: "https://a"})
+	tok, _ := s.Sign("proxy", target{URL: "https://a"})
 	var got target
-	if err := s.Verify(tok, &got); err != nil || got.URL != "https://a" {
+	if err := s.Verify("proxy", tok, &got); err != nil || got.URL != "https://a" {
 		t.Fatalf("Verify = %v, %+v", err, got)
 	}
 	payload, sig, _ := strings.Cut(tok, ".")
-	if s.Verify(payload+"x."+sig, &got) == nil || NewSigner([]byte("other")).Verify(tok, &got) == nil {
+	if s.Verify("proxy", payload+"x."+sig, &got) == nil || NewSigner([]byte("other")).Verify("proxy", tok, &got) == nil {
 		t.Fatal("tampered or foreign token accepted")
+	}
+	if s.Verify("apk", tok, &got) == nil {
+		t.Fatal("token of another kind accepted")
 	}
 }
 
@@ -67,7 +70,7 @@ func TestProxyRewritesPlaylist(t *testing.T) {
 	var tg target
 	for i, want := range []string{"/v/audio/fr.m3u8", "/v/hd/index.m3u8"} {
 		tok := strings.TrimPrefix(uris[i], "/proxy?t=")
-		if err := p.signer.Verify(tok, &tg); err != nil || tg.URL != upstream.URL+want || tg.Headers["Referer"] != "https://site/" {
+		if err := p.signer.Verify(tokenKind, tok, &tg); err != nil || tg.URL != upstream.URL+want || tg.Headers["Referer"] != "https://site/" {
 			t.Fatalf("uri %d: %v %+v", i, err, tg)
 		}
 	}

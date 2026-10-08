@@ -28,18 +28,21 @@ type Signer struct{ key []byte }
 
 func NewSigner(key []byte) *Signer { return &Signer{key: key} }
 
-func (s *Signer) Sign(v any) (string, error) {
+// Sign signs v as a token of a kind ("proxy", "link"...): the kind is part of the MAC, so a token handed out for
+// one purpose never verifies as another, even when the payloads share field names.
+func (s *Signer) Sign(kind string, v any) (string, error) {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return "", err
 	}
 	p := base64.RawURLEncoding.EncodeToString(b)
-	return p + "." + s.mac(p), nil
+	return p + "." + s.mac(kind, p), nil
 }
 
-func (s *Signer) Verify(token string, v any) error {
+// Verify checks a token of the given kind and decodes its payload into v.
+func (s *Signer) Verify(kind, token string, v any) error {
 	p, sig, ok := strings.Cut(token, ".")
-	if !ok || !hmac.Equal([]byte(sig), []byte(s.mac(p))) {
+	if !ok || !hmac.Equal([]byte(sig), []byte(s.mac(kind, p))) {
 		return errors.New("invalid token")
 	}
 	b, err := base64.RawURLEncoding.DecodeString(p)
@@ -49,9 +52,9 @@ func (s *Signer) Verify(token string, v any) error {
 	return json.Unmarshal(b, v)
 }
 
-func (s *Signer) mac(p string) string {
+func (s *Signer) mac(kind, p string) string {
 	m := hmac.New(sha256.New, s.key)
-	m.Write([]byte(p))
+	m.Write([]byte(kind + "\x00" + p))
 	return base64.RawURLEncoding.EncodeToString(m.Sum(nil)[:16])
 }
 
@@ -68,6 +71,8 @@ type target struct {
 
 // URLTTL bounds how long a proxied URL works, enough for a long movie with pauses.
 const URLTTL = 12 * time.Hour
+
+const tokenKind = "proxy"
 
 type Proxy struct {
 	signer   *Signer
@@ -96,7 +101,7 @@ func (p *Proxy) URL(st scraper.Stream, maxMbps int) (string, error) {
 }
 
 func (p *Proxy) sign(t target) (string, error) {
-	tok, err := p.signer.Sign(t)
+	tok, err := p.signer.Sign(tokenKind, t)
 	if err != nil {
 		return "", err
 	}
@@ -105,7 +110,7 @@ func (p *Proxy) sign(t target) (string, error) {
 
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var t target
-	if err := p.signer.Verify(r.URL.Query().Get("t"), &t); err != nil || time.Now().Unix() > t.Expires {
+	if err := p.signer.Verify(tokenKind, r.URL.Query().Get("t"), &t); err != nil || time.Now().Unix() > t.Expires {
 		http.Error(w, "invalid or expired link", http.StatusForbidden)
 		return
 	}
