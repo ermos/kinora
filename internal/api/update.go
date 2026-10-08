@@ -30,6 +30,8 @@ const (
 	apkTTL     = time.Hour
 )
 
+const apkTokenKind = "apk"
+
 // apkToken is what the signed local APK URL carries.
 type apkToken struct {
 	Exp int64 `json:"e"`
@@ -167,7 +169,7 @@ func (h *Handler) writeRelease(w http.ResponseWriter, rel *release) {
 		return
 	}
 	if h.releases.dev {
-		tok, err := h.signer.Sign(apkToken{Exp: time.Now().Add(apkTTL).Unix()})
+		tok, err := h.signer.Sign(apkTokenKind, apkToken{Exp: time.Now().Add(apkTTL).Unix()})
 		if err != nil {
 			internalError(w, err)
 			return
@@ -186,7 +188,7 @@ func (h *Handler) writeRelease(w http.ResponseWriter, rel *release) {
 // @Router   /update/apk [get]
 func (h *Handler) localAPK(w http.ResponseWriter, r *http.Request) {
 	var tok apkToken
-	if err := h.signer.Verify(r.URL.Query().Get("token"), &tok); err != nil || time.Now().Unix() > tok.Exp {
+	if err := h.signer.Verify(apkTokenKind, r.URL.Query().Get("token"), &tok); err != nil || time.Now().Unix() > tok.Exp {
 		writeError(w, http.StatusUnauthorized, errNotLoggedIn)
 		return
 	}
