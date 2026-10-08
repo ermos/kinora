@@ -240,3 +240,19 @@ func TestCreateSessionDropsExpired(t *testing.T) {
 		t.Fatalf("%d sessions, %v; want only the new one", n, err)
 	}
 }
+
+func TestSetPasswordLogsOut(t *testing.T) {
+	conn := testDB(t)
+	s, ctx := New(conn), context.Background()
+	u, _ := s.CreateUser(ctx, "a", "old", false)
+	_ = s.CreateSession(ctx, "tok", u.ID, time.Now().Add(time.Hour))
+	if err := s.SetPassword(ctx, u.ID, "new"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.UserBySession(ctx, "tok"); err != ErrNotFound {
+		t.Fatalf("session still valid: %v", err)
+	}
+	if got, _ := s.UserByID(ctx, u.ID); got.PasswordHash != "new" {
+		t.Fatalf("hash = %q", got.PasswordHash)
+	}
+}

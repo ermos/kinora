@@ -128,12 +128,20 @@ func (s *Store) SetStreamLimit(ctx context.Context, id int64, mbps int) error {
 	return nil
 }
 
+// SetPassword changes the password and logs out every session of the account, both or neither.
 func (s *Store) SetPassword(ctx context.Context, id int64, hash string) error {
-	if _, err := s.db.ExecContext(ctx, "UPDATE users SET password_hash = $1 WHERE id = $2", hash, id); err != nil {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
 		return err
 	}
-	_, err := s.db.ExecContext(ctx, "DELETE FROM sessions WHERE user_id = $1", id)
-	return err
+	defer func() { _ = tx.Rollback() }()
+	if _, err := tx.ExecContext(ctx, "UPDATE users SET password_hash = $1 WHERE id = $2", hash, id); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, "DELETE FROM sessions WHERE user_id = $1", id); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 // CreateSession stores a new session, and drops the expired ones on the way.
