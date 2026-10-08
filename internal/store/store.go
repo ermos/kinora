@@ -136,7 +136,11 @@ func (s *Store) SetPassword(ctx context.Context, id int64, hash string) error {
 	return err
 }
 
+// CreateSession stores a new session, and drops the expired ones on the way.
 func (s *Store) CreateSession(ctx context.Context, tokenHash string, userID int64, expires time.Time) error {
+	if _, err := s.db.ExecContext(ctx, "DELETE FROM sessions WHERE expires_at <= extract(epoch FROM now())::bigint"); err != nil {
+		return err
+	}
 	_, err := s.db.ExecContext(ctx, "INSERT INTO sessions (token_hash, user_id, expires_at) VALUES ($1, $2, $3)", tokenHash, userID, expires.Unix())
 	return err
 }
