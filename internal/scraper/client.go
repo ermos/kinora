@@ -26,6 +26,8 @@ type Client struct {
 	Referer string
 	// Solver is the FlareSolverr URL that requests challenged by Cloudflare go through ("" gives up on them).
 	Solver string
+	// AcceptLanguage is sent on every request: sources get the instance language, hosters French by default.
+	AcceptLanguage string
 }
 
 // transport only reaches public addresses: the URLs scraped come from third-party pages. Tests swap it to reach
@@ -34,7 +36,7 @@ var transport http.RoundTripper = safehttp.Transport()
 
 func NewClient() *Client {
 	jar, _ := cookiejar.New(nil)
-	return &Client{jar: jar, http: &http.Client{Jar: jar, Timeout: 20 * time.Second, Transport: transport}}
+	return &Client{jar: jar, AcceptLanguage: "fr-FR,fr;q=0.9", http: &http.Client{Jar: jar, Timeout: 20 * time.Second, Transport: transport}}
 }
 
 // Get fetches a page and returns its body and the final URL after redirects.
@@ -57,7 +59,7 @@ func (c *Client) do(ctx context.Context, method, rawURL, body string, headers ma
 		return "", "", err
 	}
 	req.Header.Set("User-Agent", UserAgent)
-	req.Header.Set("Accept-Language", "fr-FR,fr;q=0.9")
+	req.Header.Set("Accept-Language", c.AcceptLanguage)
 	if c.Referer != "" {
 		req.Header.Set("Referer", c.Referer)
 	}
