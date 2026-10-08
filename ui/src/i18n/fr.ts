@@ -106,6 +106,7 @@ export const fr = {
     trending: 'Tendances',
     clear: 'Effacer',
     space: 'Espace',
+    voice: 'Recherche vocale',
     delete: 'Supprimer une lettre',
   },
   title: {

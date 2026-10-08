@@ -12,10 +12,21 @@ const GAP = 4;
  * TV search keyboard, like Netflix's: a letter grid driven by the remote, part of the page, instead of the system
  * keyboard that covers half the screen.
  */
-/** Fills the given width: keys widen with it, their height stays the same. */
-export function SearchKeyboard({ width, onKey, onDelete }: { width: number; onKey: (key: string) => void; onDelete: () => void }) {
+/** Fills the given width: keys widen with it, their height stays the same. onVoice adds a dictation key. */
+export function SearchKeyboard({
+  width,
+  onKey,
+  onDelete,
+  onVoice,
+}: {
+  width: number;
+  onKey: (key: string) => void;
+  onDelete: () => void;
+  onVoice?: () => void;
+}) {
   const key = (width - (COLUMNS - 1) * GAP) / COLUMNS;
-  const half = (width - GAP) / 2;
+  const n = onVoice ? 3 : 2;
+  const wide = (width - (n - 1) * GAP) / n;
   return (
     <View style={[styles.keyboard, { width }]}>
       {KEYS.map((k, i) => (
@@ -23,10 +34,15 @@ export function SearchKeyboard({ width, onKey, onDelete }: { width: number; onKe
           {(color) => <Text style={[styles.letter, { color }]}>{k}</Text>}
         </Key>
       ))}
-      <Key label={t('search.space')} width={half} onPress={() => onKey(' ')}>
+      <Key label={t('search.space')} width={wide} onPress={() => onKey(' ')}>
         {(color) => <Text style={[styles.wide, { color }]}>{t('search.space')}</Text>}
       </Key>
-      <Key label={t('search.delete')} width={half} onPress={onDelete}>
+      {onVoice && (
+        <Key label={t('search.voice')} width={wide} onPress={onVoice}>
+          {(color) => <Icon d={icons.mic} size={18} color={color} />}
+        </Key>
+      )}
+      <Key label={t('search.delete')} width={wide} onPress={onDelete}>
         {(color) => <Icon d={icons.backspace} size={18} color={color} />}
       </Key>
     </View>

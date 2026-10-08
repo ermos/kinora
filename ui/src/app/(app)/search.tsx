@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { startActivityAsync } from 'expo-intent-launcher';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -7,7 +8,7 @@ import { Focusable } from '../../components/Focusable';
 import { SearchKeyboard } from '../../components/SearchKeyboard';
 import { Button, Field, Icon, icons, PosterGrid, Spinner, styles as ui } from '../../components/ui';
 import { getItem, setItem } from '../../lib/storage';
-import { t } from '../../i18n';
+import { t, useLanguage } from '../../i18n';
 import { colors, useLayout } from '../../theme';
 
 const HISTORY_MAX = 8;
@@ -26,6 +27,7 @@ export default function Search() {
   const { width, rail, gutter, phone } = useLayout();
   const profile = useProfile();
   const history = useSearchHistory(profile?.id);
+  const lang = useLanguage();
 
   const results = useQuery({
     queryKey: ['search', q],
@@ -45,6 +47,14 @@ export default function Search() {
     setInput(value);
     router.setParams({ q: value.trim() || undefined });
     history.add(value);
+  };
+  // The system dictation (the remote's mic on Google TV): no audio permission, the voice activity records itself.
+  const voice = async () => {
+    const r = await startActivityAsync('android.speech.action.RECOGNIZE_SPEECH', {
+      extra: { 'android.speech.extra.LANGUAGE_MODEL': 'free_form', 'android.speech.extra.LANGUAGE': lang },
+    }).catch(() => undefined);
+    const text = (r?.extra as { 'android.speech.extra.RESULTS'?: string[] } | undefined)?.['android.speech.extra.RESULTS']?.[0];
+    if (text) search(text);
   };
 
   // Titles of the first results, the query itself left out.
@@ -72,7 +82,7 @@ export default function Search() {
                 {input || t('browse.searchPlaceholder')}
               </Text>
             </View>
-            <SearchKeyboard width={panelWidth} onKey={(k) => type(input + k)} onDelete={() => type(input.slice(0, -1))} />
+            <SearchKeyboard width={panelWidth} onKey={(k) => type(input + k)} onDelete={() => type(input.slice(0, -1))} onVoice={voice} />
           </>
         ) : (
           <Field
