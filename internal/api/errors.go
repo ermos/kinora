@@ -16,7 +16,7 @@ const (
 	errUnknownProfile      errCode = "unknown_profile"
 	errInternal            errCode = "internal"
 	errNotFound            errCode = "not_found"
-	errInvalidCredentials  errCode = "invalid_credentials"
+	errInvalidCredentials  errCode = "invalid_credentials" //nolint:gosec // G101: an error code, not a credential
 	errAlreadySetUp        errCode = "already_set_up"
 	errUsernameRequired    errCode = "username_required"
 	errPasswordLength      errCode = "password_length"

@@ -10,6 +10,8 @@ linters:
     - misspell
     - bodyclose
     - unconvert
+    - gosec
+    - errorlint
   settings:
     misspell:
       ignore-rules:
@@ -18,12 +20,16 @@ linters:
       exclude-functions:
         - (*database/sql.Rows).Close
         - (io.Closer).Close
+    gosec:
+      excludes:
+        - G104 # unhandled errors: errcheck already checks them, with the exclusions above
   exclusions:
     rules:
       - path: _test\.go
         linters:
           - errcheck
           - bodyclose
+          - gosec
 
 formatters:
   enable:

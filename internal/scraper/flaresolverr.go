@@ -73,7 +73,7 @@ func solve(ctx context.Context, solver, method, rawURL, form string) (string, st
 	sol := out.Solution
 	cl := clearance{userAgent: sol.UserAgent}
 	for _, c := range sol.Cookies {
-		cl.cookies = append(cl.cookies, &http.Cookie{Name: c.Name, Value: c.Value})
+		cl.cookies = append(cl.cookies, &http.Cookie{Name: c.Name, Value: c.Value}) //nolint:gosec // G124: sent upstream, never set on a client
 	}
 	clearances.Store(Host(rawURL), cl)
 	if sol.Status >= 400 {

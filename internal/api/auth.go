@@ -154,7 +154,7 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 	if bcrypt.CompareHashAndPassword([]byte(hash), []byte(c.Password)) != nil || err != nil {
 		h.loginLimiter.fail(ip)
 		h.accountLimiter.fail(account)
-		time.Sleep(400*time.Millisecond + rand.N(200*time.Millisecond))
+		time.Sleep(400*time.Millisecond + rand.N(200*time.Millisecond)) //nolint:gosec // G404: timing jitter, not a secret
 		writeError(w, http.StatusUnauthorized, errInvalidCredentials)
 		return
 	}
@@ -179,7 +179,7 @@ func (h *Handler) logout(w http.ResponseWriter, r *http.Request) {
 	if c, err := r.Cookie(sessionCookie); err == nil {
 		_ = h.store.DeleteSession(r.Context(), hashToken(c.Value))
 	}
-	http.SetCookie(w, &http.Cookie{Name: sessionCookie, Value: "", Path: "/", MaxAge: -1, HttpOnly: true})
+	setSessionCookie(w, r, "", time.Time{})
 	w.WriteHeader(http.StatusNoContent)
 }
 
