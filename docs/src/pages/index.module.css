@@ -228,6 +228,20 @@
   font-weight: 700;
 }
 
+.shots {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.shot {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 4px;
+  background: var(--k-bg3);
+}
+
 .scroller {
   display: grid;
   grid-auto-flow: column;
@@ -443,6 +457,9 @@
   }
   .scroller {
     grid-auto-columns: 78%;
+  }
+  .shots {
+    grid-template-columns: 1fr;
   }
   .rank {
     font-size: 110px;

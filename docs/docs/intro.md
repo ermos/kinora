@@ -7,6 +7,10 @@ slug: /intro
 kinora is a self-hosted streaming server with a Netflix-style interface. You run it on your own machine, open it in a
 browser or on your Android TV, pick a movie or an episode, and press play.
 
+![kinora home screen](/img/screenshots/home.webp)
+
+![A show page in kinora](/img/screenshots/title.webp)
+
 ## How it works
 
 - **Catalog**: everything you browse (trending, genres, title pages, seasons, episodes) comes from
