@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -49,5 +50,21 @@ func TestProxyServesAbyss(t *testing.T) {
 		if rec.Code != http.StatusPartialContent || !bytes.Equal(rec.Body.Bytes(), plain[rg[0]:rg[1]+1]) {
 			t.Errorf("range %v: status %d, %d bytes, content differs", rg, rec.Code, rec.Body.Len())
 		}
+	}
+}
+
+// An upstream error page must not end up in the video: the body stops short instead.
+func TestServeAbyssStopsOnUpstreamError(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.WriteString(w, "<html>blocked</html>") // 200, ignoring the Range header
+	}))
+	defer upstream.Close()
+	p := newTestProxy()
+	b, _ := json.Marshal(scraper.AbyssFile{Size: 1000, URL: upstream.URL + "/x/f", Part: 1000, Sora: true})
+	u, _ := p.URL(scraper.Stream{URL: "abyss:" + base64.RawURLEncoding.EncodeToString(b)}, 0)
+	rec := httptest.NewRecorder()
+	p.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, u, nil))
+	if rec.Body.Len() != 0 {
+		t.Fatalf("body %q, want nothing", rec.Body.String())
 	}
 }
