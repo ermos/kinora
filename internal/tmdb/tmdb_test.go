@@ -1,7 +1,11 @@
 package tmdb
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
+	"net/http"
+	"strings"
 	"testing"
 	"time"
 )
@@ -36,5 +40,21 @@ func TestRecent(t *testing.T) {
 		if got := recent(date, 30, now); got != want {
 			t.Errorf("recent(%q) = %v, want %v", date, got, want)
 		}
+	}
+}
+
+type failingTransport struct{}
+
+func (failingTransport) RoundTrip(*http.Request) (*http.Response, error) {
+	return nil, errors.New("connection refused")
+}
+
+// Request errors are logged: they must not carry the v3 key sent in the query string.
+func TestErrorsHideAPIKey(t *testing.T) {
+	c := New("0123456789abcdef0123456789abcdef", "en-US")
+	c.http.Transport = failingTransport{}
+	_, err := c.Genres(context.Background(), "movie")
+	if err == nil || strings.Contains(err.Error(), "0123456789abcdef") || !strings.Contains(err.Error(), "connection refused") {
+		t.Fatalf("err = %v", err)
 	}
 }
