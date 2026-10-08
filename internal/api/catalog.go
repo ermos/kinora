@@ -416,13 +416,13 @@ func (h *Handler) links(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	found, ok := h.linkCache.get(q)
+	found, ok := h.linkCache.Get(linkCacheKey(q))
 	if !ok {
 		found = scraper.FindLinks(r.Context(), func(id string) string {
 			return h.store.SourceURL(r.Context(), id)
 		}, q, h.language())
 		if r.Context().Err() == nil {
-			h.linkCache.put(q, found)
+			h.linkCache.Set(linkCacheKey(q), found)
 		}
 	}
 	out := make([]link, 0, len(found))
@@ -490,46 +490,10 @@ func (h *Handler) play(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, playResponse{URL: u, Kind: stream.Kind(st.URL)})
 }
 
-// linkCache keeps the probed links of a title for a few minutes: reopening the player, going back to an
-// episode or switching profile does not search and probe every source again.
-// ponytail: in-memory, unbounded between sweeps; entries are small and expire quickly.
-type linkCache struct {
-	mu      sync.Mutex
-	entries map[string]cachedLinks
-}
-
-type cachedLinks struct {
-	links   []scraper.Link
-	expires time.Time
-}
-
+// linkCacheTTL: reopening the player, going back to an episode or switching profile does not search and probe
+// every source again for a few minutes.
 const linkCacheTTL = 10 * time.Minute
 
-func (c *linkCache) key(q scraper.Query) string {
+func linkCacheKey(q scraper.Query) string {
 	return fmt.Sprintf("%s/%s/%d/%d/%d", q.Lang, q.Type, q.TMDBID, q.Season, q.Episode)
-}
-
-func (c *linkCache) get(q scraper.Query) ([]scraper.Link, bool) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	e, ok := c.entries[c.key(q)]
-	if !ok || time.Now().After(e.expires) {
-		return nil, false
-	}
-	return e.links, true
-}
-
-func (c *linkCache) put(q scraper.Query, links []scraper.Link) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if c.entries == nil {
-		c.entries = map[string]cachedLinks{}
-	}
-	now := time.Now()
-	for k, e := range c.entries {
-		if now.After(e.expires) {
-			delete(c.entries, k)
-		}
-	}
-	c.entries[c.key(q)] = cachedLinks{links: links, expires: now.Add(linkCacheTTL)}
 }

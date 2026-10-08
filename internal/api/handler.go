@@ -21,6 +21,7 @@ import (
 	"github.com/ermos/kinora/internal/store"
 	"github.com/ermos/kinora/internal/stream"
 	"github.com/ermos/kinora/internal/tmdb"
+	"github.com/ermos/kinora/internal/ttlcache"
 )
 
 const (
@@ -35,8 +36,8 @@ type Handler struct {
 	tmdb      *tmdb.Client
 	signer    *stream.Signer
 	proxy     *stream.Proxy
-	linkCache linkCache
-	lang      atomic.Pointer[scraper.Language] // instance language, chosen at setup
+	linkCache *ttlcache.Cache[string, []scraper.Link] // probed links by title
+	lang      atomic.Pointer[scraper.Language]        // instance language, chosen at setup
 	aniskip   *aniskip.Client
 	releases  *releases
 	// loginLimiter locks an IP out after too many failed logins, accountLimiter an account whatever the IP: the
@@ -50,7 +51,7 @@ func New(st *store.Store, tm *tmdb.Client, signer *stream.Signer, lang scraper.L
 	if trustedProxies == nil {
 		trustedProxies = defaultTrustedProxies
 	}
-	h := &Handler{store: st, tmdb: tm, signer: signer, proxy: stream.NewProxy(signer, "/api/v1/proxy"), aniskip: aniskip.New(), releases: newReleases(dev),
+	h := &Handler{store: st, tmdb: tm, signer: signer, proxy: stream.NewProxy(signer, "/api/v1/proxy"), linkCache: ttlcache.New[string, []scraper.Link](linkCacheTTL, 500), aniskip: aniskip.New(), releases: newReleases(dev),
 		loginLimiter: newFailureLimiter(loginMaxFailures, loginWindow), accountLimiter: newFailureLimiter(accountMaxFailures, loginWindow), trustedProxies: trustedProxies}
 	h.lang.Store(&lang)
 	return h
