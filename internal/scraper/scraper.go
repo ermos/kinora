@@ -86,8 +86,8 @@ var ErrNotFound = errors.New("stream not found")
 type SiteURL func(id string) string
 
 // FindLinks queries the sources of the language concurrently, keeps the links a hoster can play, then probes them
-// (quality, dead links) and sorts them best first.
-func FindLinks(ctx context.Context, siteURL SiteURL, q Query, lang Language) []Link {
+// (quality, dead links) and sorts them best first. solver is the FlareSolverr URL, "" skips the Cloudflare sources.
+func FindLinks(ctx context.Context, siteURL SiteURL, q Query, lang Language, solver string) []Link {
 	ctx, cancel := context.WithTimeout(ctx, 25*time.Second)
 	defer cancel()
 
@@ -96,7 +96,6 @@ func FindLinks(ctx context.Context, siteURL SiteURL, q Query, lang Language) []L
 		all []Link
 		wg  sync.WaitGroup
 	)
-	solver := FlareSolverr()
 	for _, s := range Sources {
 		if !s.serves(lang.Code) || (s.Cloudflare && solver == "") {
 			continue
