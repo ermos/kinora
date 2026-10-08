@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib" // registers the "pgx" driver
 )
@@ -21,6 +22,11 @@ func Open(ctx context.Context, url string) (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Bounded pool: a burst of requests waits for a connection instead of exhausting PostgreSQL's max_connections
+	// (100 by default, shared with the backups).
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(10)
+	db.SetConnMaxIdleTime(5 * time.Minute)
 	if err := db.PingContext(ctx); err != nil {
 		_ = db.Close()
 		return nil, fmt.Errorf("connect to the database: %w", err)

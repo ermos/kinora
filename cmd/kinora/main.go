@@ -94,7 +94,8 @@ func run() error {
 	mux.Handle("/api/", h.Routes())
 	mux.Handle("/", uiHandler(cfg.UIDevURL))
 
-	srv := &http.Server{Addr: cfg.Addr, Handler: securityHeaders(mux, cfg.UIDevURL == ""), ReadHeaderTimeout: 10 * time.Second}
+	// No WriteTimeout: the proxy streams movies for hours. Idle keep-alive connections are closed after a while.
+	srv := &http.Server{Addr: cfg.Addr, Handler: securityHeaders(mux, cfg.UIDevURL == ""), ReadHeaderTimeout: 10 * time.Second, IdleTimeout: 2 * time.Minute}
 	go func() {
 		<-ctx.Done()
 		shutdown, cancel := context.WithTimeout(context.Background(), 10*time.Second)
