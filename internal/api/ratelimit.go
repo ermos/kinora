@@ -3,6 +3,7 @@ package api
 import (
 	"net"
 	"net/http"
+	"net/netip"
 	"strings"
 	"sync"
 	"time"
@@ -10,8 +11,17 @@ import (
 
 const (
 	loginMaxFailures = 10
-	loginWindow      = 15 * time.Minute
+	// accountMaxFailures caps the guesses on one account from all IPs together, higher than the per IP limit so a
+	// family member mistyping does not lock the account.
+	accountMaxFailures = 30
+	loginWindow        = 15 * time.Minute
 )
+
+// defaultTrustedProxies covers a reverse proxy on the host or on a Docker network: loopback and private ranges.
+var defaultTrustedProxies = []netip.Prefix{
+	netip.MustParsePrefix("127.0.0.0/8"), netip.MustParsePrefix("::1/128"), netip.MustParsePrefix("10.0.0.0/8"),
+	netip.MustParsePrefix("172.16.0.0/12"), netip.MustParsePrefix("192.168.0.0/16"), netip.MustParsePrefix("fc00::/7"),
+}
 
 // failureLimiter counts failed attempts per IP in a fixed window: only failures count, so a family behind
 // one address can still sign in while a guesser gets locked out.
@@ -61,17 +71,24 @@ func (l *failureLimiter) fail(ip string) {
 	f.count++
 }
 
-// clientIP is the peer address, or the last X-Forwarded-For entry when the peer is a reverse proxy on a
-// private network (the entry it appended itself): from the internet, a forged header is ignored.
-func clientIP(r *http.Request) string {
+// clientIP is the peer address, or the last X-Forwarded-For entry when the peer is a trusted reverse proxy (the
+// entry it appended itself): from anywhere else, a forged header is ignored.
+func clientIP(r *http.Request, trusted []netip.Prefix) string {
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		host = r.RemoteAddr
 	}
-	if ip := net.ParseIP(host); ip != nil && (ip.IsLoopback() || ip.IsPrivate()) {
-		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-			parts := strings.Split(xff, ",")
-			return strings.TrimSpace(parts[len(parts)-1])
+	ip, err := netip.ParseAddr(host)
+	if err != nil {
+		return host
+	}
+	for _, p := range trusted {
+		if p.Contains(ip.Unmap()) {
+			if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+				parts := strings.Split(xff, ",")
+				return strings.TrimSpace(parts[len(parts)-1])
+			}
+			break
 		}
 	}
 	return host

@@ -130,7 +130,7 @@ func (h *Handler) createAccount(r *http.Request, c credentials, admin bool) (sto
 // @Failure  429   {object}  apiError  "Too many failed attempts from this IP: retry after Retry-After seconds"
 // @Router   /auth/login [post]
 func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
-	ip := clientIP(r)
+	ip := clientIP(r, h.trustedProxies)
 	if d := h.loginLimiter.blocked(ip); d > 0 {
 		w.Header().Set("Retry-After", strconv.Itoa(int(d.Seconds())+1))
 		writeError(w, http.StatusTooManyRequests, errTooManyAttempts)
@@ -140,6 +140,12 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 	if !readJSON(w, r, &c) {
 		return
 	}
+	account := strings.ToLower(strings.TrimSpace(c.Username))
+	if d := h.accountLimiter.blocked(account); d > 0 {
+		w.Header().Set("Retry-After", strconv.Itoa(int(d.Seconds())+1))
+		writeError(w, http.StatusTooManyRequests, errTooManyAttempts)
+		return
+	}
 	u, err := h.store.UserByUsername(r.Context(), strings.TrimSpace(c.Username))
 	hash := u.PasswordHash
 	if err != nil {
@@ -147,6 +153,7 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 	}
 	if bcrypt.CompareHashAndPassword([]byte(hash), []byte(c.Password)) != nil || err != nil {
 		h.loginLimiter.fail(ip)
+		h.accountLimiter.fail(account)
 		time.Sleep(400*time.Millisecond + rand.N(200*time.Millisecond))
 		writeError(w, http.StatusUnauthorized, errInvalidCredentials)
 		return

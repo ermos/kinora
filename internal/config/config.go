@@ -2,7 +2,10 @@ package config
 
 import (
 	"errors"
+	"fmt"
+	"net/netip"
 	"os"
+	"strings"
 )
 
 type Config struct {
@@ -14,6 +17,9 @@ type Config struct {
 	UIDevURL string
 	// Dev (APP_ENV=development) serves the locally built TV APK as the latest release instead of GitHub's.
 	Dev bool
+	// TrustedProxies are the peers whose X-Forwarded-For is believed (TRUSTED_PROXIES, comma separated CIDRs).
+	// nil keeps the default: loopback and private networks.
+	TrustedProxies []netip.Prefix
 }
 
 func Load() (Config, error) {
@@ -29,6 +35,16 @@ func Load() (Config, error) {
 	}
 	if c.TMDBKey == "" {
 		return c, errors.New("TMDB_API_KEY is required (free key: https://www.themoviedb.org/settings/api)")
+	}
+	for _, s := range strings.Split(os.Getenv("TRUSTED_PROXIES"), ",") {
+		if s = strings.TrimSpace(s); s == "" {
+			continue
+		}
+		p, err := netip.ParsePrefix(s)
+		if err != nil {
+			return c, fmt.Errorf("TRUSTED_PROXIES: %w", err)
+		}
+		c.TrustedProxies = append(c.TrustedProxies, p.Masked())
 	}
 	return c, nil
 }
