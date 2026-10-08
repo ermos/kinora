@@ -69,10 +69,6 @@ func run() error {
 		}
 	}()
 
-	if u, err := st.Setting(ctx, "flaresolverr"); err == nil {
-		scraper.SetFlareSolverr(u)
-	}
-
 	lang, _ := scraper.LanguageByCode(scraper.DefaultLanguage)
 	if code, err := st.Setting(ctx, "language"); err == nil {
 		if l, ok := scraper.LanguageByCode(code); ok {
@@ -80,6 +76,9 @@ func run() error {
 		}
 	}
 	h := api.New(st, tmdb.New(cfg.TMDBKey, lang.TMDB), stream.NewSigner(secret), lang, cfg.Dev, cfg.TrustedProxies)
+	if u, err := st.Setting(ctx, "flaresolverr"); err == nil {
+		h.SetFlareSolverr(u)
+	}
 	go func() {
 		for {
 			h.RefreshShows(ctx)

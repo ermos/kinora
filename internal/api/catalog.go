@@ -423,7 +423,7 @@ func (h *Handler) links(w http.ResponseWriter, r *http.Request) {
 		// bounds it), so the others still get its result.
 		v, _, _ := h.linkSearches.Do(key, func() (any, error) {
 			ctx := context.WithoutCancel(r.Context())
-			found := scraper.FindLinks(ctx, func(id string) string { return h.store.SourceURL(ctx, id) }, q, h.language())
+			found := scraper.FindLinks(ctx, func(id string) string { return h.store.SourceURL(ctx, id) }, q, h.language(), h.FlareSolverr())
 			h.linkCache.Set(key, found)
 			return found, nil
 		})

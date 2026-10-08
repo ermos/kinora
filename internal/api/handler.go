@@ -41,6 +41,8 @@ type Handler struct {
 	linkCache    *ttlcache.Cache[string, []scraper.Link] // probed links by title
 	linkSearches singleflight.Group
 	lang         atomic.Pointer[scraper.Language] // instance language, chosen at setup
+	// flareSolverr is the FlareSolverr URL set by an admin, "" when disabled.
+	flareSolverr atomic.Pointer[string]
 	aniskip      *aniskip.Client
 	releases     *releases
 	// loginLimiter locks an IP out after too many failed logins, accountLimiter an account whatever the IP: the
@@ -61,6 +63,17 @@ func New(st *store.Store, tm *tmdb.Client, signer *stream.Signer, lang scraper.L
 }
 
 func (h *Handler) language() scraper.Language { return *h.lang.Load() }
+
+// SetFlareSolverr sets the FlareSolverr URL ("" disables it). It applies to the next search, no restart needed.
+func (h *Handler) SetFlareSolverr(u string) { h.flareSolverr.Store(&u) }
+
+// FlareSolverr returns the FlareSolverr URL, "" when disabled.
+func (h *Handler) FlareSolverr() string {
+	if p := h.flareSolverr.Load(); p != nil {
+		return *p
+	}
+	return ""
+}
 
 // Routes returns the /api/v1 handler.
 func (h *Handler) Routes() http.Handler {

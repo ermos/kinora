@@ -9,23 +9,11 @@ import (
 	"net/url"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
 // FlareSolverr (github.com/FlareSolverr/FlareSolverr) passes Cloudflare challenges in a real browser. Once an admin
-// sets its URL, the sources marked Cloudflare are queried, and their challenged requests go through it.
-var flareSolverr atomic.Pointer[string]
-
-// SetFlareSolverr sets the FlareSolverr URL ("" disables it). It applies to the next search, no restart needed.
-func SetFlareSolverr(u string) { flareSolverr.Store(&u) }
-
-func FlareSolverr() string {
-	if p := flareSolverr.Load(); p != nil {
-		return *p
-	}
-	return ""
-}
+// sets its URL, FindLinks queries the sources marked Cloudflare, and their challenged requests go through it.
 
 // clearances keeps, per host, the cookies and user agent of the last solved challenge. Requests reuse them and only
 // go back to the browser when Cloudflare challenges again.

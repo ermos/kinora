@@ -496,7 +496,7 @@ type flareSolverrSettings struct {
 // @Success  200  {object}  flareSolverrSettings
 // @Router   /admin/flaresolverr [get]
 func (h *Handler) getFlareSolverr(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, flareSolverrSettings{URL: scraper.FlareSolverr()})
+	writeJSON(w, http.StatusOK, flareSolverrSettings{URL: h.FlareSolverr()})
 }
 
 // @Summary  Set the FlareSolverr server (empty URL disables it), checked before saving. Sources behind Cloudflare are queried while it is set.
@@ -521,6 +521,6 @@ func (h *Handler) updateFlareSolverr(w http.ResponseWriter, r *http.Request) {
 		internalError(w, err)
 		return
 	}
-	scraper.SetFlareSolverr(u)
+	h.SetFlareSolverr(u)
 	w.WriteHeader(http.StatusNoContent)
 }
