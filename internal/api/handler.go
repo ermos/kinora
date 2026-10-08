@@ -16,6 +16,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"golang.org/x/sync/singleflight"
+
 	"github.com/ermos/kinora/internal/aniskip"
 	"github.com/ermos/kinora/internal/scraper"
 	"github.com/ermos/kinora/internal/store"
@@ -32,14 +34,15 @@ const (
 )
 
 type Handler struct {
-	store     *store.Store
-	tmdb      *tmdb.Client
-	signer    *stream.Signer
-	proxy     *stream.Proxy
-	linkCache *ttlcache.Cache[string, []scraper.Link] // probed links by title
-	lang      atomic.Pointer[scraper.Language]        // instance language, chosen at setup
-	aniskip   *aniskip.Client
-	releases  *releases
+	store        *store.Store
+	tmdb         *tmdb.Client
+	signer       *stream.Signer
+	proxy        *stream.Proxy
+	linkCache    *ttlcache.Cache[string, []scraper.Link] // probed links by title
+	linkSearches singleflight.Group
+	lang         atomic.Pointer[scraper.Language] // instance language, chosen at setup
+	aniskip      *aniskip.Client
+	releases     *releases
 	// loginLimiter locks an IP out after too many failed logins, accountLimiter an account whatever the IP: the
 	// client IP can be spoofed behind a trusted proxy range.
 	loginLimiter, accountLimiter *failureLimiter
