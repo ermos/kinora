@@ -14,6 +14,7 @@ kinora reads its settings from the environment. With Docker Compose, put them in
 | `ADDR` | `:8080` | Address the server listens on. |
 | `APP_ENV` | `production` | Where the Android TV app looks for updates: `production` uses the latest GitHub release, `development` the APK built locally. See [Android TV](./android-tv.md#updates). |
 | `UI_DEV_URL` | | Development only: proxies the UI to an Expo dev server. See [Development](./development.md). |
+| `TRUSTED_PROXIES` | loopback and private networks | Comma separated CIDRs of the reverse proxies whose `X-Forwarded-For` header gives the client IP, for the failed login lockout. If kinora's port is reachable from the internet without a reverse proxy in front, set it to your proxy's address only (for example `127.0.0.1/32`), otherwise anyone can forge their IP. |
 
 ## Instance settings
 

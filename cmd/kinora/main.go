@@ -79,7 +79,7 @@ func run() error {
 			lang = l
 		}
 	}
-	h := api.New(st, tmdb.New(cfg.TMDBKey, lang.TMDB), stream.NewSigner(secret), lang, cfg.Dev)
+	h := api.New(st, tmdb.New(cfg.TMDBKey, lang.TMDB), stream.NewSigner(secret), lang, cfg.Dev, cfg.TrustedProxies)
 	go func() {
 		for {
 			h.RefreshShows(ctx)

@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"mime"
 	"net/http"
+	"net/netip"
 	"strconv"
 	"sync/atomic"
 	"time"
@@ -38,12 +39,19 @@ type Handler struct {
 	lang      atomic.Pointer[scraper.Language] // instance language, chosen at setup
 	aniskip   *aniskip.Client
 	releases  *releases
-	// loginLimiter locks an IP out after too many failed logins.
-	loginLimiter *failureLimiter
+	// loginLimiter locks an IP out after too many failed logins, accountLimiter an account whatever the IP: the
+	// client IP can be spoofed behind a trusted proxy range.
+	loginLimiter, accountLimiter *failureLimiter
+	trustedProxies               []netip.Prefix
 }
 
-func New(st *store.Store, tm *tmdb.Client, signer *stream.Signer, lang scraper.Language, dev bool) *Handler {
-	h := &Handler{store: st, tmdb: tm, signer: signer, proxy: stream.NewProxy(signer, "/api/v1/proxy"), aniskip: aniskip.New(), releases: newReleases(dev), loginLimiter: newFailureLimiter(loginMaxFailures, loginWindow)}
+// New builds the API. trustedProxies nil trusts X-Forwarded-For from loopback and private networks.
+func New(st *store.Store, tm *tmdb.Client, signer *stream.Signer, lang scraper.Language, dev bool, trustedProxies []netip.Prefix) *Handler {
+	if trustedProxies == nil {
+		trustedProxies = defaultTrustedProxies
+	}
+	h := &Handler{store: st, tmdb: tm, signer: signer, proxy: stream.NewProxy(signer, "/api/v1/proxy"), aniskip: aniskip.New(), releases: newReleases(dev),
+		loginLimiter: newFailureLimiter(loginMaxFailures, loginWindow), accountLimiter: newFailureLimiter(accountMaxFailures, loginWindow), trustedProxies: trustedProxies}
 	h.lang.Store(&lang)
 	return h
 }
