@@ -5,9 +5,24 @@ import (
 	"database/sql"
 	"errors"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
-var ErrNotFound = errors.New("not found")
+var (
+	ErrNotFound = errors.New("not found")
+	// ErrConflict: a unique constraint refused the row (a username already taken...).
+	ErrConflict = errors.New("already exists")
+)
+
+// conflict maps PostgreSQL's unique_violation to ErrConflict.
+func conflict(err error) error {
+	var pg *pgconn.PgError
+	if errors.As(err, &pg) && pg.Code == "23505" {
+		return ErrConflict
+	}
+	return err
+}
 
 type Store struct{ db *sql.DB }
 
@@ -76,7 +91,7 @@ func (s *Store) CreateUser(ctx context.Context, username, hash string, admin boo
 	var id int64
 	err := s.db.QueryRowContext(ctx, "INSERT INTO users (username, password_hash, is_admin) VALUES ($1, $2, $3) RETURNING id", username, hash, admin).Scan(&id)
 	if err != nil {
-		return User{}, err
+		return User{}, conflict(err)
 	}
 	return User{ID: id, Username: username, IsAdmin: admin, PasswordHash: hash}, nil
 }

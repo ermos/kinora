@@ -368,12 +368,11 @@ func (h *Handler) createUser(w http.ResponseWriter, r *http.Request) {
 	if !readJSON(w, r, &nu) || !validCredentials(w, nu.credentials) {
 		return
 	}
-	if _, err := h.store.UserByUsername(r.Context(), strings.TrimSpace(nu.Username)); err == nil {
+	u, err := h.createAccount(r, nu.credentials, nu.IsAdmin)
+	if errors.Is(err, store.ErrConflict) { // the unique index on lower(username) decides, even for two requests at once
 		writeError(w, http.StatusConflict, errUsernameTaken)
 		return
-	}
-	u, err := h.createAccount(r, nu.credentials, nu.IsAdmin)
-	if err != nil {
+	} else if err != nil {
 		internalError(w, err)
 		return
 	}
