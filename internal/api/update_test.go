@@ -37,6 +37,29 @@ func TestGitHubReleaseIsSlimmedAndCached(t *testing.T) {
 	}
 }
 
+// A failed check is not retried by every TV asking right after: they get no release until releaseRetry.
+func TestGitHubFailureIsNotRetriedAtOnce(t *testing.T) {
+	calls := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		http.Error(w, "down", http.StatusBadGateway)
+	}))
+	defer srv.Close()
+
+	rs := newReleases(false)
+	rs.github = srv.URL
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/update", nil)
+	if _, err := rs.get(req, false); err == nil {
+		t.Fatal("want the GitHub error")
+	}
+	if rel, err := rs.get(req, false); rel != nil || err != nil || calls != 1 {
+		t.Fatalf("release = %+v, err = %v, github called %d times", rel, err, calls)
+	}
+	if _, err := rs.get(req, true); err == nil || calls != 2 {
+		t.Fatalf("forced check: github called %d times, err = %v", calls, err)
+	}
+}
+
 func TestLocalRelease(t *testing.T) {
 	rs := newReleases(true)
 	rs.local = t.TempDir()

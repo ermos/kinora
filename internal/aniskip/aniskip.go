@@ -101,7 +101,7 @@ func (c *Client) list(ctx context.Context) (map[key][]entry, error) {
 	if time.Now().Before(c.expires) {
 		return c.index, nil
 	}
-	index, err := c.fetchList(ctx)
+	index, err := c.fetchList(context.WithoutCancel(ctx)) // shared by the callers waiting on mu, bounded by the client timeout
 	if err != nil {
 		c.expires = time.Now().Add(retryTTL) // keep the old index, if any, and retry later
 		return c.index, err
