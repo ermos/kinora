@@ -5,6 +5,7 @@ package tmdb
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -377,7 +378,12 @@ func (c *Client) get(ctx context.Context, path string, params url.Values, out an
 	}
 	resp, err := c.http.Do(req)
 	if err != nil {
-		return err
+		// *url.Error quotes the request URL, api_key included: keep only the cause, the error ends up in the logs.
+		var ue *url.Error
+		if errors.As(err, &ue) {
+			err = ue.Err
+		}
+		return fmt.Errorf("tmdb %s: %w", path, err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
