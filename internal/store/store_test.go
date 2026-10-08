@@ -191,7 +191,7 @@ func TestStreamLimit(t *testing.T) {
 	if got, err := s.UserBySession(ctx, "tok"); err != nil || got.MaxStreamMbps != 20 {
 		t.Fatalf("UserBySession = %+v, %v", got, err)
 	}
-	if err := s.SetStreamLimit(ctx, u.ID+1, 20); err != ErrNotFound {
+	if err := s.SetStreamLimit(ctx, u.ID+1, 20); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("unknown user: %v", err)
 	}
 }
@@ -218,7 +218,7 @@ func TestSetPasswordLogsOut(t *testing.T) {
 	if err := s.SetPassword(ctx, u.ID, "new"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.UserBySession(ctx, "tok"); err != ErrNotFound {
+	if _, err := s.UserBySession(ctx, "tok"); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("session still valid: %v", err)
 	}
 	if got, _ := s.UserByID(ctx, u.ID); got.PasswordHash != "new" {

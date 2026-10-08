@@ -78,7 +78,7 @@ func copyTable(ctx context.Context, src *sql.DB, tx *sql.Tx, table, cols string,
 			}
 		}
 	}
-	insert := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", table, cols, strings.Join(marks, ", "))
+	insert := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", table, cols, strings.Join(marks, ", ")) //nolint:gosec // G201: table and columns come from importTables
 	n := 0
 	for rows.Next() {
 		vals := make([]any, len(names))

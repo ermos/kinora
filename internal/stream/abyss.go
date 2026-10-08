@@ -39,7 +39,7 @@ func (p *Proxy) serveAbyss(w http.ResponseWriter, r *http.Request, f scraper.Aby
 			return
 		}
 		last = min(last, end)
-		req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, u, nil)
+		req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, u, nil) //nolint:gosec // G704: p.client only dials public addresses (safehttp)
 		if err != nil {
 			return
 		}
@@ -48,7 +48,7 @@ func (p *Proxy) serveAbyss(w http.ResponseWriter, r *http.Request, f scraper.Aby
 			req.Header.Set(k, v)
 		}
 		req.Header.Set("Range", fmt.Sprintf("bytes=%d-%d", from, from+last-off))
-		resp, err := p.client.Do(req)
+		resp, err := p.client.Do(req) //nolint:gosec // G704: see above
 		if err != nil {
 			return // headers are sent: the player sees a short body and asks again from there
 		}

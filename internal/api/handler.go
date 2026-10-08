@@ -236,12 +236,22 @@ func (h *Handler) startSession(w http.ResponseWriter, r *http.Request, userID in
 	if err := h.store.CreateSession(r.Context(), hashToken(token), userID, expires); err != nil {
 		return err
 	}
-	http.SetCookie(w, &http.Cookie{
+	setSessionCookie(w, r, token, expires)
+	return nil
+}
+
+// setSessionCookie sets the session cookie, or clears it with an empty token. Secure follows the request scheme:
+// an instance reached over plain HTTP on the LAN must still be able to log in.
+func setSessionCookie(w http.ResponseWriter, r *http.Request, token string, expires time.Time) {
+	c := &http.Cookie{ //nolint:gosec // G124: Secure is set whenever the request came over HTTPS, see above
 		Name: sessionCookie, Value: token, Path: "/", Expires: expires,
 		HttpOnly: true, SameSite: http.SameSiteLaxMode,
 		Secure: r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https",
-	})
-	return nil
+	}
+	if token == "" {
+		c.MaxAge = -1
+	}
+	http.SetCookie(w, c)
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

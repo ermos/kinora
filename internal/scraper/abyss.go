@@ -4,7 +4,7 @@ import (
 	"context"
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/md5"
+	"crypto/md5" //nolint:gosec // G501: Abyss' player derives its keys with md5, reproduced as is
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -66,14 +66,14 @@ func (f AbyssFile) Head(off int64) (cipher.Stream, int64) {
 // abyssCipher is the player's AES-256-CTR: the key is the hex md5 of seed taken as text, the counter starts
 // at its first 16 bytes. offset positions the keystream.
 func abyssCipher(seed string, offset int64) cipher.Stream {
-	sum := md5.Sum([]byte(seed))
+	sum := md5.Sum([]byte(seed)) //nolint:gosec // G401: see the import
 	key := []byte(hex.EncodeToString(sum[:]))
 	block, _ := aes.NewCipher(key) // 32 bytes: never fails
 	ctr := new(big.Int).SetBytes(key[:16])
 	ctr.Add(ctr, big.NewInt(offset/16))
 	iv := make([]byte, 16)
-	ctr.FillBytes(iv) // hex text keeps the top bit clear: no overflow
-	s := cipher.NewCTR(block, iv)
+	ctr.FillBytes(iv)             // hex text keeps the top bit clear: no overflow
+	s := cipher.NewCTR(block, iv) //nolint:gosec // G407: the player's counter, derived from the key above
 	skip := make([]byte, offset%16)
 	s.XORKeyStream(skip, skip)
 	return s
@@ -193,7 +193,7 @@ func latin1(b []byte) string {
 func latin1Bytes(s string) []byte {
 	b := make([]byte, 0, len(s))
 	for _, r := range s {
-		b = append(b, byte(r))
+		b = append(b, byte(r)) //nolint:gosec // G115: latin1 text, every rune fits a byte
 	}
 	return b
 }
