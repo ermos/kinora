@@ -37,7 +37,7 @@ func TestProxyServesAbyss(t *testing.T) {
 		http.ServeContent(w, r, "", time.Time{}, bytes.NewReader(parts[r.URL.Path]))
 	})
 
-	p := NewProxy(NewSigner([]byte("k")), "/proxy")
+	p := newTestProxy()
 	b, _ := json.Marshal(f)
 	u, _ := p.URL(scraper.Stream{URL: "abyss:" + base64.RawURLEncoding.EncodeToString(b), Headers: map[string]string{"Referer": "https://site/"}}, 0)
 

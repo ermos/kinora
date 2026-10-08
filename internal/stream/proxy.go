@@ -12,12 +12,14 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
 	"time"
 
+	"github.com/ermos/kinora/internal/safehttp"
 	"github.com/ermos/kinora/internal/scraper"
 )
 
@@ -75,8 +77,9 @@ type Proxy struct {
 }
 
 func NewProxy(signer *Signer, prefix string) *Proxy {
-	// No overall timeout: a movie file can stream for hours. The dial and header phases are bounded.
-	tr := http.DefaultTransport.(*http.Transport).Clone()
+	// No overall timeout: a movie file can stream for hours. The dial and header phases are bounded. Stream and
+	// playlist URLs come from third-party sites: only public addresses are reached.
+	tr := safehttp.Transport()
 	tr.ResponseHeaderTimeout = 20 * time.Second
 	return &Proxy{signer: signer, prefix: prefix, client: &http.Client{Transport: tr}}
 }
@@ -114,8 +117,8 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, t.URL, nil)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if err != nil || (req.URL.Scheme != "http" && req.URL.Scheme != "https") {
+		http.Error(w, "invalid upstream URL", http.StatusBadRequest)
 		return
 	}
 	req.Header.Set("User-Agent", scraper.UserAgent)
@@ -129,7 +132,8 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	resp, err := p.client.Do(req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		slog.Warn("proxy upstream failed", "err", err) // not echoed: it would tell what answers on the network
+		http.Error(w, "upstream unreachable", http.StatusBadGateway)
 		return
 	}
 	defer resp.Body.Close()

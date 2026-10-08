@@ -60,7 +60,7 @@ func fetchSites(ctx context.Context, sitesURL string) (map[string]siteEntry, err
 	if err != nil {
 		return nil, err
 	}
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := (&http.Client{Transport: transport}).Do(req)
 	if err != nil {
 		return nil, err
 	}
