@@ -107,6 +107,7 @@ export const en = {
     trending: 'Trending',
     clear: 'Clear',
     space: 'Space',
+    voice: 'Voice search',
     delete: 'Delete a letter',
   },
   title: {
