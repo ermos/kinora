@@ -12,27 +12,22 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/ermos/kinora/internal/ttlcache"
 )
 
 type Client struct {
 	key  string
 	lang atomic.Value // string, TMDB locale ("fr-FR")
 	http *http.Client
-
-	mu    sync.Mutex
-	cache map[string]cached
-}
-
-type cached struct {
-	body    []byte
-	expires time.Time
+	// cache keeps raw answers by URL. Search queries come from users: the size is capped.
+	cache *ttlcache.Cache[string, []byte]
 }
 
 func New(key, lang string) *Client {
-	c := &Client{key: key, http: &http.Client{Timeout: 15 * time.Second}, cache: map[string]cached{}}
+	c := &Client{key: key, http: &http.Client{Timeout: 15 * time.Second}, cache: ttlcache.New[string, []byte](6*time.Hour, 2000)}
 	c.SetLanguage(lang)
 	return c
 }
@@ -349,7 +344,6 @@ func (c *Client) Season(ctx context.Context, id, number int) ([]Episode, error) 
 	return out, nil
 }
 
-// ponytail: in-memory cache with a fixed 6h TTL and no eviction, entries are small and keys bounded by what users browse.
 func (c *Client) get(ctx context.Context, path string, params url.Values, out any) error {
 	if params == nil {
 		params = url.Values{}
@@ -357,11 +351,8 @@ func (c *Client) get(ctx context.Context, path string, params url.Values, out an
 	params.Set("language", c.lang.Load().(string))
 	u := "https://api.themoviedb.org/3/" + path + "?" + params.Encode()
 
-	c.mu.Lock()
-	hit, ok := c.cache[u]
-	c.mu.Unlock()
-	if ok && time.Now().Before(hit.expires) {
-		return json.Unmarshal(hit.body, out)
+	if body, ok := c.cache.Get(u); ok {
+		return json.Unmarshal(body, out)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
@@ -393,9 +384,7 @@ func (c *Client) get(ctx context.Context, path string, params url.Values, out an
 	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
 		return err
 	}
-	c.mu.Lock()
-	c.cache[u] = cached{body: body, expires: time.Now().Add(6 * time.Hour)}
-	c.mu.Unlock()
+	c.cache.Set(u, body)
 	return json.Unmarshal(body, out)
 }
 

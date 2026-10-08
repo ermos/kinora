@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/ermos/kinora/internal/ttlcache"
 )
 
 const (
@@ -35,8 +37,8 @@ type Client struct {
 	mu      sync.Mutex
 	index   map[key][]entry
 	expires time.Time
-	// ponytail: no eviction, like the TMDB cache: keys are bounded by the episodes people watch.
-	skips map[string]cachedSkips
+	// skips is keyed by API URL, which holds the duration the client sends: the size is capped.
+	skips *ttlcache.Cache[string, []Segment]
 }
 
 type key struct {
@@ -51,13 +53,8 @@ type entry struct {
 	offset int // episodes of the TMDB season before this part
 }
 
-type cachedSkips struct {
-	segments []Segment
-	expires  time.Time
-}
-
 func New() *Client {
-	return &Client{http: &http.Client{Timeout: 30 * time.Second}, listURL: listURL, apiURL: apiURL, skips: map[string]cachedSkips{}}
+	return &Client{http: &http.Client{Timeout: 30 * time.Second}, listURL: listURL, apiURL: apiURL, skips: ttlcache.New[string, []Segment](skipTTL, 5000)}
 }
 
 // Segments returns the opening and ending of an episode (season and episode are 0 for movies). duration, the
@@ -172,11 +169,8 @@ func (v *ids) UnmarshalJSON(b []byte) error {
 }
 
 func (c *Client) skipTimes(ctx context.Context, u string) ([]Segment, error) {
-	c.mu.Lock()
-	hit, ok := c.skips[u]
-	c.mu.Unlock()
-	if ok && time.Now().Before(hit.expires) {
-		return hit.segments, nil
+	if segments, ok := c.skips.Get(u); ok {
+		return segments, nil
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
@@ -212,8 +206,6 @@ func (c *Client) skipTimes(ctx context.Context, u string) ([]Segment, error) {
 			segments = append(segments, Segment{Kind: kind, Start: r.Interval.Start, End: r.Interval.End})
 		}
 	}
-	c.mu.Lock()
-	c.skips[u] = cachedSkips{segments: segments, expires: time.Now().Add(skipTTL)}
-	c.mu.Unlock()
+	c.skips.Set(u, segments)
 	return segments, nil
 }
