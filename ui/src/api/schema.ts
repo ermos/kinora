@@ -515,6 +515,15 @@ export interface paths {
                         "application/json": components["schemas"]["api.apiError"];
                     };
                 };
+                /** @description Too many failed attempts from this IP: retry after Retry-After seconds */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["api.apiError"];
+                    };
+                };
             };
         };
         delete?: never;
@@ -1943,7 +1952,7 @@ export interface components {
         };
         "api.apiError": {
             /** @enum {string} */
-            code: "invalid_json" | "unsupported_media_type" | "not_logged_in" | "session_expired" | "admin_only" | "missing_profile" | "unknown_profile" | "internal" | "not_found" | "invalid_credentials" | "already_set_up" | "username_required" | "password_length" | "unsupported_language" | "wrong_password" | "name_required" | "unknown_avatar" | "profile_limit" | "last_profile" | "username_taken" | "delete_self" | "invalid_id" | "invalid_request" | "episode_required" | "tmdb_unreachable" | "invalid_link" | "link_dead" | "invalid_progress" | "flaresolverr_unreachable" | "device_code_expired" | "device_code_invalid" | "release_unreachable";
+            code: "invalid_json" | "unsupported_media_type" | "not_logged_in" | "session_expired" | "admin_only" | "missing_profile" | "unknown_profile" | "internal" | "not_found" | "invalid_credentials" | "already_set_up" | "username_required" | "password_length" | "unsupported_language" | "wrong_password" | "name_required" | "unknown_avatar" | "profile_limit" | "last_profile" | "username_taken" | "delete_self" | "invalid_id" | "invalid_request" | "episode_required" | "tmdb_unreachable" | "invalid_link" | "link_dead" | "invalid_progress" | "flaresolverr_unreachable" | "device_code_expired" | "device_code_invalid" | "release_unreachable" | "too_many_attempts";
             error: string;
         };
         "api.credentials": {

@@ -2,9 +2,11 @@ package api
 
 import (
 	"errors"
+	"math/rand/v2"
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -125,16 +127,27 @@ func (h *Handler) createAccount(r *http.Request, c credentials, admin bool) (sto
 // @Param    body  body      credentials  true  "Credentials"
 // @Success  200   {object}  store.User
 // @Failure  401   {object}  apiError
+// @Failure  429   {object}  apiError  "Too many failed attempts from this IP: retry after Retry-After seconds"
 // @Router   /auth/login [post]
 func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
+	ip := clientIP(r)
+	if d := h.loginLimiter.blocked(ip); d > 0 {
+		w.Header().Set("Retry-After", strconv.Itoa(int(d.Seconds())+1))
+		writeError(w, http.StatusTooManyRequests, errTooManyAttempts)
+		return
+	}
 	var c credentials
 	if !readJSON(w, r, &c) {
 		return
 	}
 	u, err := h.store.UserByUsername(r.Context(), strings.TrimSpace(c.Username))
-	if err != nil || bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(c.Password)) != nil {
-		// ponytail: a flat delay instead of per-IP rate limiting, bcrypt already makes guessing slow.
-		time.Sleep(500 * time.Millisecond)
+	hash := u.PasswordHash
+	if err != nil {
+		hash = dummyHash() // an unknown username takes as long as a wrong password: no account enumeration
+	}
+	if bcrypt.CompareHashAndPassword([]byte(hash), []byte(c.Password)) != nil || err != nil {
+		h.loginLimiter.fail(ip)
+		time.Sleep(400*time.Millisecond + rand.N(200*time.Millisecond))
 		writeError(w, http.StatusUnauthorized, errInvalidCredentials)
 		return
 	}
@@ -144,6 +157,12 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, u)
 }
+
+// dummyHash is compared against when the username does not exist, at the same cost as real hashes.
+var dummyHash = sync.OnceValue(func() string {
+	h, _ := bcrypt.GenerateFromPassword([]byte("kinora-dummy-password"), bcrypt.DefaultCost)
+	return string(h)
+})
 
 // @Summary  Log out
 // @Tags     auth

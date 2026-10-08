@@ -38,10 +38,12 @@ type Handler struct {
 	lang      atomic.Pointer[scraper.Language] // instance language, chosen at setup
 	aniskip   *aniskip.Client
 	releases  *releases
+	// loginLimiter locks an IP out after too many failed logins.
+	loginLimiter *failureLimiter
 }
 
 func New(st *store.Store, tm *tmdb.Client, signer *stream.Signer, lang scraper.Language, dev bool) *Handler {
-	h := &Handler{store: st, tmdb: tm, signer: signer, proxy: stream.NewProxy(signer, "/api/v1/proxy"), aniskip: aniskip.New(), releases: newReleases(dev)}
+	h := &Handler{store: st, tmdb: tm, signer: signer, proxy: stream.NewProxy(signer, "/api/v1/proxy"), aniskip: aniskip.New(), releases: newReleases(dev), loginLimiter: newFailureLimiter(loginMaxFailures, loginWindow)}
 	h.lang.Store(&lang)
 	return h
 }

@@ -52,6 +52,7 @@ components:
           - device_code_expired
           - device_code_invalid
           - release_unreachable
+          - too_many_attempts
           type: string
         error:
           type: string
@@ -937,6 +938,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/api.apiError'
           description: Unauthorized
+        "429":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api.apiError'
+          description: 'Too many failed attempts from this IP: retry after Retry-After
+            seconds'
       summary: Log in
       tags:
       - auth
