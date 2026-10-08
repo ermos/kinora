@@ -3,21 +3,53 @@ sidebar_position: 4
 title: Android TV
 ---
 
-kinora has a native Android TV app (Google TV included), built from the same code as the web app. It is designed for
-the remote: everything is reachable with the arrows, OK and Back.
+kinora has a native Android TV app (Google TV and Amazon Fire TV included), built from the same code as the web app.
+It is designed for the remote: everything is reachable with the arrows, OK and Back.
 
 ![kinora on an Android TV](/img/screenshots/android-tv.webp)
 
 ## Install the app
 
-1. Get the APK: download `kinora-android-tv.apk` from the
-   [latest GitHub release](https://github.com/ermos/kinora/releases/latest), or [build it yourself](#build-the-apk).
-2. Copy it to the TV and install it: with `adb install kinora-android-tv.apk`, a USB stick, or the **Downloader** app on the
-   TV. You may have to allow installs from unknown sources.
-3. On first launch, enter your server address, as seen from the TV: `http://192.168.1.10:8080`. It is saved on the
-   device and can be changed from the sign-in screen.
+The APK is always available at **`kinora.stream/apk`**, a short link to `kinora-android-tv.apk` in the
+[latest GitHub release](https://github.com/ermos/kinora/releases/latest). You can also
+[build it yourself](#build-the-apk).
 
-Plain HTTP is allowed, so a server on your local network works without TLS.
+The easiest way is to download it from the TV with the **Downloader** app (by AFTVnews), which has its own browser and
+installs what it downloads. The TV's own browser can't install APKs.
+
+### Android TV and Google TV
+
+1. Install **Downloader** from the Google Play Store.
+2. Allow it to install apps: **Settings > Apps > Security & restrictions > Unknown sources**, enable **Downloader**
+   (the path varies a little between brands).
+3. Open Downloader, type `kinora.stream/apk` and press **Go**, then **Install**.
+
+### Amazon Fire TV
+
+Fire TV devices running Fire OS 6 or later are supported. The newest models running Vega OS can't install APKs.
+
+1. Install **Downloader** from the Amazon Appstore.
+2. Enable the developer options: **Settings > My Fire TV > About**, press OK seven times on the device name.
+3. Allow Downloader to install apps: **Settings > My Fire TV > Developer options > Install unknown apps**, enable
+   **Downloader**.
+4. Open Downloader, type `kinora.stream/apk` and press **Go**, then **Install**.
+
+### With adb
+
+From a computer on the same network, with debugging enabled on the TV (**Developer options > ADB debugging**):
+
+```bash
+adb connect <tv-ip>
+adb install kinora-android-tv.apk
+```
+
+### First launch
+
+Enter your server address, as seen from the TV: `http://192.168.1.10:8080`. It is saved on the device and can be
+changed from the sign-in screen. Plain HTTP is allowed, so a server on your local network works without TLS.
+
+To install updates from the app (see [Updates](#updates)), allow kinora to install unknown apps too, the same way as
+Downloader. The TV asks the first time.
 
 ## Sign in
 

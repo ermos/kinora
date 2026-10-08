@@ -64,7 +64,7 @@ The web app is built into the server: open kinora in any browser, on a computer,
 | Client | Where to get it |
 |---|---|
 | Web (computer, phone, tablet) | built in, at `http://<your-server>:8080` |
-| Android TV and Google TV | `kinora-android-tv.apk` in the [latest release](https://github.com/ermos/kinora/releases/latest), see [Android TV](./android-tv.md) |
+| Android TV, Google TV and Fire TV | `kinora.stream/apk` (latest release), see [Android TV](./android-tv.md) |
 
 ## Update
 
