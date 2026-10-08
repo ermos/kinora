@@ -112,6 +112,7 @@ func FindLinks(ctx context.Context, siteURL SiteURL, q Query, lang Language) []L
 		go func(s Source) {
 			defer wg.Done()
 			c := NewClient()
+			c.AcceptLanguage = lang.TMDB + "," + lang.Code + ";q=0.9"
 			if s.Cloudflare {
 				c.Solver = solver
 			}

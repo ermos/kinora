@@ -1,6 +1,7 @@
 package scraper
 
 import (
+	"context"
 	"encoding/base64"
 	"strings"
 	"testing"
@@ -104,5 +105,20 @@ func TestSortLinks(t *testing.T) {
 	want := []string{"multi-1080", "nolang-1080", "vf-720", "vf-unknown", "vostfr-4k", "dead"}
 	if strings.Join(got, ",") != strings.Join(want, ",") {
 		t.Fatalf("SortLinks = %v, want %v", got, want)
+	}
+}
+
+// Sources are asked in the instance language.
+func TestFindLinksSendsInstanceLanguage(t *testing.T) {
+	saved := Sources
+	defer func() { Sources = saved }()
+	var got string
+	Sources = []Source{{ID: "s", DefaultURL: "https://s.example", Langs: []string{"en"}, Find: func(_ context.Context, c *Client, _ string, _ Query) ([]Link, error) {
+		got = c.AcceptLanguage
+		return nil, nil
+	}}}
+	FindLinks(context.Background(), func(string) string { return "" }, Query{}, Language{Code: "en", TMDB: "en-US", AudioRank: func(string) int { return 0 }})
+	if got != "en-US,en;q=0.9" {
+		t.Fatalf("Accept-Language = %q", got)
 	}
 }
