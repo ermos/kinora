@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -25,6 +26,8 @@ type release struct {
 const (
 	githubRelease = "https://api.github.com/repos/ermos/kinora/releases/latest"
 	releaseTTL    = 24 * time.Hour
+	// releaseRetry: after a failed check, TVs get the last known release until then instead of each waiting on GitHub.
+	releaseRetry = 5 * time.Minute
 	// localBuild is where `npm run tv:apk` leaves the APK, seen from the repo root (make run).
 	localBuild = "ui/android/app/build/outputs/apk/release"
 	apkTTL     = time.Hour
@@ -45,9 +48,10 @@ type releases struct {
 	local  string
 	client *http.Client
 
-	mu      sync.Mutex
-	latest  *release
-	fetched time.Time
+	mu       sync.Mutex
+	latest   *release
+	fetched  time.Time
+	failedAt time.Time
 }
 
 func newReleases(dev bool) *releases {
@@ -61,19 +65,21 @@ func (rs *releases) get(r *http.Request, force bool) (*release, error) {
 	}
 	rs.mu.Lock()
 	defer rs.mu.Unlock()
-	if !force && !rs.fetched.IsZero() && time.Since(rs.fetched) < releaseTTL {
+	if !force && (!rs.fetched.IsZero() && time.Since(rs.fetched) < releaseTTL || time.Since(rs.failedAt) < releaseRetry) {
 		return rs.latest, nil
 	}
-	rel, err := rs.githubRelease(r)
+	// The callers waiting on mu share this fetch: one TV going away must not fail it for the others.
+	rel, err := rs.githubRelease(context.WithoutCancel(r.Context()))
 	if err != nil {
+		rs.failedAt = time.Now()
 		return nil, err
 	}
 	rs.latest, rs.fetched = rel, time.Now()
 	return rel, nil
 }
 
-func (rs *releases) githubRelease(r *http.Request) (*release, error) {
-	req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, rs.github, nil)
+func (rs *releases) githubRelease(ctx context.Context) (*release, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rs.github, nil)
 	if err != nil {
 		return nil, err
 	}
