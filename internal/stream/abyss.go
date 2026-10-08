@@ -52,13 +52,17 @@ func (p *Proxy) serveAbyss(w http.ResponseWriter, r *http.Request, f scraper.Aby
 		if err != nil {
 			return // headers are sent: the player sees a short body and asks again from there
 		}
+		if resp.StatusCode != http.StatusPartialContent { // an error page or the whole part: not the bytes asked for
+			resp.Body.Close()
+			return
+		}
 		body := io.LimitReader(resp.Body, last-off+1)
 		if s, n := f.Head(off); s != nil {
 			body = &decrypter{r: body, s: s, left: n}
 		}
 		n, _ := io.Copy(w, body)
 		resp.Body.Close()
-		if resp.StatusCode != http.StatusPartialContent || n != last-off+1 {
+		if n != last-off+1 {
 			return
 		}
 		off = last + 1
