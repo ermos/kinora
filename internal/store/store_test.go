@@ -226,3 +226,17 @@ func TestStreamLimit(t *testing.T) {
 		t.Fatalf("unknown user: %v", err)
 	}
 }
+
+func TestCreateSessionDropsExpired(t *testing.T) {
+	conn := testDB(t)
+	s, ctx := New(conn), context.Background()
+	u, _ := s.CreateUser(ctx, "a", "h", false)
+	_ = s.CreateSession(ctx, "old", u.ID, time.Now().Add(-time.Hour))
+	if err := s.CreateSession(ctx, "new", u.ID, time.Now().Add(time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	var n int
+	if err := conn.QueryRow("SELECT COUNT(*) FROM sessions").Scan(&n); err != nil || n != 1 {
+		t.Fatalf("%d sessions, %v; want only the new one", n, err)
+	}
+}
