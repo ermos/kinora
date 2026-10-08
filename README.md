@@ -14,6 +14,8 @@ it knows to start the best stream it finds. In your browser, on your phone and o
 
 </div>
 
+![kinora home screen](docs/static/img/screenshots/home.webp)
+
 ## Why kinora
 
 Most self-hosted media servers expect you to already have the files. kinora doesn't: it pairs the
@@ -38,6 +40,10 @@ that your whole family already knows how to use.
   [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr), and an optional service dumps the database every day.
 - **Light**: a single Go binary with the web app built in, next to PostgreSQL.
 - **French and English** sources and interface, picked per instance.
+
+| A title page | On Android TV |
+|---|---|
+| ![A show page in kinora](docs/static/img/screenshots/title.webp) | ![kinora on an Android TV](docs/static/img/screenshots/android-tv.webp) |
 
 ## Quick start
 

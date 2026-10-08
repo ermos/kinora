@@ -72,6 +72,12 @@ const steps: { title: string; code: string; body: ReactNode }[] = [
   { title: 'Press play', code: 'docker compose up -d', body: 'Open port 8080 in your browser and create the admin account. That\'s it.' },
 ];
 
+const screenshots = [
+  { src: '/img/screenshots/home.webp', alt: 'The kinora home screen in a browser' },
+  { src: '/img/screenshots/title.webp', alt: 'A show page with its seasons and episodes' },
+  { src: '/img/screenshots/android-tv.webp', alt: 'kinora running on an Android TV' },
+];
+
 const RELEASES = `${GITHUB}/releases/latest`;
 
 const clients = [
@@ -83,6 +89,10 @@ const clients = [
     link: { href: RELEASES, label: 'Download the APK' },
   },
 ];
+
+function Screenshot({ src, alt }: { src: string; alt: string }) {
+  return <img className={s.shot} src={useBaseUrl(src)} alt={alt} loading="lazy" width={1600} height={900} />;
+}
 
 export default function Home(): ReactNode {
   const install = useBaseUrl('/docs/installation');
@@ -122,6 +132,15 @@ export default function Home(): ReactNode {
             </div>
           </div>
         </header>
+
+        <section className={s.row} aria-labelledby="screens">
+          <h2 id="screens" className={s.rowTitle}>Now streaming</h2>
+          <div className={s.shots}>
+            {screenshots.map((sh) => (
+              <Screenshot key={sh.src} {...sh} />
+            ))}
+          </div>
+        </section>
 
         <section className={s.row} aria-labelledby="features">
           <h2 id="features" className={s.rowTitle}>Popular on your server</h2>

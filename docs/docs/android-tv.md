@@ -6,6 +6,8 @@ title: Android TV
 kinora has a native Android TV app (Google TV included), built from the same code as the web app. It is designed for
 the remote: everything is reachable with the arrows, OK and Back.
 
+![kinora on an Android TV](/img/screenshots/android-tv.webp)
+
 ## Install the app
 
 1. Get the APK: download `kinora-android-tv.apk` from the
