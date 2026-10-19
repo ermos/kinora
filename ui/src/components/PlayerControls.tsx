@@ -9,6 +9,16 @@ import { t } from '../i18n';
 
 export const SEEK_STEP = 10;
 
+// Presses less than 500 ms apart in the same direction jump further and further.
+const SEEK_STEPS = [10, 10, 10, 20, 20, 30, 40, 50, 60, 90, 120];
+let streak = { at: 0, dir: 0, n: 0 };
+
+/** Signed number of seconds to jump for a seek press: 10 s, growing while the presses come fast. */
+export function seekStep(dir: 1 | -1, now = Date.now()) {
+  streak = { at: now, dir, n: dir === streak.dir && now - streak.at < 500 ? streak.n + 1 : 0 };
+  return dir * SEEK_STEPS[Math.min(streak.n, SEEK_STEPS.length - 1)];
+}
+
 const paths = {
   play: 'M6 4v16l14-8z',
   pause: 'M6 4h4v16H6zM14 4h4v16h-4z',
@@ -65,10 +75,10 @@ export function PlayerControls({
           <ControlButton label={playing ? t('watch.pause') : t('common.play')} onPress={onToggle} onFocus={onPoke}>
             <Icon d={playing ? paths.pause : paths.play} size={34} fill />
           </ControlButton>
-          <ControlButton label={t('watch.back10')} onPress={() => onSeek(Math.max(0, position - SEEK_STEP))} onFocus={onPoke}>
+          <ControlButton label={t('watch.back10')} onPress={() => onSeek(Math.max(0, position + seekStep(-1)))} onFocus={onPoke}>
             <SeekIcon forward={false} />
           </ControlButton>
-          <ControlButton label={t('watch.forward10')} onPress={() => onSeek(Math.min(duration, position + SEEK_STEP))} onFocus={onPoke}>
+          <ControlButton label={t('watch.forward10')} onPress={() => onSeek(Math.min(duration, position + seekStep(1)))} onFocus={onPoke}>
             <SeekIcon forward />
           </ControlButton>
           {web && (

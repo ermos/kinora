@@ -6,7 +6,7 @@ import { absolute, api, unwrap, type Link, type MediaType, type Segment } from '
 import { Focusable } from '../../../components/Focusable';
 import { Player } from '../../../components/Player';
 import type { PlayerHandle } from '../../../components/Player.types';
-import { PlayerControls, SEEK_STEP, toggleFullscreen } from '../../../components/PlayerControls';
+import { PlayerControls, seekStep, toggleFullscreen } from '../../../components/PlayerControls';
 import { Button, Chip, Icon, icons, styles as ui } from '../../../components/ui';
 import { Gate } from '../../../lib/auth';
 import { colors, useLayout } from '../../../theme';
@@ -239,8 +239,8 @@ function Watch() {
       const actions: Record<string, () => void> = {
         ' ': k.toggle,
         k: k.toggle,
-        ArrowLeft: () => k.seek(Math.max(0, k.time - SEEK_STEP)),
-        ArrowRight: () => k.seek(Math.min(k.duration, k.time + SEEK_STEP)),
+        ArrowLeft: () => k.seek(Math.max(0, k.time + seekStep(-1))),
+        ArrowRight: () => k.seek(Math.min(k.duration, k.time + seekStep(1))),
         f: toggleFullscreen,
         m: () => setMuted((m) => !m),
       };
@@ -266,8 +266,8 @@ function Watch() {
       const seekBy = (d: number) => k.seek(Math.min(k.duration, Math.max(0, k.time + d)));
       const type = e.eventType;
       if (type === 'playPause' || (type === 'select' && scrubbing.current)) k.toggle();
-      else if (type === 'rewind' || type === 'longLeft' || (type === 'left' && free)) seekBy(-SEEK_STEP);
-      else if (type === 'fastForward' || type === 'longRight' || (type === 'right' && free)) seekBy(SEEK_STEP);
+      else if (type === 'rewind' || type === 'longLeft' || (type === 'left' && free)) seekBy(seekStep(-1));
+      else if (type === 'fastForward' || type === 'longRight' || (type === 'right' && free)) seekBy(seekStep(1));
       k.poke();
     });
     return () => sub?.remove();
