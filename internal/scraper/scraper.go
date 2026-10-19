@@ -8,8 +8,11 @@ package scraper
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"log/slog"
+	"net"
 	"regexp"
 	"strings"
 	"sync"
@@ -85,9 +88,22 @@ var ErrNotFound = errors.New("stream not found")
 // SiteURL gives the current URL of a source, synced from its sites.json ("" before the first sync).
 type SiteURL func(id string) string
 
+// Unreachable reports whether err looks like a site whose domain moved: no DNS record, no connection, or a
+// certificate for another host.
+func Unreachable(err error) bool {
+	var (
+		dns  *net.DNSError
+		op   *net.OpError
+		cert *tls.CertificateVerificationError
+		host x509.HostnameError
+	)
+	return errors.As(err, &dns) || errors.As(err, &op) || errors.As(err, &cert) || errors.As(err, &host)
+}
+
 // FindLinks queries the sources of the language concurrently, keeps the links a hoster can play, then probes them
 // (quality, dead links) and sorts them best first. solver is the FlareSolverr URL, "" skips the Cloudflare sources.
-func FindLinks(ctx context.Context, siteURL SiteURL, q Query, lang Language, solver string) []Link {
+// An unreachable source is asked again on its fresh URL after resync (nil skips it) syncs the sites.json files.
+func FindLinks(ctx context.Context, siteURL SiteURL, resync func(context.Context), q Query, lang Language, solver string) []Link {
 	ctx, cancel := context.WithTimeout(ctx, 25*time.Second)
 	defer cancel()
 
@@ -100,10 +116,7 @@ func FindLinks(ctx context.Context, siteURL SiteURL, q Query, lang Language, sol
 		if !s.serves(lang.Code) || (s.Cloudflare && solver == "") {
 			continue
 		}
-		base := siteURL(s.ID)
-		if base == "" {
-			base = s.DefaultURL
-		}
+		base := s.base(siteURL)
 		if base == "" {
 			continue
 		}
@@ -115,7 +128,14 @@ func FindLinks(ctx context.Context, siteURL SiteURL, q Query, lang Language, sol
 			if s.Cloudflare {
 				c.Solver = solver
 			}
-			links, err := s.Find(ctx, c, strings.TrimRight(base, "/")+"/", q)
+			links, err := s.Find(ctx, c, base, q)
+			if Unreachable(err) && resync != nil {
+				resync(ctx)
+				if fresh := s.base(siteURL); fresh != base {
+					slog.Info("source moved", "source", s.ID, "url", fresh)
+					links, err = s.Find(ctx, c, fresh, q)
+				}
+			}
 			if err != nil {
 				slog.Warn("source failed", "source", s.ID, "err", err)
 			}
@@ -136,6 +156,18 @@ func FindLinks(ctx context.Context, siteURL SiteURL, q Query, lang Language, sol
 	probe(ctx, all)
 	SortLinks(all, lang.AudioRank)
 	return all
+}
+
+// base is the current URL of the source with a trailing slash, "" when it has none.
+func (s Source) base(siteURL SiteURL) string {
+	u := siteURL(s.ID)
+	if u == "" {
+		u = s.DefaultURL
+	}
+	if u == "" {
+		return ""
+	}
+	return strings.TrimRight(u, "/") + "/"
 }
 
 // streamFresh is how long a stream resolved by probe is reused; hoster URLs are signed for a few hours.

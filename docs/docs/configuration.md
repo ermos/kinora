@@ -44,4 +44,5 @@ If you don't need these sites, remove the `flaresolverr` service from `docker-co
 
 Streaming sites change domains often. kinora syncs them every 6 hours from a `sites.json` per language: vStream's for
 French (updated by their team several times a week), and `internal/scraper/en/sites.json` from the kinora repository
-for English. There is nothing to configure.
+for English. When a site stops answering (unknown domain, refused connection, certificate for another host), kinora
+syncs again right away, at most every 10 minutes, and retries the site on its new address. There is nothing to configure.
