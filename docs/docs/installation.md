@@ -39,6 +39,19 @@ This pulls the image and starts the services ([see the file](pathname:///docker-
 | `flaresolverr` | optional, lets kinora reach sites behind Cloudflare (see [Configuration](./configuration.md#flaresolverr)) |
 | `backup` | optional, off by default: daily database dumps (see [Automatic backups](#automatic-backups)) |
 
+### Sites blocked by your ISP
+
+Some internet providers block the domains of streaming sites at the DNS level (common in France). If a source keeps
+finding nothing, give the containers that reach the sites a public DNS resolver in `docker-compose.yml`:
+
+```yaml
+services:
+  kinora:
+    dns: [1.1.1.1, 9.9.9.9]
+  flaresolverr:
+    dns: [1.1.1.1, 9.9.9.9]
+```
+
 ### Image tags
 
 | Tag | Description |
