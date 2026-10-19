@@ -3,6 +3,8 @@ package scraper
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
+	"net"
 	"strings"
 	"testing"
 )
@@ -117,8 +119,31 @@ func TestFindLinksSendsInstanceLanguage(t *testing.T) {
 		got = c.AcceptLanguage
 		return nil, nil
 	}}}
-	FindLinks(context.Background(), func(string) string { return "" }, Query{}, Language{Code: "en", TMDB: "en-US", AudioRank: func(string) int { return 0 }}, "")
+	FindLinks(context.Background(), func(string) string { return "" }, nil, Query{}, Language{Code: "en", TMDB: "en-US", AudioRank: func(string) int { return 0 }}, "")
 	if got != "en-US,en;q=0.9" {
 		t.Fatalf("Accept-Language = %q", got)
+	}
+}
+
+// An unreachable source is asked again on the URL the resync brings.
+func TestFindLinksRetriesMovedSource(t *testing.T) {
+	saved := Sources
+	defer func() { Sources = saved }()
+	var asked []string
+	Sources = []Source{{ID: "s", Langs: []string{"en"}, Find: func(_ context.Context, _ *Client, base string, _ Query) ([]Link, error) {
+		asked = append(asked, base)
+		if base == "https://old.example/" {
+			return nil, fmt.Errorf("GET %s: %w", base, &net.DNSError{Err: "no such host", IsNotFound: true})
+		}
+		return nil, nil
+	}}}
+	url := "https://old.example"
+	FindLinks(context.Background(), func(string) string { return url }, func(context.Context) { url = "https://new.example" }, Query{},
+		Language{Code: "en", TMDB: "en-US", AudioRank: func(string) int { return 0 }}, "")
+	if strings.Join(asked, ",") != "https://old.example/,https://new.example/" {
+		t.Fatalf("asked %v", asked)
+	}
+	if Unreachable(fmt.Errorf("GET x: status 404")) {
+		t.Fatal("a status error is not unreachable")
 	}
 }

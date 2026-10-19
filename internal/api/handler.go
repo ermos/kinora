@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/netip"
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -49,6 +50,9 @@ type Handler struct {
 	// client IP can be spoofed behind a trusted proxy range.
 	loginLimiter, accountLimiter *failureLimiter
 	trustedProxies               []netip.Prefix
+	// syncMu guards syncedAt, the last sites.json sync.
+	syncMu   sync.Mutex
+	syncedAt time.Time
 }
 
 // New builds the API. trustedProxies nil trusts X-Forwarded-For from loopback and private networks.
@@ -73,6 +77,44 @@ func (h *Handler) FlareSolverr() string {
 		return *p
 	}
 	return ""
+}
+
+// resyncEvery bounds the syncs asked by unreachable sources.
+const resyncEvery = 10 * time.Minute
+
+// SyncSources stores the current URL of each source from the sites.json files.
+func (h *Handler) SyncSources(ctx context.Context) error {
+	h.syncMu.Lock()
+	defer h.syncMu.Unlock()
+	return h.syncSources(ctx)
+}
+
+// resyncSources syncs again for a source that is unreachable, its domain may have moved. Searches waiting on it
+// then read the fresh URLs.
+func (h *Handler) resyncSources(ctx context.Context) {
+	h.syncMu.Lock()
+	defer h.syncMu.Unlock()
+	if time.Since(h.syncedAt) < resyncEvery {
+		return
+	}
+	if err := h.syncSources(ctx); err != nil {
+		slog.Warn("sites.json sync failed", "err", err)
+	}
+}
+
+func (h *Handler) syncSources(ctx context.Context) error {
+	h.syncedAt = time.Now()
+	urls, err := scraper.FetchSiteURLs(ctx)
+	if err != nil {
+		return err
+	}
+	for id, u := range urls {
+		if err := h.store.SetSyncedURL(ctx, id, u); err != nil {
+			return err
+		}
+	}
+	slog.Info("source URLs synced", "count", len(urls))
+	return nil
 }
 
 // Routes returns the /api/v1 handler.

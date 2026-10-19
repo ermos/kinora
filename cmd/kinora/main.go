@@ -56,19 +56,6 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	go func() {
-		for {
-			if err := syncSources(ctx, st); err != nil {
-				slog.Warn("sites.json sync failed", "err", err)
-			}
-			select {
-			case <-ctx.Done():
-				return
-			case <-time.After(6 * time.Hour):
-			}
-		}
-	}()
-
 	lang, _ := scraper.LanguageByCode(scraper.DefaultLanguage)
 	if code, err := st.Setting(ctx, "language"); err == nil {
 		if l, ok := scraper.LanguageByCode(code); ok {
@@ -79,6 +66,19 @@ func run() error {
 	if u, err := st.Setting(ctx, "flaresolverr"); err == nil {
 		h.SetFlareSolverr(u)
 	}
+	go func() {
+		for {
+			if err := h.SyncSources(ctx); err != nil {
+				slog.Warn("sites.json sync failed", "err", err)
+			}
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(6 * time.Hour):
+			}
+		}
+	}()
+
 	go func() {
 		for {
 			h.RefreshShows(ctx)
@@ -162,18 +162,4 @@ func signingKey(ctx context.Context, st *store.Store) ([]byte, error) {
 		return nil, err
 	}
 	return hex.DecodeString(v)
-}
-
-func syncSources(ctx context.Context, st *store.Store) error {
-	urls, err := scraper.FetchSiteURLs(ctx)
-	if err != nil {
-		return err
-	}
-	for id, u := range urls {
-		if err := st.SetSyncedURL(ctx, id, u); err != nil {
-			return err
-		}
-	}
-	slog.Info("source URLs synced", "count", len(urls))
-	return nil
 }
