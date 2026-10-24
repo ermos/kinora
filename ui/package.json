@@ -19,12 +19,12 @@
     "expo-video": "~57.0.5",
     "hls.js": "^1.7.3",
     "openapi-fetch": "^0.17.0",
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "react-native": "npm:react-native-tvos@^0.86.3-0",
     "react-native-safe-area-context": "~5.10.0",
-    "react-native-screens": "~4.28.0",
-    "react-native-svg": "15.15.5",
+    "react-native-screens": "~4.30.0",
+    "react-native-svg": "15.16.0",
     "react-native-web": "^0.21.2"
   },
   "devDependencies": {
