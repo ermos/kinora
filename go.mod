@@ -2,6 +2,8 @@ module github.com/ermos/kinora
 
 go 1.27.1
 
+toolchain go1.27.4
+
 require (
 	github.com/jackc/pgx/v5 v5.11.0
 	golang.org/x/crypto v0.57.0
